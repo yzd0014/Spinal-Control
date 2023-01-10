@@ -3,7 +3,7 @@ from mujoco.glfw import glfw
 import numpy as np
 import os
 
-xml_path = 'hello.xml' #xml file (assumes this is in the same folder as this file)
+xml_path = 'muscle_control_narrow.xml' #xml file (assumes this is in the same folder as this file)
 simend = 5 #simulation time
 print_camera_config = 0 #set to 1 to print camera config
                         #this is useful for initializing view of the model)
@@ -15,13 +15,33 @@ button_right = False
 lastx = 0
 lasty = 0
 
+pulse_generator_coeff = 0
+actuator_threshold = np.array([0, 0], dtype = float)
+event_time = np.array([0, 0], dtype = float)
+
 def init_controller(model,data):
+    global pulse_generator_coeff
     #initialize the controller here. This function is called once, in the beginning
-    pass
+    mj.mj_forward(model, data)
+    pulse_generator_coeff = 200 / 0.4
+    actuator_threshold[0] = data.actuator_length[1]
+    actuator_threshold[1] = data.actuator_length[2]
+    actuator_threshold[0] = 0.55
 
 def controller(model, data):
     #put the controller here. This function is called inside the simulation.
-    pass
+    for i in range(2):
+        length_diff = data.actuator_length[i+1] - actuator_threshold[i]
+        if length_diff < 0:
+            length_diff = 0
+        freq = pulse_generator_coeff * length_diff
+        T = 0
+        if freq > 0.0000001:
+            T = 1 / freq
+        data.ctrl[i+1] = 0
+        if freq > 0.0000001 and data.time - event_time[i] > T:
+            data.ctrl[i+1] = 1
+            event_time[i] = data.time
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
@@ -139,7 +159,6 @@ while not glfw.window_should_close(window):
 
     while (data.time - time_prev < 1.0/60.0):
         mj.mj_step(model, data)
-
     # if (data.time>=simend):
     #     break;
 
