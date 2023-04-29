@@ -19,30 +19,6 @@ pulse_generator_coeff = 0
 actuator_threshold = np.array([0, 0], dtype = float)
 event_time = np.array([0, 0], dtype = float)
 
-def init_controller(model,data):
-    global pulse_generator_coeff
-    #initialize the controller here. This function is called once, in the beginning
-    mj.mj_forward(model, data)
-    pulse_generator_coeff = 200 / 0.4
-    actuator_threshold[0] = data.actuator_length[1]
-    actuator_threshold[1] = data.actuator_length[2]
-    actuator_threshold[0] = 0.55
-
-def controller(model, data):
-    #put the controller here. This function is called inside the simulation.
-    for i in range(2):
-        length_diff = data.actuator_length[i+1] - actuator_threshold[i]
-        if length_diff < 0:
-            length_diff = 0
-        freq = pulse_generator_coeff * length_diff
-        T = 0
-        if freq > 0.0000001:
-            T = 1 / freq
-        data.ctrl[i+1] = 0
-        if freq > 0.0000001 and data.time - event_time[i] > T:
-            data.ctrl[i+1] = 1
-            event_time[i] = data.time
-
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
         mj.mj_resetData(model, data)
@@ -113,6 +89,30 @@ def scroll(window, xoffset, yoffset):
     mj.mjv_moveCamera(model, action, 0.0, -0.05 *
                       yoffset, scene, cam)
 
+def init_controller(model,data):
+    global pulse_generator_coeff
+    #initialize the controller here. This function is called once, in the beginning
+    mj.mj_forward(model, data)
+    pulse_generator_coeff = 200 / 0.4
+    actuator_threshold[0] = data.actuator_length[1]
+    actuator_threshold[1] = data.actuator_length[2]
+    actuator_threshold[0] = 0.55
+
+def controller(model, data):
+    #put the controller here. This function is called inside the simulation.
+    for i in range(2):
+        length_diff = data.actuator_length[i+1] - actuator_threshold[i]
+        if length_diff < 0:
+            length_diff = 0
+        freq = pulse_generator_coeff * length_diff
+        T = 0
+        if freq > 0.0000001:
+            T = 1 / freq
+        data.ctrl[i+1] = 0
+        if freq > 0.0000001 and data.time - event_time[i] > T:
+            data.ctrl[i+1] = 1
+            event_time[i] = data.time
+
 #get the full path
 dirname = os.path.dirname(__file__)
 abspath = os.path.join(dirname + "/" + xml_path)
@@ -143,10 +143,10 @@ glfw.set_mouse_button_callback(window, mouse_button)
 glfw.set_scroll_callback(window, scroll)
 
 # Example on how to set camera configuration
-# cam.azimuth = 90
-# cam.elevation = -45
-# cam.distance = 2
-# cam.lookat = np.array([0.0, 0.0, 0])
+cam.azimuth = 90
+cam.elevation = -20
+cam.distance = 2
+cam.lookat = np.array([0.0, -1, 2])
 
 #initialize the controller
 init_controller(model,data)
