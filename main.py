@@ -98,20 +98,61 @@ def init_controller(model,data):
     actuator_threshold[1] = data.actuator_length[2]
     actuator_threshold[0] = 0.55
 
-def controller(model, data):
-    #put the controller here. This function is called inside the simulation.
-    for i in range(2):
-        length_diff = data.actuator_length[i+1] - actuator_threshold[i]
-        if length_diff < 0:
-            length_diff = 0
-        freq = pulse_generator_coeff * length_diff
-        T = 0
-        if freq > 0.0000001:
-            T = 1 / freq
-        data.ctrl[i+1] = 0
-        if freq > 0.0000001 and data.time - event_time[i] > T:
-            data.ctrl[i+1] = 1
-            event_time[i] = data.time
+h = 0.6
+w = 0.06
+S = 0.1
+L = np.sqrt(h*h+w*w)
+theta_offset = np.arctan(w/h)
+
+def get_length_from_angle(theta):
+    lsqr0 = S*S+L*L-2*S*L*np.cos(np.pi*0.5-theta-theta_offset)
+    lsqr1 = S*S+L*L-2*S*L*np.cos(np.pi*0.5+theta-theta_offset)
+    l_right = np.sqrt(lsqr0)
+    l_left = np.sqrt(lsqr1)
+    return l_left, l_right
+
+e0_r = 0
+e0_l = 0
+def pid_controller(model, data):
+    global e0_r
+    global e0_l
+    kp = 40
+    ki = 2
+    kd = 5
+    l1, l0 = get_length_from_angle(0.7)
+    e0_r += (data.actuator_length[1] - l0) * model.opt.timestep
+    e0_l += (data.actuator_length[2] - l1) * model.opt.timestep
+    r_spindle = 0.05 * data.actuator_velocity[1] + data.actuator_length[1]
+    l_spindle = 0.05 * data.actuator_velocity[2] + data.actuator_length[2]
+    data.ctrl[1] = kp * (r_spindle - l0) + kd * data.actuator_velocity[1] + ki * e0_r
+    data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
+    # print(data.qpos[0])
+
+e1_r = 0
+e1_l = 0
+def spinal_controller(model, data):
+    global e1_r
+    global e1_l
+    kp = 50
+    kd = 8
+    ki = 8
+    gl1, gl0 = get_length_from_angle(-0.45)
+    e1_r += (data.actuator_length[1] - gl0) * model.opt.timestep
+    e1_l += (data.actuator_length[2] - gl1) * model.opt.timestep
+    mb = 0.1
+    l0 = max(mb - (kp * (data.actuator_length[1] - gl0) + kd * data.actuator_velocity[1] + ki * e1_r), 0)
+    l1 = max(mb - (kp * (data.actuator_length[2] - gl1) + kd * data.actuator_velocity[2] + ki * e1_l), 0)
+
+    #spinal cord
+    r_spindle = 0.05 * data.actuator_velocity[1] + data.actuator_length[1]
+    l_spindle = 0.05 * data.actuator_velocity[2] + data.actuator_length[2]
+    l_diff = max(l_spindle - l1 - (r_spindle - l0), 0)
+    r_diff = max(r_spindle - l0 - (l_spindle - l1), 0)
+
+    ctrl_coeff = 1
+    data.ctrl[1] = ctrl_coeff * (r_spindle - l0 - l_diff)
+    data.ctrl[2] = ctrl_coeff * (l_spindle - l1 - r_diff)
+    print(data.qpos[0])
 
 #get the full path
 dirname = os.path.dirname(__file__)
@@ -152,7 +193,7 @@ cam.lookat = np.array([0.0, -1, 2])
 init_controller(model,data)
 
 #set the controller
-mj.set_mjcb_control(controller)
+mj.set_mjcb_control(spinal_controller)
 
 while not glfw.window_should_close(window):
     time_prev = data.time
