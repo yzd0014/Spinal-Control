@@ -1,3 +1,4 @@
+from stable_baselines3 import PPO
 import mujoco as mj
 from mujoco.glfw import glfw
 import numpy as np
@@ -15,9 +16,8 @@ button_right = False
 lastx = 0
 lasty = 0
 
-pulse_generator_coeff = 0
-actuator_threshold = np.array([0, 0], dtype = float)
-event_time = np.array([0, 0], dtype = float)
+PPO_model_path="models/1683657385/1310000.zip"
+PPO_model=PPO.load(PPO_model_path)
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
@@ -90,13 +90,7 @@ def scroll(window, xoffset, yoffset):
                       yoffset, scene, cam)
 
 def init_controller(model,data):
-    global pulse_generator_coeff
-    #initialize the controller here. This function is called once, in the beginning
-    mj.mj_forward(model, data)
-    pulse_generator_coeff = 200 / 0.4
-    actuator_threshold[0] = data.actuator_length[1]
-    actuator_threshold[1] = data.actuator_length[2]
-    actuator_threshold[0] = 0.55
+    pass
 
 h = 0.6
 w = 0.06
@@ -114,19 +108,25 @@ def get_length_from_angle(theta):
 e0_r = 0
 e0_l = 0
 def pid_controller(model, data):
-    global e0_r
-    global e0_l
-    kp = 40
-    ki = 2
-    kd = 5
-    l1, l0 = get_length_from_angle(0.7)
-    e0_r += (data.actuator_length[1] - l0) * model.opt.timestep
-    e0_l += (data.actuator_length[2] - l1) * model.opt.timestep
-    r_spindle = 0.05 * data.actuator_velocity[1] + data.actuator_length[1]
-    l_spindle = 0.05 * data.actuator_velocity[2] + data.actuator_length[2]
-    data.ctrl[1] = kp * (r_spindle - l0) + kd * data.actuator_velocity[1] + ki * e0_r
-    data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
+    # global e0_r
+    # global e0_l
+    # kp = 40
+    # ki = 2
+    # kd = 5
+    # l1, l0 = get_length_from_angle(0.7)
+    # e0_r += (data.actuator_length[1] - l0) * model.opt.timestep
+    # e0_l += (data.actuator_length[2] - l1) * model.opt.timestep
+    # r_spindle = 0.05 * data.actuator_velocity[1] + data.actuator_length[1]
+    # l_spindle = 0.05 * data.actuator_velocity[2] + data.actuator_length[2]
+    # data.ctrl[1] = kp * (r_spindle - l0) + kd * data.actuator_velocity[1] + ki * e0_r
+    # data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
     # print(data.qpos[0])
+
+    obs = np.array([data.qpos[0], data.qvel[0], 0.7, 0])
+    action, _states = PPO_model.predict(obs)
+    data.ctrl[1] = action[0]
+    data.ctrl[2] = action[1]
+    print(data.qpos[0])
 
 e1_r = 0
 e1_l = 0
@@ -193,7 +193,7 @@ cam.lookat = np.array([0.0, -1, 2])
 init_controller(model,data)
 
 #set the controller
-mj.set_mjcb_control(spinal_controller)
+mj.set_mjcb_control(pid_controller)
 
 while not glfw.window_should_close(window):
     time_prev = data.time
@@ -209,7 +209,7 @@ while not glfw.window_should_close(window):
     viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
 
     #print camera configuration (help to initialize the view)
-    if (print_camera_config==1):
+    if print_camera_config==1:
         print('cam.azimuth =',cam.azimuth,';','cam.elevation =',cam.elevation,';','cam.distance = ',cam.distance)
         print('cam.lookat =np.array([',cam.lookat[0],',',cam.lookat[1],',',cam.lookat[2],'])')
 
