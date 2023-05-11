@@ -36,11 +36,19 @@ class PendulumEnv(gym.Env):
         reward = 0
         if pos_diff_new <= 0.01 and np.absolute(self.data.qvel[0] - self.vel_t) <= 0.1:
             self.done = True
+            reward += 500
+
+        elif pos_diff_new <= 0.2 and np.absolute(self.data.qvel[0] - self.vel_t) <= 0.2:
+            self.done = True
+            reward += 50
+
+        elif pos_diff_new <= 0.3 and np.absolute(self.data.qvel[0] - self.vel_t) <= 0.4:
+            self.done = True
             reward += 10
 
-        if pos_diff_new > self.pos_diff:
+        if pos_diff_new >= self.pos_diff:
             self.done = True
-            reward -= 0.1
+            #reward -= 0.1
 
         if pos_diff_new < self.pos_diff:
             reward += 0.1

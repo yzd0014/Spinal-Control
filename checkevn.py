@@ -7,6 +7,7 @@ check_env(env)
 episodes = 3
 for i in range(episodes):
     done = False
+    print("start episode")
     obs = env.reset()
     while done == False:
         random_action = env.action_space.sample()

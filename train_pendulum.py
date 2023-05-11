@@ -15,7 +15,11 @@ if not os.path.exists(logdir):
 env = PendulumEnv()
 env.reset()
 
-model = PPO('MlpPolicy', env, verbose=1, tensorboard_log=logdir)
+# model = PPO('MlpPolicy', env, verbose=1, tensorboard_log=logdir)
+PPO_model_path="models/1683756307/2340000.zip"
+model=PPO.load(PPO_model_path, env=env)
+model.verbose = 1
+model.tensorboard_log = logdir
 
 TIMESTEPS = 10000
 iters = 0

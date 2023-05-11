@@ -16,7 +16,7 @@ button_right = False
 lastx = 0
 lasty = 0
 
-PPO_model_path="models/1683657385/1310000.zip"
+PPO_model_path="models/1683759070/5210000.zip"
 PPO_model=PPO.load(PPO_model_path)
 
 def keyboard(window, key, scancode, act, mods):
@@ -122,7 +122,7 @@ def pid_controller(model, data):
     # data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
     # print(data.qpos[0])
 
-    obs = np.array([data.qpos[0], data.qvel[0], 0.7, 0])
+    obs = np.array([data.qpos[0], data.qvel[0], 0.5, 0])
     action, _states = PPO_model.predict(obs)
     data.ctrl[1] = action[0]
     data.ctrl[2] = action[1]
