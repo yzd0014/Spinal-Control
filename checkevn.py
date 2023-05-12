@@ -14,3 +14,4 @@ for i in range(episodes):
         print("action", random_action)
         obs, reward, done, info = env.step(random_action)
         print('reward', reward)
+        print('target', env.pos_t)

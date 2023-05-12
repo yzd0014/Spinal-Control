@@ -16,9 +16,6 @@ button_right = False
 lastx = 0
 lasty = 0
 
-PPO_model_path="models/1683759070/5210000.zip"
-PPO_model=PPO.load(PPO_model_path)
-
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
         mj.mj_resetData(model, data)
@@ -107,6 +104,8 @@ def get_length_from_angle(theta):
 
 e0_r = 0
 e0_l = 0
+PPO_model_path="models/1683852427/1860000.zip"
+PPO_model=PPO.load(PPO_model_path)
 def pid_controller(model, data):
     # global e0_r
     # global e0_l
@@ -122,7 +121,7 @@ def pid_controller(model, data):
     # data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
     # print(data.qpos[0])
 
-    obs = np.array([data.qpos[0], data.qvel[0], 0.5, 0])
+    obs = np.array([data.qpos[0], data.qvel[0], 0.4, 0])
     action, _states = PPO_model.predict(obs)
     data.ctrl[1] = action[0]
     data.ctrl[2] = action[1]

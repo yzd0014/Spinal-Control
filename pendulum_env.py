@@ -4,6 +4,7 @@ from gym import spaces
 import mujoco as mj
 import os
 import random
+import time
 
 ctrl0 = 0
 ctrl1 = 0
@@ -18,6 +19,7 @@ class PendulumEnv(gym.Env):
     def __init__(self):
         super(PendulumEnv, self).__init__()
         self.init_mujoco()
+        self.pos_t_candidate = -0.8
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
@@ -33,25 +35,15 @@ class PendulumEnv(gym.Env):
         mj.mj_step(self.model, self.data)
 
         pos_diff_new = np.absolute(self.data.qpos[0] - self.pos_t)
-        reward = 0
-        if pos_diff_new <= 0.01 and np.absolute(self.data.qvel[0] - self.vel_t) <= 0.1:
+        vel_diff_new = np.absolute(self.data.qvel[0] - self.vel_t)
+        reward = 10 * np.exp(-30 * pos_diff_new) * 10 * np.exp(-70 * vel_diff_new)
+        if reward > 90:
             self.done = True
-            reward += 500
-
-        elif pos_diff_new <= 0.2 and np.absolute(self.data.qvel[0] - self.vel_t) <= 0.2:
-            self.done = True
-            reward += 50
-
-        elif pos_diff_new <= 0.3 and np.absolute(self.data.qvel[0] - self.vel_t) <= 0.4:
-            self.done = True
-            reward += 10
-
         if pos_diff_new >= self.pos_diff:
             self.done = True
-            #reward -= 0.1
 
         if pos_diff_new < self.pos_diff:
-            reward += 0.1
+            reward += 5
         self.pos_diff = pos_diff_new
 
         observation = [self.data.qpos[0], self.data.qvel[0], self.pos_t, self.vel_t]
@@ -61,10 +53,14 @@ class PendulumEnv(gym.Env):
         return observation, reward, self.done, info
 
     def reset(self):
-        self.pos_t = random.uniform(-0.8, 0.8)
+        self.pos_t = self.pos_t_candidate
+        self.pos_t_candidate += 0.05
+        if self.pos_t_candidate > 0.8:
+            self.pos_t_candidate = -0.8
         self.vel_t = 0
         self.done = False
         self.pos_diff = np.pi
+        self.old_time = time.time()
         mj.mj_resetData(self.model, self.data)
         mj.mj_forward(self.model, self.data)
 
