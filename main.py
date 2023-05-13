@@ -104,7 +104,7 @@ def get_length_from_angle(theta):
 
 e0_r = 0
 e0_l = 0
-PPO_model_path="models/1683852427/1860000.zip"
+PPO_model_path="models/1683952217/590000.zip"
 PPO_model=PPO.load(PPO_model_path)
 def pid_controller(model, data):
     # global e0_r
