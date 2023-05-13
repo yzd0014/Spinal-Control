@@ -100,7 +100,7 @@ class PendulumEnv(gym.Env):
         self.cam.distance = 2
         self.cam.lookat = np.array([0.0, -1, 2])
 
-        mj.set_mjcb_control(self.spinal_controller)
+        mj.set_mjcb_control(self.reciprocal_inhibition_controller)
 
     def init_window(self):
         glfw.init()
@@ -120,3 +120,12 @@ class PendulumEnv(gym.Env):
         l_spindle = data.actuator_length[2] + 0.05 * data.actuator_velocity[2]
         data.ctrl[1] = r_spindle - self.ctrl0
         data.ctrl[2] = l_spindle - self.ctrl1
+
+    def reciprocal_inhibition_controller(self, model, data):
+        data.ctrl[1] = self.ctrl0
+        data.ctrl[2] = self.ctrl1
+        offset = 0.05
+        if data.qpos[0] < self.pos_t - offset:
+            data.ctrl[2] = data.ctrl[2] * 0.05
+        if data.qpos[0] > self.pos_t + offset:
+            data.ctrl[1] = data.ctrl[1] * 0.05

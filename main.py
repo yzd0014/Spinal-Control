@@ -104,7 +104,9 @@ def get_length_from_angle(theta):
 
 e0_r = 0
 e0_l = 0
-PPO_model_path="models/1683952217/590000.zip"
+#PPO_model_path="models/1683952217/590000.zip"
+#PPO_model_path="models/1684009075/590000.zip"
+PPO_model_path="models/1684009512/590000.zip"
 PPO_model=PPO.load(PPO_model_path)
 def pid_controller(model, data):
     # global e0_r
@@ -153,6 +155,29 @@ def spinal_controller(model, data):
     data.ctrl[2] = ctrl_coeff * (l_spindle - l1 - r_diff)
     print(data.qpos[0])
 
+def strech_reflex_controller(model, data):
+    r_spindle = data.actuator_length[1] + 0.05 * data.actuator_velocity[1]
+    l_spindle = data.actuator_length[2] + 0.05 * data.actuator_velocity[2]
+    obs = np.array([data.qpos[0], data.qvel[0], 0.4, 0])
+    action, _states = PPO_model.predict(obs)
+    data.ctrl[1] = r_spindle - action[0]
+    data.ctrl[2] = l_spindle - action[1]
+    print(data.qpos[0])
+
+def reciprocal_inhibition_controller(model, data):
+    obs = np.array([data.qpos[0], data.qvel[0], 0.4, 0])
+    action, _states = PPO_model.predict(obs)
+    data.ctrl[1] = action[0]
+    data.ctrl[2] = action[1]
+    offset = 0.05
+    pos_t = 0.4
+    if data.qpos[0] < pos_t - offset:
+        data.ctrl[2] = data.ctrl[2] * 0.05
+    if data.qpos[0] > pos_t + offset:
+        data.ctrl[1] = data.ctrl[1] * 0.05
+
+    print(data.qpos[0])
+
 #get the full path
 dirname = os.path.dirname(__file__)
 abspath = os.path.join(dirname + "/" + xml_path)
@@ -192,7 +217,7 @@ cam.lookat = np.array([0.0, -1, 2])
 init_controller(model,data)
 
 #set the controller
-mj.set_mjcb_control(pid_controller)
+mj.set_mjcb_control(reciprocal_inhibition_controller)
 
 while not glfw.window_should_close(window):
     time_prev = data.time
