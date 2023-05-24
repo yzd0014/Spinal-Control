@@ -100,7 +100,7 @@ class PendulumEnv(gym.Env):
         self.cam.distance = 2
         self.cam.lookat = np.array([0.0, -1, 2])
 
-        mj.set_mjcb_control(self.spinal_controller)
+        mj.set_mjcb_control(self.reciprocal_inhibition_controller)
 
     def init_window(self):
         glfw.init()
@@ -117,16 +117,35 @@ class PendulumEnv(gym.Env):
 
     def spinal_controller(self, model, data):
         normalize_factor = 0.677
-        r_spindle = (data.actuator_length[1] + 0.05 * data.actuator_velocity[1])/normalize_factor
-        l_spindle = (data.actuator_length[2] + 0.05 * data.actuator_velocity[2])/normalize_factor
+        r_spindle = data.actuator_length[1]/normalize_factor
+        l_spindle = data.actuator_length[2]/normalize_factor
         data.ctrl[1] = r_spindle - self.ctrl0
         data.ctrl[2] = l_spindle - self.ctrl1
+
+        a_square = self.ctrl0 * self.ctrl0
+        b_square = self.ctrl1 * self.ctrl1
+        theta_d = 0
+        if a_square + b_square > 0.0000001:
+            theta_d = np.arccos(3.08333 * (b_square - a_square)/(a_square + b_square))
+            theta_d = np.pi * 0.5 - theta_d
+        offset = 0.05
+        if data.qpos[0] < theta_d - offset:
+            data.ctrl[2] = 0
+        if data.qpos[0] > theta_d + offset:
+            data.ctrl[1] = 0
+
 
     def reciprocal_inhibition_controller(self, model, data):
         data.ctrl[1] = self.ctrl0
         data.ctrl[2] = self.ctrl1
-        offset = 0.05
-        if data.qpos[0] < self.pos_t - offset:
-            data.ctrl[2] = data.ctrl[2] * 0.05
-        if data.qpos[0] > self.pos_t + offset:
-            data.ctrl[1] = data.ctrl[1] * 0.05
+
+        # offset = 0.05
+        # if data.qpos[0] < self.pos_t - offset:
+        #     data.ctrl[2] = data.ctrl[2] * 0.05
+        # if data.qpos[0] > self.pos_t + offset:
+        #     data.ctrl[1] = data.ctrl[1] * 0.05
+
+        if data.ctrl[2] > data.ctrl[1]:
+            data.ctrl[1] = 0
+        if data.ctrl[1] > data.ctrl[2]:
+            data.ctrl[2] = 0
