@@ -61,7 +61,7 @@ class PendulumEnv(gym.Env):
 
     def reset(self):
         #self.pos_t = self.pos_t_candidate
-        self.pos_t = 0.4
+        self.pos_t = self.pos_t_candidate
         self.pos_t_candidate += 0.05
         if self.pos_t_candidate > 0.8:
             self.pos_t_candidate = -0.8
@@ -100,7 +100,7 @@ class PendulumEnv(gym.Env):
         self.cam.distance = 2
         self.cam.lookat = np.array([0.0, -1, 2])
 
-        mj.set_mjcb_control(self.reciprocal_inhibition_controller)
+        mj.set_mjcb_control(self.my_controller)
 
     def init_window(self):
         glfw.init()
@@ -126,7 +126,13 @@ class PendulumEnv(gym.Env):
         b_square = self.ctrl1 * self.ctrl1
         theta_d = 0
         if a_square + b_square > 0.0000001:
-            theta_d = np.arccos(3.08333 * (b_square - a_square)/(a_square + b_square))
+            tmp = 3.08333 * (b_square - a_square)/(a_square + b_square)
+            if tmp > 1:
+                theta_d = 0
+            elif tmp < -1:
+                theta_d = np.pi
+            else:
+                theta_d = np.arccos(tmp)
             theta_d = np.pi * 0.5 - theta_d
         offset = 0.05
         if data.qpos[0] < theta_d - offset:

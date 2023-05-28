@@ -21,11 +21,11 @@ model = PPO('MlpPolicy', env, verbose=1, tensorboard_log=logdir)
 # model=PPO.load(PPO_model_path, env=env)
 # model.verbose = 1
 # model.tensorboard_log = logdir
-model.device="cuda"
+# model.device="cuda"
 
 TIMESTEPS = 10000
 iters = 0
-while iters < 59:
+while True:
 	iters += 1
 	model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
 	model.save(f"{models_dir}/{TIMESTEPS * iters}")

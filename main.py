@@ -104,7 +104,7 @@ def get_length_from_angle(theta):
 
 e0_r = 0
 e0_l = 0
-PPO_model_path="models/1683952217/590000.zip"
+PPO_model_path="models/1684970010/2860000.zip"
 #PPO_model_path="models/1684009075/590000.zip"
 # PPO_model_path="models/1684475054/590000.zip"
 PPO_model=PPO.load(PPO_model_path)
@@ -123,14 +123,14 @@ def pid_controller(model, data):
     # data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
     # print(data.qpos[0])
 
-    obs = np.array([data.qpos[0], data.qvel[0], 0, 0])
+    obs = np.array([data.qpos[0], data.qvel[0], -0.6, 0])
     action, _states = PPO_model.predict(obs)
     data.ctrl[1] = action[0]
     data.ctrl[2] = action[1]
-    if data.ctrl[2] > data.ctrl[1]:
-        data.ctrl[1] = 0
-    if data.ctrl[1] > data.ctrl[2]:
-        data.ctrl[2] = 0
+    # if data.ctrl[2] > data.ctrl[1]:
+    #     data.ctrl[1] = 0
+    # if data.ctrl[1] > data.ctrl[2]:
+    #     data.ctrl[2] = 0
     print(data.qpos[0])
 
 e1_r = 0
@@ -221,7 +221,7 @@ cam.lookat = np.array([0.0, -1, 2])
 init_controller(model,data)
 
 #set the controller
-mj.set_mjcb_control(reciprocal_inhibition_controller)
+mj.set_mjcb_control(pid_controller)
 
 while not glfw.window_should_close(window):
     time_prev = data.time
