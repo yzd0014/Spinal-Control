@@ -4,6 +4,7 @@ from gym import spaces
 import mujoco as mj
 from mujoco.glfw import glfw
 import os
+from spinal_controllers import *
 import random
 import time
 
@@ -100,7 +101,7 @@ class PendulumEnv(gym.Env):
         self.cam.distance = 2
         self.cam.lookat = np.array([0.0, -1, 2])
 
-        mj.set_mjcb_control(self.my_controller)
+        mj.set_mjcb_control(self.my_neuron_controller)
 
     def init_window(self):
         glfw.init()
@@ -111,47 +112,22 @@ class PendulumEnv(gym.Env):
         self.scene = mj.MjvScene(self.model, maxgeom=10000)
         self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
-    def my_controller(self, model, data):
-        data.ctrl[1] = self.ctrl0
-        data.ctrl[2] = self.ctrl1
+    def my_baseline(self, model, data):
+        action = np.array([self.ctrl0, self.ctr1])
+        baseline_controller(action, data)
 
-    def spinal_controller(self, model, data):
-        normalize_factor = 0.677
-        r_spindle = data.actuator_length[1]/normalize_factor
-        l_spindle = data.actuator_length[2]/normalize_factor
-        data.ctrl[1] = r_spindle - self.ctrl0
-        data.ctrl[2] = l_spindle - self.ctrl1
+    def my_RI(self, model, data):
+        action = np.array([self.ctrl0, self.ctr1])
+        RI_controller(action, data)
 
-        a_square = self.ctrl0 * self.ctrl0
-        b_square = self.ctrl1 * self.ctrl1
-        theta_d = 0
-        if a_square + b_square > 0.0000001:
-            tmp = 3.08333 * (b_square - a_square)/(a_square + b_square)
-            if tmp > 1:
-                theta_d = 0
-            elif tmp < -1:
-                theta_d = np.pi
-            else:
-                theta_d = np.arccos(tmp)
-            theta_d = np.pi * 0.5 - theta_d
-        offset = 0.05
-        if data.qpos[0] < theta_d - offset:
-            data.ctrl[2] = 0
-        if data.qpos[0] > theta_d + offset:
-            data.ctrl[1] = 0
+    def my_stretch_reflex(self, model, data):
+        action = np.array([self.ctrl0, self.ctr1])
+        stretch_reflex_controller(action, data)
 
+    def my_RI_and_stretch_reflex_controller(self, model, data):
+        action = np.array([self.ctrl0, self.ctr1])
+        RI_and_stretch_reflex_controller(action, data)
 
-    def reciprocal_inhibition_controller(self, model, data):
-        data.ctrl[1] = self.ctrl0
-        data.ctrl[2] = self.ctrl1
-
-        # offset = 0.05
-        # if data.qpos[0] < self.pos_t - offset:
-        #     data.ctrl[2] = data.ctrl[2] * 0.05
-        # if data.qpos[0] > self.pos_t + offset:
-        #     data.ctrl[1] = data.ctrl[1] * 0.05
-
-        if data.ctrl[2] > data.ctrl[1]:
-            data.ctrl[1] = 0
-        if data.ctrl[1] > data.ctrl[2]:
-            data.ctrl[2] = 0
+    def my_neuron_controller(self, model, data):
+        action = np.array([self.ctrl0, self.ctr1])
+        neuron_controller(action, data)

@@ -3,6 +3,8 @@ import mujoco as mj
 from mujoco.glfw import glfw
 import numpy as np
 import os
+import matplotlib.pyplot as plt
+from spinal_controllers import *
 
 xml_path = 'muscle_control_narrow.xml' #xml file (assumes this is in the same folder as this file)
 simend = 5 #simulation time
@@ -104,82 +106,76 @@ def get_length_from_angle(theta):
 
 e0_r = 0
 e0_l = 0
-PPO_model_path="models/1684970010/2860000.zip"
-#PPO_model_path="models/1684009075/590000.zip"
-# PPO_model_path="models/1684475054/590000.zip"
-PPO_model=PPO.load(PPO_model_path)
 def pid_controller(model, data):
-    # global e0_r
-    # global e0_l
-    # kp = 40
-    # ki = 2
-    # kd = 5
-    # l1, l0 = get_length_from_angle(0.7)
-    # e0_r += (data.actuator_length[1] - l0) * model.opt.timestep
-    # e0_l += (data.actuator_length[2] - l1) * model.opt.timestep
-    # r_spindle = 0.05 * data.actuator_velocity[1] + data.actuator_length[1]
-    # l_spindle = 0.05 * data.actuator_velocity[2] + data.actuator_length[2]
-    # data.ctrl[1] = kp * (r_spindle - l0) + kd * data.actuator_velocity[1] + ki * e0_r
-    # data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
-    # print(data.qpos[0])
-
-    obs = np.array([data.qpos[0], data.qvel[0], -0.6, 0])
-    action, _states = PPO_model.predict(obs)
-    data.ctrl[1] = action[0]
-    data.ctrl[2] = action[1]
-    # if data.ctrl[2] > data.ctrl[1]:
-    #     data.ctrl[1] = 0
-    # if data.ctrl[1] > data.ctrl[2]:
-    #     data.ctrl[2] = 0
-    print(data.qpos[0])
-
-e1_r = 0
-e1_l = 0
-def spinal_controller(model, data):
-    global e1_r
-    global e1_l
-    kp = 50
-    kd = 8
-    ki = 8
-    gl1, gl0 = get_length_from_angle(-0.45)
-    e1_r += (data.actuator_length[1] - gl0) * model.opt.timestep
-    e1_l += (data.actuator_length[2] - gl1) * model.opt.timestep
-    mb = 0.1
-    l0 = max(mb - (kp * (data.actuator_length[1] - gl0) + kd * data.actuator_velocity[1] + ki * e1_r), 0)
-    l1 = max(mb - (kp * (data.actuator_length[2] - gl1) + kd * data.actuator_velocity[2] + ki * e1_l), 0)
-
-    #spinal cord
+    global e0_r
+    global e0_l
+    kp = 40
+    ki = 2
+    kd = 5
+    l1, l0 = get_length_from_angle(0.7)
+    e0_r += (data.actuator_length[1] - l0) * model.opt.timestep
+    e0_l += (data.actuator_length[2] - l1) * model.opt.timestep
     r_spindle = 0.05 * data.actuator_velocity[1] + data.actuator_length[1]
     l_spindle = 0.05 * data.actuator_velocity[2] + data.actuator_length[2]
-    l_diff = max(l_spindle - l1 - (r_spindle - l0), 0)
-    r_diff = max(r_spindle - l0 - (l_spindle - l1), 0)
-
-    ctrl_coeff = 1
-    data.ctrl[1] = ctrl_coeff * (r_spindle - l0 - l_diff)
-    data.ctrl[2] = ctrl_coeff * (l_spindle - l1 - r_diff)
+    data.ctrl[1] = kp * (r_spindle - l0) + kd * data.actuator_velocity[1] + ki * e0_r
+    data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
     print(data.qpos[0])
 
-def strech_reflex_controller(model, data):
-    r_spindle = data.actuator_length[1] + 0.05 * data.actuator_velocity[1]
-    l_spindle = data.actuator_length[2] + 0.05 * data.actuator_velocity[2]
-    obs = np.array([data.qpos[0], data.qvel[0], 0.4, 0])
-    action, _states = PPO_model.predict(obs)
-    data.ctrl[1] = r_spindle - action[0]
-    data.ctrl[2] = l_spindle - action[1]
+target_pos = -0.42
+e1_r = 0
+e1_l = 0
+PPO_model_path4="models/1684970010/7960000.zip"
+PPO_model4=PPO.load(PPO_model_path4)
+def spinal_controller(model, data):
+    # global e1_r
+    # global e1_l
+    # kp = 50
+    # kd = 8
+    # ki = 8
+    # gl1, gl0 = get_length_from_angle(-0.45)
+    # e1_r += (data.actuator_length[1] - gl0) * model.opt.timestep
+    # e1_l += (data.actuator_length[2] - gl1) * model.opt.timestep
+    # mb = 0.1
+    # l0 = max(mb - (kp * (data.actuator_length[1] - gl0) + kd * data.actuator_velocity[1] + ki * e1_r), 0)
+    # l1 = max(mb - (kp * (data.actuator_length[2] - gl1) + kd * data.actuator_velocity[2] + ki * e1_l), 0)
+
+    #spinal cord
+    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+    action, _states = PPO_model4.predict(obs)
+    neuron_controller(input_action=action, data=data)
     print(data.qpos[0])
 
-def reciprocal_inhibition_controller(model, data):
-    obs = np.array([data.qpos[0], data.qvel[0], 0.4, 0])
-    action, _states = PPO_model.predict(obs)
-    data.ctrl[1] = action[0]
-    data.ctrl[2] = action[1]
-    offset = 0.05
-    pos_t = 0.4
-    if data.qpos[0] < pos_t - offset:
-        data.ctrl[2] = data.ctrl[2] * 0.05
-    if data.qpos[0] > pos_t + offset:
-        data.ctrl[1] = data.ctrl[1] * 0.05
+# PPO_model_path0="models/1685125100/1850000.zip"
+PPO_model_path0="models/1684970010/7960000.zip"
+PPO_model0=PPO.load(PPO_model_path0)
+def baseline_callback(model, data):
+    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+    action, _states = PPO_model0.predict(obs)
+    baseline_controller(input_action=action, data=data)
+    print(data.qpos[0])
 
+PPO_model_path1="models/1685030922/1850000.zip"
+PPO_model1=PPO.load(PPO_model_path1)
+def RI_callback(model, data):
+    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+    action, _states = PPO_model1.predict(obs)
+    RI_controller(input_action=action, data=data)
+    print(data.qpos[0])
+
+PPO_model_path2="models/1685057485/1850000.zip"
+PPO_model2=PPO.load(PPO_model_path2)
+def stretch_reflex_callback(model, data):
+    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+    action, _states = PPO_model2.predict(obs)
+    stretch_reflex_controller(input_action=action, data=data)
+    print(data.qpos[0])
+
+PPO_model_path3="models/1685079447/1850000.zip"
+PPO_model3=PPO.load(PPO_model_path3)
+def RI_and_stretch_reflex_callback(model, data):
+    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+    action, _states = PPO_model3.predict(obs)
+    RI_and_stretch_reflex_controller(input_action=action, data=data)
     print(data.qpos[0])
 
 #get the full path
@@ -221,7 +217,7 @@ cam.lookat = np.array([0.0, -1, 2])
 init_controller(model,data)
 
 #set the controller
-mj.set_mjcb_control(pid_controller)
+mj.set_mjcb_control(RI_and_stretch_reflex_callback)
 
 while not glfw.window_should_close(window):
     time_prev = data.time
