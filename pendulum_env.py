@@ -113,21 +113,21 @@ class PendulumEnv(gym.Env):
         self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
     def my_baseline(self, model, data):
-        action = np.array([self.ctrl0, self.ctr1])
+        action = np.array([self.ctrl0, self.ctrl1])
         baseline_controller(action, data)
 
     def my_RI(self, model, data):
-        action = np.array([self.ctrl0, self.ctr1])
+        action = np.array([self.ctrl0, self.ctrl1])
         RI_controller(action, data)
 
     def my_stretch_reflex(self, model, data):
-        action = np.array([self.ctrl0, self.ctr1])
+        action = np.array([self.ctrl0, self.ctrl1])
         stretch_reflex_controller(action, data)
 
     def my_RI_and_stretch_reflex_controller(self, model, data):
-        action = np.array([self.ctrl0, self.ctr1])
+        action = np.array([self.ctrl0, self.ctrl1])
         RI_and_stretch_reflex_controller(action, data)
 
     def my_neuron_controller(self, model, data):
-        action = np.array([self.ctrl0, self.ctr1])
+        action = np.array([self.ctrl0, self.ctrl1])
         neuron_controller(action, data)
