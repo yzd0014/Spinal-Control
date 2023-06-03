@@ -8,15 +8,18 @@ from spinal_controllers import *
 import random
 import time
 
+max_pos = 0.4
+stride = 0.01
 class PendulumEnv(gym.Env):
     """Custom Environment that follows gym interface."""
     def __init__(self):
         super(PendulumEnv, self).__init__()
-        self.rendering = True
+        self.rendering = False
         self.init_mujoco()
         if self.rendering == True:
             self.init_window()
-        self.pos_t_candidate = -0.8
+        self.pos_t_candidate = -max_pos
+        self.dx = stride
         self.ctrl0 = 0
         self.ctrl1 = 0
         # Define action and observation space
@@ -46,13 +49,11 @@ class PendulumEnv(gym.Env):
             glfw.poll_events()
 
         pos_diff_new = np.absolute(self.data.qpos[0] - self.pos_t)
-        vel_diff_new = np.absolute(self.data.qvel[0] - self.vel_t)
-        self.ticks += 1
         reward = -pos_diff_new
-        #reward = 10 * np.exp(-10 * pos_diff_new) * np.exp(-20 * vel_diff_new)
+
+        self.ticks += 1
         if self.ticks >= 10000:
             self.done = True
-        # reward = reward - self.ticks/5000
 
         observation = [self.data.qpos[0], self.data.qvel[0], self.pos_t, self.vel_t]
         observation = np.array(observation, dtype=np.float32)
@@ -63,9 +64,14 @@ class PendulumEnv(gym.Env):
     def reset(self):
         #self.pos_t = self.pos_t_candidate
         self.pos_t = self.pos_t_candidate
-        self.pos_t_candidate += 0.05
-        if self.pos_t_candidate > 0.8:
-            self.pos_t_candidate = -0.8
+        print(self.pos_t)
+        self.pos_t_candidate += self.dx
+        if self.pos_t_candidate > max_pos:
+            self.dx = -stride
+            self.pos_t_candidate = max_pos
+        if self.pos_t_candidate < -max_pos:
+            self.dx = stride
+            self.pos_t_candidate = -max_pos
         self.vel_t = 0
         self.done = False
         self.ticks = 0
@@ -101,7 +107,7 @@ class PendulumEnv(gym.Env):
         self.cam.distance = 2
         self.cam.lookat = np.array([0.0, -1, 2])
 
-        mj.set_mjcb_control(self.my_neuron_controller)
+        mj.set_mjcb_control(self.my_RI)
 
     def init_window(self):
         glfw.init()

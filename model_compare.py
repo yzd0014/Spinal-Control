@@ -60,6 +60,7 @@ y0 = []
 y1 = []
 y2 = []
 y3 = []
+y4 = []
 
 mj.set_mjcb_control(baseline_callback)
 while data.time < target_sim_time:
@@ -89,10 +90,18 @@ while data.time < target_sim_time:
     y3.append(data.qpos[0])
 print("y3 done!")
 
+mj.mj_resetData(model, data)
+mj.set_mjcb_control(neuron_callback)
+while data.time < target_sim_time:
+    mj.mj_step(model, data)
+    y4.append(data.qpos[0])
+print("y4 done!")
+
 plt.plot(x_time, y0, label = "baseline")
 plt.plot(x_time, y1, label = "RI")
 plt.plot(x_time, y2, label = "stretch reflex")
 plt.plot(x_time, y3, label = "RI + stretch reflex")
+plt.plot(x_time, y4, label = "RI + stretch reflex with neurons")
 plt.axhline(y = target_pos, color = 'r', linestyle = '-', label = "target position", linewidth = 0.2)
 plt.xlabel('time')
 plt.ylabel('position')

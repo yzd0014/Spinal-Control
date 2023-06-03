@@ -121,40 +121,41 @@ def pid_controller(model, data):
     data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
     print(data.qpos[0])
 
-target_pos = -0.42
+target_pos = -0.46
 e1_r = 0
 e1_l = 0
-PPO_model_path4="models/1684970010/7960000.zip"
-PPO_model4=PPO.load(PPO_model_path4)
-def spinal_controller(model, data):
-    # global e1_r
-    # global e1_l
-    # kp = 50
-    # kd = 8
-    # ki = 8
-    # gl1, gl0 = get_length_from_angle(-0.45)
-    # e1_r += (data.actuator_length[1] - gl0) * model.opt.timestep
-    # e1_l += (data.actuator_length[2] - gl1) * model.opt.timestep
-    # mb = 0.1
-    # l0 = max(mb - (kp * (data.actuator_length[1] - gl0) + kd * data.actuator_velocity[1] + ki * e1_r), 0)
-    # l1 = max(mb - (kp * (data.actuator_length[2] - gl1) + kd * data.actuator_velocity[2] + ki * e1_l), 0)
-
-    #spinal cord
-    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-    action, _states = PPO_model4.predict(obs)
-    neuron_controller(input_action=action, data=data)
-    print(data.qpos[0])
+# PPO_model_path4="models/1685516023/1850000.zip"
+# PPO_model4=PPO.load(PPO_model_path4)
+# def spinal_controller(model, data):
+#     # global e1_r
+#     # global e1_l
+#     # kp = 50
+#     # kd = 8
+#     # ki = 8
+#     # gl1, gl0 = get_length_from_angle(-0.45)
+#     # e1_r += (data.actuator_length[1] - gl0) * model.opt.timestep
+#     # e1_l += (data.actuator_length[2] - gl1) * model.opt.timestep
+#     # mb = 0.1
+#     # l0 = max(mb - (kp * (data.actuator_length[1] - gl0) + kd * data.actuator_velocity[1] + ki * e1_r), 0)
+#     # l1 = max(mb - (kp * (data.actuator_length[2] - gl1) + kd * data.actuator_velocity[2] + ki * e1_l), 0)
+#
+#     #spinal cord
+#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+#     action, _states = PPO_model4.predict(obs)
+#     neuron_controller(input_action=action, data=data)
+#     print(data.qpos[0])
 
 # PPO_model_path0="models/1685125100/1850000.zip"
-PPO_model_path0="models/1684970010/7960000.zip"
-PPO_model0=PPO.load(PPO_model_path0)
-def baseline_callback(model, data):
-    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-    action, _states = PPO_model0.predict(obs)
-    baseline_controller(input_action=action, data=data)
-    print(data.qpos[0])
+# PPO_model_path0="models/1684970010/1850000.zip"
+# PPO_model0=PPO.load(PPO_model_path0)
+# def baseline_callback(model, data):
+#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+#     action, _states = PPO_model0.predict(obs)
+#     baseline_controller(input_action=action, data=data)
+#     print(data.qpos[0])
 
-PPO_model_path1="models/1685030922/1850000.zip"
+# PPO_model_path1="models/1685030922/1850000.zip"
+PPO_model_path1="models/1685686025/7860000.zip"
 PPO_model1=PPO.load(PPO_model_path1)
 def RI_callback(model, data):
     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
@@ -162,21 +163,21 @@ def RI_callback(model, data):
     RI_controller(input_action=action, data=data)
     print(data.qpos[0])
 
-PPO_model_path2="models/1685057485/1850000.zip"
-PPO_model2=PPO.load(PPO_model_path2)
-def stretch_reflex_callback(model, data):
-    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-    action, _states = PPO_model2.predict(obs)
-    stretch_reflex_controller(input_action=action, data=data)
-    print(data.qpos[0])
-
-PPO_model_path3="models/1685079447/1850000.zip"
-PPO_model3=PPO.load(PPO_model_path3)
-def RI_and_stretch_reflex_callback(model, data):
-    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-    action, _states = PPO_model3.predict(obs)
-    RI_and_stretch_reflex_controller(input_action=action, data=data)
-    print(data.qpos[0])
+# PPO_model_path2="models/1685057485/1850000.zip"
+# PPO_model2=PPO.load(PPO_model_path2)
+# def stretch_reflex_callback(model, data):
+#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+#     action, _states = PPO_model2.predict(obs)
+#     stretch_reflex_controller(input_action=action, data=data)
+#     print(data.qpos[0])
+#
+# PPO_model_path3="models/1685079447/1850000.zip"
+# PPO_model3=PPO.load(PPO_model_path3)
+# def RI_and_stretch_reflex_callback(model, data):
+#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+#     action, _states = PPO_model3.predict(obs)
+#     RI_and_stretch_reflex_controller(input_action=action, data=data)
+#     print(data.qpos[0])
 
 #get the full path
 dirname = os.path.dirname(__file__)
@@ -217,7 +218,7 @@ cam.lookat = np.array([0.0, -1, 2])
 init_controller(model,data)
 
 #set the controller
-mj.set_mjcb_control(RI_and_stretch_reflex_callback)
+mj.set_mjcb_control(RI_callback)
 
 while not glfw.window_should_close(window):
     time_prev = data.time
