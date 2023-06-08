@@ -2,6 +2,7 @@ from stable_baselines3 import PPO
 #from stable_baselines3 import DDPG
 import os
 from pendulum_env import *
+from double_links_env import *
 import time
 
 control_type = Control_Type.BASELINE
@@ -15,7 +16,8 @@ if not os.path.exists(models_dir):
 if not os.path.exists(logdir):
 	os.makedirs(logdir)
 
-env = PendulumEnv(control_type=control_type)
+# env = PendulumEnv(control_type=control_type)
+env = DoubleLinkEnv(control_type=control_type)
 env.reset()
 
 model = PPO('MlpPolicy', env, n_steps=8192, batch_size=2048, n_epochs=100, verbose=1, tensorboard_log=logdir)

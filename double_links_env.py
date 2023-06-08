@@ -4,9 +4,7 @@ from gym import spaces
 import mujoco as mj
 from mujoco.glfw import glfw
 import os
-from spinal_controllers import *
-import random
-import time
+from double_link_controllers import *
 from enum import Enum
 
 class Control_Type(Enum):
@@ -22,34 +20,38 @@ control_typle_dic = {Control_Type.BASELINE: "baseline",
                      Control_Type.RI_AND_REFLEX: "RI + stretch refelx",
                      Control_Type.NEURON: "neuron model"}
 
-max_pos = 0.4
-stride = 0.01
+max_pos = 0.2
+max_length = 2
+min_length = 1.766
+pos_stride = 0.01
+length_stride = 0.1
 class DoubleLinkEnv(gym.Env):
     """Custom Environment that follows gym interface."""
     def __init__(self, control_type = Control_Type.BASELINE):
         super(DoubleLinkEnv, self).__init__()
+
         self.control_type = control_type
-        self.rendering = False
+        self.rendering = True
         self.init_mujoco()
         if self.rendering == True:
             self.init_window()
-        self.pos_t_candidate = -max_pos
-        self.dx = stride
-        self.ctrl0 = 0
-        self.ctrl1 = 0
+
+        self.pos_t = -max_pos
+        self.length_t = min_length
+        self.target_pos = np.zeros(3)
+        self.m_ctrl = np.zeros(4)
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
-        self.action_space = spaces.Box(low=0, high=1.0,shape=(2,), dtype=np.float32)
+        self.action_space = spaces.Box(low=0, high=1.0,shape=(4,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
-        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(4,), dtype=np.float32)
+        #current endfactor pos
+        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(5,), dtype=np.float32)
 
     def step(self, action):
-        self.ctrl0 = action[0]
-        self.ctrl1 = action[1]
+        for i in range(4):
+            self.m_ctrl[i] = action[i]
 
-        viewport_width = 0
-        viewport_height = 0
         viewport = 0
         if self.rendering == True:
             viewport_width, viewport_height = glfw.get_framebuffer_size(self.window)
@@ -63,38 +65,36 @@ class DoubleLinkEnv(gym.Env):
             glfw.swap_buffers(self.window)
             glfw.poll_events()
 
-        pos_diff_new = np.absolute(self.data.qpos[0] - self.pos_t)
+        pos_diff_new = np.linalg.norm(self.data.xpos[2] - self.target_pos)
         reward = -pos_diff_new
 
         self.ticks += 1
-        if self.ticks >= 10000:
+        if self.ticks >= 20000:
             self.done = True
 
-        observation = [self.data.qpos[0], self.data.qvel[0], self.pos_t, self.vel_t]
-        observation = np.array(observation, dtype=np.float32)
+        observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1]])))
         info = {}
 
         return observation, reward, self.done, info
 
     def reset(self):
-        #self.pos_t = self.pos_t_candidate
-        self.pos_t = self.pos_t_candidate
-        print(self.pos_t)
-        self.pos_t_candidate += self.dx
-        if self.pos_t_candidate > max_pos:
-            self.dx = -stride
-            self.pos_t_candidate = max_pos
-        if self.pos_t_candidate < -max_pos:
-            self.dx = stride
-            self.pos_t_candidate = -max_pos
-        self.vel_t = 0
+        self.length_t += length_stride
+        if self.length_t > max_length:
+            self.length_t = min_length
+            self.pos_t += pos_stride
+        if self.pos_t > max_pos:
+            self.pos_t = -max_pos
+        print(f"target angle: {self.pos_t}")
+        print(f"target length: {self.length_t}")
+        self.compute_target_pos()
+
         self.done = False
         self.ticks = 0
         mj.mj_resetData(self.model, self.data)
+        self.data.site_xpos[0] = self.target_pos
         mj.mj_forward(self.model, self.data)
 
-        observation = [self.data.qpos[0], self.data.qvel[0], self.pos_t, self.vel_t]
-        observation = np.array(observation, dtype=np.float32)
+        observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1]])))
         return observation
 
     # def render(self):
@@ -105,7 +105,7 @@ class DoubleLinkEnv(gym.Env):
             glfw.terminate()
 
     def init_mujoco(self):
-        xml_path = 'muscle_control_narrow.xml'
+        xml_path = 'double_links.xml'
         dirname = os.path.dirname(__file__)
         abspath = os.path.join(dirname + "/" + xml_path)
         xml_path = abspath
@@ -142,22 +142,23 @@ class DoubleLinkEnv(gym.Env):
         self.scene = mj.MjvScene(self.model, maxgeom=10000)
         self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
+    def compute_target_pos(self):
+        x = np.cos(-0.5 * np.pi + self.pos_t)
+        z = np.sin(-0.5 * np.pi + self.pos_t) + 2.5
+        self.target_pos = np.array([x, 0, z])
+
     def my_baseline(self, model, data):
-        action = np.array([self.ctrl0, self.ctrl1])
-        baseline_controller(action, data)
+        baseline_controller(self.m_ctrl, data)
 
     def my_RI(self, model, data):
-        action = np.array([self.ctrl0, self.ctrl1])
-        RI_controller(action, data)
+        RI_controller(self.m_ctrl, data)
 
     def my_stretch_reflex(self, model, data):
-        action = np.array([self.ctrl0, self.ctrl1])
-        stretch_reflex_controller(action, data)
+        pass
+
 
     def my_RI_and_stretch_reflex_controller(self, model, data):
-        action = np.array([self.ctrl0, self.ctrl1])
-        RI_and_stretch_reflex_controller(action, data)
+        pass
 
     def my_neuron_controller(self, model, data):
-        action = np.array([self.ctrl0, self.ctrl1])
-        neuron_controller(action, data)
+        pass
