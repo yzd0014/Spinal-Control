@@ -7,13 +7,28 @@ import os
 from spinal_controllers import *
 import random
 import time
+from enum import Enum
+
+class Control_Type(Enum):
+    BASELINE = 1
+    RI = 2
+    REFLEX = 3
+    RI_AND_REFLEX = 4
+    NEURON = 5
+
+control_typle_dic = {Control_Type.BASELINE: "baseline",
+                     Control_Type.RI: "RI",
+                     Control_Type.REFLEX: "strech reflex",
+                     Control_Type.RI_AND_REFLEX: "RI + stretch refelx",
+                     Control_Type.NEURON: "neuron model"}
 
 max_pos = 0.4
 stride = 0.01
 class PendulumEnv(gym.Env):
     """Custom Environment that follows gym interface."""
-    def __init__(self):
+    def __init__(self, control_type = Control_Type.BASELINE):
         super(PendulumEnv, self).__init__()
+        self.control_type = control_type
         self.rendering = False
         self.init_mujoco()
         if self.rendering == True:
@@ -107,7 +122,16 @@ class PendulumEnv(gym.Env):
         self.cam.distance = 2
         self.cam.lookat = np.array([0.0, -1, 2])
 
-        mj.set_mjcb_control(self.my_stretch_reflex)
+        if self.control_type == Control_Type.BASELINE:
+            mj.set_mjcb_control(self.my_baseline)
+        elif self.control_type == Control_Type.REFLEX:
+            mj.set_mjcb_control(self.my_stretch_reflex)
+        elif self.control_type == Control_Type.RI:
+            mj.set_mjcb_control(self.my_RI)
+        elif self.control_type == Control_Type.RI_AND_REFLEX:
+            mj.set_mjcb_control(self.my_RI_and_stretch_reflex_controller)
+        elif self.control_type == Control_Type.NEURON:
+            mj.set_mjcb_control(self.my_neuron_controller)
 
     def init_window(self):
         glfw.init()
