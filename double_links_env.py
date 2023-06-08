@@ -87,11 +87,11 @@ class DoubleLinkEnv(gym.Env):
         print(f"target angle: {self.pos_t}")
         print(f"target length: {self.length_t}")
         self.compute_target_pos()
+        print(self.target_pos)
 
         self.done = False
         self.ticks = 0
         mj.mj_resetData(self.model, self.data)
-        self.data.site_xpos[0] = self.target_pos
         mj.mj_forward(self.model, self.data)
 
         observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1]])))
@@ -143,8 +143,8 @@ class DoubleLinkEnv(gym.Env):
         self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
     def compute_target_pos(self):
-        x = np.cos(-0.5 * np.pi + self.pos_t)
-        z = np.sin(-0.5 * np.pi + self.pos_t) + 2.5
+        x = self.length_t * np.cos(-0.5 * np.pi + self.pos_t)
+        z = self.length_t * np.sin(-0.5 * np.pi + self.pos_t) + 2.5
         self.target_pos = np.array([x, 0, z])
 
     def my_baseline(self, model, data):
