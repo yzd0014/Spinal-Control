@@ -121,7 +121,7 @@ def pid_controller(model, data):
     data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
     print(data.qpos[0])
 
-target_pos = -0.46
+target_pos = 0.8
 e1_r = 0
 e1_l = 0
 # PPO_model_path4="models/1685516023/1850000.zip"
@@ -147,15 +147,16 @@ e1_l = 0
 
 # PPO_model_path0="models/1685125100/1850000.zip"
 # PPO_model_path0="models/1684970010/1850000.zip"
-# PPO_model0=PPO.load(PPO_model_path0)
-# def baseline_callback(model, data):
-#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-#     action, _states = PPO_model0.predict(obs)
-#     baseline_controller(input_action=action, data=data)
-#     print(data.qpos[0])
+PPO_model_path0="models/1686013750/4490000.zip"
+PPO_model0=PPO.load(PPO_model_path0)
+def baseline_callback(model, data):
+    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+    action, _states = PPO_model0.predict(obs)
+    baseline_controller(input_action=action, data=data)
+    print(data.qpos[0])
 
 # PPO_model_path1="models/1685030922/1850000.zip"
-PPO_model_path1="models/1685686025/7860000.zip"
+PPO_model_path1="models/1685758998/1900000.zip"
 PPO_model1=PPO.load(PPO_model_path1)
 def RI_callback(model, data):
     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
@@ -163,14 +164,14 @@ def RI_callback(model, data):
     RI_controller(input_action=action, data=data)
     print(data.qpos[0])
 
-# PPO_model_path2="models/1685057485/1850000.zip"
-# PPO_model2=PPO.load(PPO_model_path2)
-# def stretch_reflex_callback(model, data):
-#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-#     action, _states = PPO_model2.predict(obs)
-#     stretch_reflex_controller(input_action=action, data=data)
-#     print(data.qpos[0])
-#
+PPO_model_path2="models/1686030096/2220000.zip"
+PPO_model2=PPO.load(PPO_model_path2)
+def stretch_reflex_callback(model, data):
+    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+    action, _states = PPO_model2.predict(obs)
+    stretch_reflex_controller(input_action=action, data=data)
+    print(data.qpos[0])
+
 # PPO_model_path3="models/1685079447/1850000.zip"
 # PPO_model3=PPO.load(PPO_model_path3)
 # def RI_and_stretch_reflex_callback(model, data):

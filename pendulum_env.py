@@ -107,7 +107,7 @@ class PendulumEnv(gym.Env):
         self.cam.distance = 2
         self.cam.lookat = np.array([0.0, -1, 2])
 
-        mj.set_mjcb_control(self.my_RI)
+        mj.set_mjcb_control(self.my_stretch_reflex)
 
     def init_window(self):
         glfw.init()
