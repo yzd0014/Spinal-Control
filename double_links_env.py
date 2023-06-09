@@ -31,7 +31,7 @@ class DoubleLinkEnv(gym.Env):
         super(DoubleLinkEnv, self).__init__()
 
         self.control_type = control_type
-        self.rendering = True
+        self.rendering = False
         self.init_mujoco()
         if self.rendering == True:
             self.init_window()
@@ -46,7 +46,7 @@ class DoubleLinkEnv(gym.Env):
         self.action_space = spaces.Box(low=0, high=1.0,shape=(4,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
         #current endfactor pos
-        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(5,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(7,), dtype=np.float32)
 
     def step(self, action):
         for i in range(4):
@@ -69,21 +69,23 @@ class DoubleLinkEnv(gym.Env):
         reward = -pos_diff_new
 
         self.ticks += 1
-        if self.ticks >= 20000:
+        if self.ticks >= 10000:
             self.done = True
 
-        observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1]])))
+        observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
         info = {}
 
         return observation, reward, self.done, info
 
     def reset(self):
-        self.length_t += length_stride
-        if self.length_t > max_length:
-            self.length_t = min_length
-            self.pos_t += pos_stride
-        if self.pos_t > max_pos:
-            self.pos_t = -max_pos
+        # self.length_t += length_stride
+        # if self.length_t > max_length:
+        #     self.length_t = min_length
+        #     self.pos_t += pos_stride
+        # if self.pos_t > max_pos:
+        #     self.pos_t = -max_pos
+        self.length_t = 1.866
+        self.pos_t = -0.2
         print(f"target angle: {self.pos_t}")
         print(f"target length: {self.length_t}")
         self.compute_target_pos()
@@ -94,7 +96,7 @@ class DoubleLinkEnv(gym.Env):
         mj.mj_resetData(self.model, self.data)
         mj.mj_forward(self.model, self.data)
 
-        observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1]])))
+        observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
         return observation
 
     # def render(self):

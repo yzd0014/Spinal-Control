@@ -9,13 +9,14 @@ def RI_controller(input_action, data):
     for i in range(4):
         data.ctrl[i] = input_action[i]
 
-    if input_action[0] > input_action[1]:
+    offset = 0.2
+    if input_action[0] > input_action[1] + offset:
         data.ctrl[1] = 0
-    if input_action[1] > input_action[0]:
+    if input_action[1] > input_action[0] + offset :
         data.ctrl[0] = 0
-    if input_action[2] > input_action[3]:
+    if input_action[2] > input_action[3] + offset:
         data.ctrl[3] = 0
-    if input_action[3] > input_action[2]:
+    if input_action[3] > input_action[2] + offset:
         data.ctrl[2] = 0
 
 def stretch_reflex_controller(input_action, data):

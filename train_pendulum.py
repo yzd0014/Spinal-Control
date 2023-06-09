@@ -5,7 +5,7 @@ from pendulum_env import *
 from double_links_env import *
 import time
 
-control_type = Control_Type.BASELINE
+control_type = Control_Type.RI
 
 models_dir = f"models/{int(time.time())}/"
 logdir = f"logs/{int(time.time())}-{control_typle_dic[control_type]}/"
@@ -18,8 +18,6 @@ if not os.path.exists(logdir):
 
 # env = PendulumEnv(control_type=control_type)
 env = DoubleLinkEnv(control_type=control_type)
-env.reset()
-
 model = PPO('MlpPolicy', env, n_steps=8192, batch_size=2048, n_epochs=100, verbose=1, tensorboard_log=logdir)
 # PPO_model_path="models/1683788483/11830000.zip"
 # model=PPO.load(PPO_model_path, env=env)
