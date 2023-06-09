@@ -4,9 +4,15 @@ from mujoco.glfw import glfw
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from spinal_controllers import *
+import spinal_controllers
+import double_link_controllers
 
-xml_path = 'muscle_control_narrow.xml' #xml file (assumes this is in the same folder as this file)
+control_type = spinal_controllers.Control_Type.BASELINE
+env_id = 1
+xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
+if env_id == 1:
+    xml_path = 'double_links.xml'
+
 simend = 5 #simulation time
 print_camera_config = 0 #set to 1 to print camera config
                         #this is useful for initializing view of the model)
@@ -147,30 +153,35 @@ e1_l = 0
 
 # PPO_model_path0="models/1685125100/1850000.zip"
 # PPO_model_path0="models/1684970010/1850000.zip"
-PPO_model_path0="models/1686013750/4490000.zip"
+PPO_model_path0="models/1686275791/4590000.zip"
 PPO_model0=PPO.load(PPO_model_path0)
 def baseline_callback(model, data):
-    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-    action, _states = PPO_model0.predict(obs)
-    baseline_controller(input_action=action, data=data)
-    print(data.qpos[0])
+    if env_id == 0:
+        obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+        action, _states = PPO_model0.predict(obs)
+        spinal_controllers.baseline_controller(input_action=action, data=data)
+        print(data.qpos[0])
+    elif env_id == 1:
+        obs = np.concatenate((data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
+        action, _states = PPO_model0.predict(obs)
+        double_link_controllers.baseline_controller(input_action=action, data=data)
 
 # PPO_model_path1="models/1685030922/1850000.zip"
-PPO_model_path1="models/1685758998/1900000.zip"
-PPO_model1=PPO.load(PPO_model_path1)
-def RI_callback(model, data):
-    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-    action, _states = PPO_model1.predict(obs)
-    RI_controller(input_action=action, data=data)
-    print(data.qpos[0])
-
-PPO_model_path2="models/1686030096/2220000.zip"
-PPO_model2=PPO.load(PPO_model_path2)
-def stretch_reflex_callback(model, data):
-    obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-    action, _states = PPO_model2.predict(obs)
-    stretch_reflex_controller(input_action=action, data=data)
-    print(data.qpos[0])
+# PPO_model_path1="models/1685758998/1900000.zip"
+# PPO_model1=PPO.load(PPO_model_path1)
+# def RI_callback(model, data):
+#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+#     action, _states = PPO_model1.predict(obs)
+#     spinal_controllers.RI_controller(input_action=action, data=data)
+#     print(data.qpos[0])
+#
+# PPO_model_path2="models/1686030096/2220000.zip"
+# PPO_model2=PPO.load(PPO_model_path2)
+# def stretch_reflex_callback(model, data):
+#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+#     action, _states = PPO_model2.predict(obs)
+#     spinal_controllers.stretch_reflex_controller(input_action=action, data=data)
+#     print(data.qpos[0])
 
 # PPO_model_path3="models/1685079447/1850000.zip"
 # PPO_model3=PPO.load(PPO_model_path3)
@@ -219,8 +230,14 @@ cam.lookat = np.array([0.0, -1, 2])
 init_controller(model,data)
 
 #set the controller
-mj.set_mjcb_control(RI_callback)
-
+if control_type == spinal_controllers.Control_Type.BASELINE:
+    mj.set_mjcb_control(baseline_callback)
+# elif control_type == spinal_controllers.Control_Type.RI:
+#     mj.set_mjcb_control(RI_callback)
+# elif control_type == spinal_controllers.Control_Type.REFLEX:
+#     mj.set_mjcb_control(stretch_reflex_callback)
+# elif control_type == spinal_controllers.Control_Type.RI_AND_REFLEX:
+#     mj.set_mjcb_control()
 while not glfw.window_should_close(window):
     time_prev = data.time
 

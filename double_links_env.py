@@ -5,20 +5,6 @@ import mujoco as mj
 from mujoco.glfw import glfw
 import os
 from double_link_controllers import *
-from enum import Enum
-
-class Control_Type(Enum):
-    BASELINE = 1
-    RI = 2
-    REFLEX = 3
-    RI_AND_REFLEX = 4
-    NEURON = 5
-
-control_typle_dic = {Control_Type.BASELINE: "baseline",
-                     Control_Type.RI: "RI",
-                     Control_Type.REFLEX: "strech reflex",
-                     Control_Type.RI_AND_REFLEX: "RI + stretch refelx",
-                     Control_Type.NEURON: "neuron model"}
 
 max_pos = 0.2
 max_length = 2
@@ -46,7 +32,7 @@ class DoubleLinkEnv(gym.Env):
         self.action_space = spaces.Box(low=0, high=1.0,shape=(4,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
         #current endfactor pos
-        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(7,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(10,), dtype=np.float32)
 
     def step(self, action):
         for i in range(4):
@@ -73,19 +59,20 @@ class DoubleLinkEnv(gym.Env):
             self.done = True
 
         observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
+        observation = np.concatenate((observation, self.target_pos))
         info = {}
 
         return observation, reward, self.done, info
 
     def reset(self):
-        # self.length_t += length_stride
-        # if self.length_t > max_length:
-        #     self.length_t = min_length
-        #     self.pos_t += pos_stride
-        # if self.pos_t > max_pos:
-        #     self.pos_t = -max_pos
-        self.length_t = 1.866
-        self.pos_t = -0.2
+        self.length_t += length_stride
+        if self.length_t > max_length:
+            self.length_t = min_length
+            self.pos_t += pos_stride
+        if self.pos_t > max_pos:
+            self.pos_t = -max_pos
+        # self.length_t = 1.866
+        # self.pos_t = -0.2
         print(f"target angle: {self.pos_t}")
         print(f"target length: {self.length_t}")
         self.compute_target_pos()
@@ -97,6 +84,7 @@ class DoubleLinkEnv(gym.Env):
         mj.mj_forward(self.model, self.data)
 
         observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
+        observation = np.concatenate((observation, self.target_pos))
         return observation
 
     # def render(self):

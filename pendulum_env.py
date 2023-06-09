@@ -5,22 +5,6 @@ import mujoco as mj
 from mujoco.glfw import glfw
 import os
 from spinal_controllers import *
-import random
-import time
-from enum import Enum
-
-class Control_Type(Enum):
-    BASELINE = 1
-    RI = 2
-    REFLEX = 3
-    RI_AND_REFLEX = 4
-    NEURON = 5
-
-control_typle_dic = {Control_Type.BASELINE: "baseline",
-                     Control_Type.RI: "RI",
-                     Control_Type.REFLEX: "strech reflex",
-                     Control_Type.RI_AND_REFLEX: "RI + stretch refelx",
-                     Control_Type.NEURON: "neuron model"}
 
 max_pos = 0.4
 stride = 0.01

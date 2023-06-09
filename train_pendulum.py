@@ -5,7 +5,7 @@ from pendulum_env import *
 from double_links_env import *
 import time
 
-control_type = Control_Type.RI
+control_type = Control_Type.BASELINE
 
 models_dir = f"models/{int(time.time())}/"
 logdir = f"logs/{int(time.time())}-{control_typle_dic[control_type]}/"
