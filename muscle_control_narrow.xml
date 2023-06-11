@@ -1,6 +1,6 @@
 <mujoco>
     <option timestep="0.001">
-		<flag gravity="enable"/>
+		<flag gravity="disable"/>
 	</option>
     <size nuserdata="3"/>
    <worldbody>
@@ -8,11 +8,11 @@
       <geom type="plane" size="1 1 0.1" rgba=".9 0 0 1"/>
       <site name="s0" pos="0.1 0 2" size="0.02"/>
       <site name="s2" pos="-0.1 0 2" size="0.02"/>
-      <body pos="0 0 1.5" euler="0 0 0">
-         <joint name="joint0" type="hinge" axis="0 -1 0" pos="0 0 0.5" damping="0.0" limited="true" range="-56 56"/>
-         <geom name="pendulum" type="cylinder" size="0.05 .5" rgba="0 .9 0 1" mass="1"/>
-         <site name="s1" pos="0.06 0 -0.1" size="0.02"/>
-         <site name="s3" pos="-0.06 0 -0.1" size="0.02"/>
+      <body pos="0 0 1" euler="0 0 0">
+         <joint name="joint0" type="hinge" axis="0 -1 0" pos="0 0 1" damping="0.0" limited="true" range="-56 56"/>
+         <geom name="pendulum" type="cylinder" pos="0 0 0.5" size="0.05 .5" rgba="0 .9 0 1" mass="1"/>
+         <site name="s1" pos="0.06 0 0.4" size="0.02"/>
+         <site name="s3" pos="-0.06 0 0.4" size="0.02"/>
       </body>
    </worldbody>
    <tendon>
@@ -28,7 +28,7 @@
        </spatial>
    </tendon>
    <actuator> 
-        <position name="position" joint="joint0" kp="0"/>
+        <motor name="motor_0" joint="joint0"/>
         <!-- <motor name="motor" joint="joint0" ctrlrange="-1000000 1000000"/> -->
         <!-- <muscle  name="r-muscle" tendon="r-tendon" range="0.75 1.05" scale="10000000000"/> -->
         <!-- <muscle  name="l-muscle" tendon="l-tendon" range="0.75 1.05" scale="10000000000"/> -->

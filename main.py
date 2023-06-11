@@ -8,7 +8,7 @@ import spinal_controllers
 import double_link_controllers
 
 control_type = spinal_controllers.Control_Type.BASELINE
-env_id = 1
+env_id = 0
 xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 if env_id == 1:
     xml_path = 'double_links.xml'
@@ -110,6 +110,12 @@ def get_length_from_angle(theta):
     l_left = np.sqrt(lsqr1)
     return l_left, l_right
 
+def compute_target_pos(w, r):
+    x = r * np.cos(-0.5 * np.pi + w)
+    z = r * np.sin(-0.5 * np.pi + w) + 2
+    output = np.array([x, 0, z])
+    return output
+
 e0_r = 0
 e0_l = 0
 def pid_controller(model, data):
@@ -127,7 +133,6 @@ def pid_controller(model, data):
     data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
     print(data.qpos[0])
 
-target_pos = 0.8
 e1_r = 0
 e1_l = 0
 # PPO_model_path4="models/1685516023/1850000.zip"
@@ -150,14 +155,13 @@ e1_l = 0
 #     action, _states = PPO_model4.predict(obs)
 #     neuron_controller(input_action=action, data=data)
 #     print(data.qpos[0])
-
-# PPO_model_path0="models/1685125100/1850000.zip"
-# PPO_model_path0="models/1684970010/1850000.zip"
-PPO_model_path0="models/1686275791/4590000.zip"
+w = 0.7
+target_pos = compute_target_pos(w, 1)
+PPO_model_path0="models/1686388379/1850000.zip"
 PPO_model0=PPO.load(PPO_model_path0)
 def baseline_callback(model, data):
     if env_id == 0:
-        obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
+        obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
         action, _states = PPO_model0.predict(obs)
         spinal_controllers.baseline_controller(input_action=action, data=data)
         print(data.qpos[0])

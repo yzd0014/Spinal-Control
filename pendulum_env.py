@@ -17,7 +17,8 @@ class PendulumEnv(gym.Env):
         self.init_mujoco()
         if self.rendering == True:
             self.init_window()
-        self.pos_t_candidate = -max_pos
+        self.w_t = -max_pos
+        self.pos_t = np.array([0, 0, 1])
         self.dx = stride
         self.ctrl0 = 0
         self.ctrl1 = 0
@@ -26,7 +27,7 @@ class PendulumEnv(gym.Env):
         # Example when using discrete actions:
         self.action_space = spaces.Box(low=0, high=1.0,shape=(2,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
-        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(4,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(7,), dtype=np.float32)
 
     def step(self, action):
         self.ctrl0 = action[0]
@@ -47,38 +48,35 @@ class PendulumEnv(gym.Env):
             glfw.swap_buffers(self.window)
             glfw.poll_events()
 
-        pos_diff_new = np.absolute(self.data.qpos[0] - self.pos_t)
-        reward = -pos_diff_new
+        reward = -np.linalg.norm(self.pos_t - self.data.xpos[1])
 
         self.ticks += 1
         if self.ticks >= 10000:
             self.done = True
 
-        observation = [self.data.qpos[0], self.data.qvel[0], self.pos_t, self.vel_t]
-        observation = np.array(observation, dtype=np.float32)
+        observation = np.concatenate((self.pos_t, self.data.xpos[1], np.array([self.data.qvel[0]])))
         info = {}
 
         return observation, reward, self.done, info
 
     def reset(self):
-        #self.pos_t = self.pos_t_candidate
-        self.pos_t = self.pos_t_candidate
+        print(self.w_t)
+        self.compute_target_pos()
         print(self.pos_t)
-        self.pos_t_candidate += self.dx
-        if self.pos_t_candidate > max_pos:
+        self.w_t += self.dx
+        if self.w_t > max_pos:
             self.dx = -stride
-            self.pos_t_candidate = max_pos
-        if self.pos_t_candidate < -max_pos:
+            self.w_t = max_pos
+        if self.w_t < -max_pos:
             self.dx = stride
-            self.pos_t_candidate = -max_pos
+            self.w_t = -max_pos
         self.vel_t = 0
         self.done = False
         self.ticks = 0
         mj.mj_resetData(self.model, self.data)
         mj.mj_forward(self.model, self.data)
 
-        observation = [self.data.qpos[0], self.data.qvel[0], self.pos_t, self.vel_t]
-        observation = np.array(observation, dtype=np.float32)
+        observation = np.concatenate((self.pos_t, self.data.xpos[1], np.array([self.data.qvel[0]])))
         return observation
 
     # def render(self):
@@ -125,6 +123,12 @@ class PendulumEnv(gym.Env):
 
         self.scene = mj.MjvScene(self.model, maxgeom=10000)
         self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
+
+    def compute_target_pos(self):
+        x = np.cos(-0.5 * np.pi + self.w_t)
+        z = np.sin(-0.5 * np.pi + self.w_t) + 2
+        self.pos_t = np.array([x, 0, z])
+
 
     def my_baseline(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1])
