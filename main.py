@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import spinal_controllers
 import double_link_controllers
 
-control_type = spinal_controllers.Control_Type.BASELINE
+control_type = spinal_controllers.Control_Type.RI
 env_id = 0
 xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 if env_id == 1:
@@ -116,6 +116,11 @@ def compute_target_pos(w, r):
     output = np.array([x, 0, z])
     return output
 
+def joint0_controller(data):
+    scale = 1.0
+    noise = np.ramdom.randn(1)
+    data.ctrl[0] = scale * noise * np.sin(data.time)
+
 e0_r = 0
 e0_l = 0
 def pid_controller(model, data):
@@ -155,7 +160,7 @@ e1_l = 0
 #     action, _states = PPO_model4.predict(obs)
 #     neuron_controller(input_action=action, data=data)
 #     print(data.qpos[0])
-w = 0
+w = 0.67
 target_pos = compute_target_pos(w, 1)
 PPO_model_path0="models/1686463683/1360000.zip"
 PPO_model0=PPO.load(PPO_model_path0)
@@ -170,22 +175,21 @@ def baseline_callback(model, data):
         action, _states = PPO_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=action, data=data)
 
-# PPO_model_path1="models/1685030922/1850000.zip"
-# PPO_model_path1="models/1685758998/1900000.zip"
-# PPO_model1=PPO.load(PPO_model_path1)
-# def RI_callback(model, data):
-#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-#     action, _states = PPO_model1.predict(obs)
-#     spinal_controllers.RI_controller(input_action=action, data=data)
-#     print(data.qpos[0])
-#
-# PPO_model_path2="models/1686030096/2220000.zip"
-# PPO_model2=PPO.load(PPO_model_path2)
-# def stretch_reflex_callback(model, data):
-#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-#     action, _states = PPO_model2.predict(obs)
-#     spinal_controllers.stretch_reflex_controller(input_action=action, data=data)
-#     print(data.qpos[0])
+PPO_model_path1="models/1686467696/990000.zip"
+PPO_model1=PPO.load(PPO_model_path1)
+def RI_callback(model, data):
+    obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
+    action, _states = PPO_model0.predict(obs)
+    spinal_controllers.RI_controller(input_action=action, data=data)
+    print(data.qpos[0])
+
+PPO_model_path2="models/1686473437/980000.zip"
+PPO_model2=PPO.load(PPO_model_path2)
+def stretch_reflex_callback(model, data):
+    obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
+    action, _states = PPO_model2.predict(obs)
+    spinal_controllers.stretch_reflex_controller(input_action=action, data=data)
+    print(data.qpos[0])
 
 # PPO_model_path3="models/1685079447/1850000.zip"
 # PPO_model3=PPO.load(PPO_model_path3)
@@ -236,8 +240,8 @@ init_controller(model,data)
 #set the controller
 if control_type == spinal_controllers.Control_Type.BASELINE:
     mj.set_mjcb_control(baseline_callback)
-# elif control_type == spinal_controllers.Control_Type.RI:
-#     mj.set_mjcb_control(RI_callback)
+elif control_type == spinal_controllers.Control_Type.RI:
+    mj.set_mjcb_control(RI_callback)
 # elif control_type == spinal_controllers.Control_Type.REFLEX:
 #     mj.set_mjcb_control(stretch_reflex_callback)
 # elif control_type == spinal_controllers.Control_Type.RI_AND_REFLEX:

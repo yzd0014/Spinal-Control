@@ -6,7 +6,7 @@ import pendulum_env
 import double_links_env
 import time
 
-control_type = pendulum_env.Control_Type.BASELINE
+control_type = pendulum_env.Control_Type.REFLEX
 
 models_dir = f"models/{int(time.time())}/"
 logdir = f"logs/{int(time.time())}-{pendulum_env.control_typle_dic[control_type]}/"
@@ -34,4 +34,4 @@ while True:
 	iters += 1
 	model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
 	model.save(f"{models_dir}/{TIMESTEPS * iters}")
-	print(f"modle saved {iters}")
+	print(f"modle saved {iters}\n")

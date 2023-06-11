@@ -60,7 +60,7 @@ class PendulumEnv(gym.Env):
         return observation, reward, self.done, info
 
     def reset(self):
-        print(self.w_t)
+        # print(self.w_t)
         self.compute_target_pos()
         print(self.pos_t)
         self.w_t += self.dx

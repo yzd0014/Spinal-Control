@@ -23,9 +23,9 @@ def RI_controller(input_action, data):
     data.ctrl[1] = input_action[0]
     data.ctrl[2] = input_action[1]
 
-    if data.ctrl[2] > data.ctrl[1]:
+    if data.ctrl[2] > data.ctrl[1] + 0.2:
         data.ctrl[1] = 0
-    if data.ctrl[1] > data.ctrl[2]:
+    if data.ctrl[1] > data.ctrl[2] + 0.2:
         data.ctrl[2] = 0
 
 def stretch_reflex_controller(input_action, data):
