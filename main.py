@@ -155,9 +155,9 @@ e1_l = 0
 #     action, _states = PPO_model4.predict(obs)
 #     neuron_controller(input_action=action, data=data)
 #     print(data.qpos[0])
-w = 0.7
+w = 0
 target_pos = compute_target_pos(w, 1)
-PPO_model_path0="models/1686388379/1850000.zip"
+PPO_model_path0="models/1686463683/1360000.zip"
 PPO_model0=PPO.load(PPO_model_path0)
 def baseline_callback(model, data):
     if env_id == 0:
