@@ -133,14 +133,17 @@ class PendulumEnv(gym.Env):
     def my_baseline(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1])
         baseline_controller(action, data)
+        joint0_controller(model, data)
 
     def my_RI(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1])
         RI_controller(action, data)
+        joint0_controller(model, data)
 
     def my_stretch_reflex(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1])
         stretch_reflex_controller(action, data)
+        joint0_controller(model, data)
 
     def my_RI_and_stretch_reflex_controller(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1])

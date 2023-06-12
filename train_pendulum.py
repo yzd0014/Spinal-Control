@@ -21,7 +21,7 @@ env = pendulum_env.PendulumEnv(control_type=control_type)
 # vec_env = make_vec_env(lambda: pendulum_env.PendulumEnv(control_type=control_type), n_envs=4)
 
 # env = DoubleLinkEnv(control_type=control_type)
-model = PPO('MlpPolicy', env, n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
+model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
 # PPO_model_path="models/1683788483/11830000.zip"
 # model=PPO.load(PPO_model_path, env=env)
 # model.verbose = 1
