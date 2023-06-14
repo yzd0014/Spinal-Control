@@ -6,11 +6,25 @@ from mujoco.glfw import glfw
 import os
 from double_link_controllers import *
 
-max_pos = 0.2
+max_angle = 0.2
 max_length = 2
 min_length = 1.766
-pos_stride = 0.01
+pos_stride = 0.1
 length_stride = 0.1
+
+all_targets = np.zeros((15, 3))
+length_candidate = [1.776, 1.8776, 2]
+angle_candidate = [-0.2, -0.1, 0, 0.1, 0.2]
+iter = 0
+for length in length_candidate:
+    for angle in angle_candidate:
+        x = length * np.cos(-0.5 * np.pi + angle)
+        z = length * np.sin(-0.5 * np.pi + angle) + 2.5
+        all_targets[iter] = np.array([x, 0, z])
+        iter += 1
+
+num_training_each_target = 100
+
 class DoubleLinkEnv(gym.Env):
     """Custom Environment that follows gym interface."""
     def __init__(self, control_type = Control_Type.BASELINE):
@@ -22,9 +36,10 @@ class DoubleLinkEnv(gym.Env):
         if self.rendering == True:
             self.init_window()
 
-        self.pos_t = -max_pos
+        self.angle_t = -max_angle
         self.length_t = min_length
         self.target_pos = np.zeros(3)
+        self.target_iter = 0
         self.m_ctrl = np.zeros(4)
         # Define action and observation space
         # They must be gym.spaces objects
@@ -32,7 +47,7 @@ class DoubleLinkEnv(gym.Env):
         self.action_space = spaces.Box(low=0, high=1.0,shape=(4,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
         #current endfactor pos
-        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(10,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(7,), dtype=np.float32)
 
     def step(self, action):
         for i in range(4):
@@ -58,33 +73,29 @@ class DoubleLinkEnv(gym.Env):
         if self.ticks >= 10000:
             self.done = True
 
-        observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
-        observation = np.concatenate((observation, self.target_pos))
+        observation = np.concatenate((self.target_pos, np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
         info = {}
 
         return observation, reward, self.done, info
 
     def reset(self):
-        self.length_t += length_stride
-        if self.length_t > max_length:
-            self.length_t = min_length
-            self.pos_t += pos_stride
-        if self.pos_t > max_pos:
-            self.pos_t = -max_pos
-        # self.length_t = 1.866
-        # self.pos_t = -0.2
-        print(f"target angle: {self.pos_t}")
-        print(f"target length: {self.length_t}")
-        self.compute_target_pos()
-        print(self.target_pos)
+        global num_training_each_target
+
+        self.target_pos = all_targets[self.target_iter]
+        num_training_each_target -= 1
+        if num_training_each_target < 1:
+            self.target_iter += 1
+            num_training_each_target = 100
+        if self.target_iter == 15:
+            self.target_iter = 0
+        print(f"{self.target_iter}({num_training_each_target})")
 
         self.done = False
         self.ticks = 0
         mj.mj_resetData(self.model, self.data)
         mj.mj_forward(self.model, self.data)
 
-        observation = np.concatenate((self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
-        observation = np.concatenate((observation, self.target_pos))
+        observation = np.concatenate((self.target_pos, np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
         return observation
 
     # def render(self):
@@ -133,8 +144,8 @@ class DoubleLinkEnv(gym.Env):
         self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
     def compute_target_pos(self):
-        x = self.length_t * np.cos(-0.5 * np.pi + self.pos_t)
-        z = self.length_t * np.sin(-0.5 * np.pi + self.pos_t) + 2.5
+        x = self.length_t * np.cos(-0.5 * np.pi + self.angle_t)
+        z = self.length_t * np.sin(-0.5 * np.pi + self.angle_t) + 2.5
         self.target_pos = np.array([x, 0, z])
 
     def my_baseline(self, model, data):
