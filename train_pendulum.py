@@ -6,7 +6,7 @@ import pendulum_env
 import double_links_env
 import time
 
-env_id = 0
+env_id = 1
 
 models_dir = f"models/{int(time.time())}/"
 
@@ -35,7 +35,7 @@ model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_e
 # model.tensorboard_log = logdir
 # model.device="cuda"
 
-TIMESTEPS = 10000
+TIMESTEPS = 50000
 iters = 0
 while True:
 	iters += 1
