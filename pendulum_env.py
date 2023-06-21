@@ -20,11 +20,15 @@ class PendulumEnv(gym.Env):
         self.w_t = -max_pos
         self.pos_t = np.array([0, 0, 1])
         self.dx = stride
+        self.ctrl0 = 0
+        self.ctrl1 = 0
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
         if self.control_type == Control_Type.NEURON:
             self.action_space = spaces.Box(low=0, high=1.0,shape=(4,), dtype=np.float32)
+            self.ctrl2 = 0
+            self.ctrl3 = 0
         else:
             self.action_space = spaces.Box(low=0, high=1.0,shape=(2,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
@@ -152,7 +156,9 @@ class PendulumEnv(gym.Env):
     def my_RI_and_stretch_reflex_controller(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1])
         RI_and_stretch_reflex_controller(action, data)
+        joint0_controller(model, data)
 
     def my_neuron_controller(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1, self.ctrl2, self.ctrl3])
         neuron_controller(action, data)
+        joint0_controller(model, data)

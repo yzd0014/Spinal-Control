@@ -6,7 +6,7 @@ import pendulum_env
 import double_links_env
 import time
 
-env_id = 1
+env_id = 0
 
 models_dir = f"models/{int(time.time())}/"
 
@@ -32,14 +32,15 @@ if env_id == 1:
 episode_length = 10000
 num_episodes = 16
 m_steps = episode_length * num_episodes
-model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=20000, n_epochs=10, verbose=1, tensorboard_log=logdir)
+# model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=20000, n_epochs=10, verbose=1, tensorboard_log=logdir)
+model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
 # PPO_model_path="models/1683788483/11830000.zip"
 # model=PPO.load(PPO_model_path, env=env)
 # model.verbose = 1
 # model.tensorboard_log = logdir
 # model.device="cuda"
 
-TIMESTEPS = m_steps
+TIMESTEPS = 50000
 iters = 0
 while True:
 	iters += 1

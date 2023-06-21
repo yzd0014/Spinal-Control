@@ -77,6 +77,6 @@ def neuron_controller(input_action, data):
     data.ctrl[2] = max(ctrl_coeff * (l_spindle - l1 - r_diff), 0)
 
 def joint0_controller(model, data):
-    kp = 0.2
+    kp = 0.5
     noise = np.random.randn(1)
-    data.ctrl[0] = kp * noise * np.sin(data.time)
+    data.ctrl[0] = kp * noise

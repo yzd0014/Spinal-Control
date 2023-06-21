@@ -8,7 +8,7 @@ import spinal_controllers
 import double_link_controllers
 
 control_type = spinal_controllers.Control_Type.BASELINE
-env_id = 1
+env_id = 0
 xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 if env_id == 1:
     xml_path = 'double_links.xml'
@@ -155,6 +155,7 @@ e1_l = 0
 #     action, _states = PPO_model4.predict(obs)
 #     neuron_controller(input_action=action, data=data)
 #     print(data.qpos[0])
+
 if control_type == spinal_controllers.Control_Type.BASELINE:
     w = 0.56
     # target_pos = compute_target_pos(w, 1)
@@ -174,6 +175,7 @@ def baseline_callback(model, data):
         action, _states = PPO_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=action, data=data)
         print(data.xpos[2])
+        # pass
 
 
 # PPO_model_path1="models/1686467696/990000.zip"
