@@ -27,19 +27,27 @@ class DoubleLinkEnv(gym.Env):
         # self.target_qs = [np.array([0.195, -0.792])]
 
         self.target_iter = 0
-        self.m_ctrl = np.zeros(4)
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
-        self.action_space = spaces.Box(low=0, high=1.0,shape=(4,), dtype=np.float32)
+        if self.control_type == Control_Type.NEURON:
+            self.m_ctrl = np.zeros(8)
+            self.action_space = spaces.Box(low=0, high=1.0,shape=(8,), dtype=np.float32)
+        else:
+            self.m_ctrl = np.zeros(4)
+            self.action_space = spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
         #current endfactor pos
         # self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(13,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(6,), dtype=np.float32)
 
     def step(self, action):
-        for i in range(4):
-            self.m_ctrl[i] = action[i]
+        if self.control_type == Control_Type.NEURON:
+            for i in range(8):
+                self.m_ctrl[i] = action[i]
+        else:
+            for i in range(4):
+                self.m_ctrl[i] = action[i]
 
         viewport = 0
         if self.rendering == True:
@@ -146,10 +154,10 @@ class DoubleLinkEnv(gym.Env):
         RI_controller(self.m_ctrl, data)
 
     def my_stretch_reflex(self, model, data):
-        pass
+        stretch_reflex_controller(self.m_ctrl, data)
 
     def my_RI_and_stretch_reflex_controller(self, model, data):
         pass
 
     def my_neuron_controller(self, model, data):
-        pass
+        neuron_controller(self.m_ctrl, data)
