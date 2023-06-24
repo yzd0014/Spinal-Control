@@ -51,8 +51,8 @@ def neuron_controller(input_action, data):
         l_spindle = 0.05 * data.actuator_velocity[i*2+2] + data.actuator_length[i*2+2]
         inhibition_coeff = 2
         beta = 0.9
-        l_diff = inhibition_coeff / (beta * beta) * (l_spindle - beta * r_spindle + beta * input_action[i*4+2] - input_action[i*4+3])
-        r_diff = inhibition_coeff / (beta * beta) * (r_spindle - beta * l_spindle + beta * input_action[i*4+3] - input_action[i*4+2])
+        l_diff = inhibition_coeff / (beta * beta) * max((l_spindle - beta * r_spindle + beta * input_action[i*4+2] - input_action[i*4+3]), 0)
+        r_diff = inhibition_coeff / (beta * beta) * max((r_spindle - beta * l_spindle + beta * input_action[i*4+3] - input_action[i*4+2]), 0)
 
         ctrl_coeff = 1
         data.ctrl[i*2+1] = max(ctrl_coeff * (r_spindle - length_r - l_diff), 0)
