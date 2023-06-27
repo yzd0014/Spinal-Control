@@ -32,7 +32,7 @@ if env_id == 1:
 episode_length = 10000
 num_episodes = 16
 m_steps = episode_length * num_episodes
-model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=20000, n_epochs=10, verbose=1, tensorboard_log=logdir)
+model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=10000, n_epochs=10, verbose=1, tensorboard_log=logdir)
 # model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
 # PPO_model_path="models/1683788483/11830000.zip"
 # model=PPO.load(PPO_model_path, env=env)

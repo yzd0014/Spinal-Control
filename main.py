@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import spinal_controllers
 import double_link_controllers
 
-control_type = spinal_controllers.Control_Type.BASELINE
-env_id = 1
+control_type = spinal_controllers.Control_Type.NEURON
+env_id = 0
 xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 if env_id == 1:
     xml_path = 'double_links.xml'
@@ -148,7 +148,7 @@ e1_l = 0
 #     # l0 = max(mb - (kp * (data.actuator_length[1] - gl0) + kd * data.actuator_velocity[1] + ki * e1_r), 0)
 #     # l1 = max(mb - (kp * (data.actuator_length[2] - gl1) + kd * data.actuator_velocity[2] + ki * e1_l), 0)
 
-w = -0.68
+w = -0.48
 if control_type == spinal_controllers.Control_Type.BASELINE:
     if env_id == 0:
         target_pos = compute_target_pos(w, 1)
@@ -205,15 +205,25 @@ def stretch_reflex_callback(model, data):
 
 if control_type == spinal_controllers.Control_Type.NEURON:
     if env_id == 0:
-        PPO_model_path4 = "models/1687332811/7750000.zip"
+        PPO_model_path4 = "models/1687587323/8050000.zip"
         PPO_model4 = PPO.load(PPO_model_path4)
         target_pos = compute_target_pos(w, 1)
+    elif env_id == 1:
+        PPO_model_path4 = "models/1687590862/42400000.zip"
+        PPO_model4 = PPO.load(PPO_model_path4)
+        m_target = np.array([0.3, -0.7])
 def neuron_callback(model, data):
-    obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
-    action, _states = PPO_model4.predict(obs)
-    spinal_controllers.neuron_controller(input_action=action, data=data)
-    # spinal_controllers.joint0_controller(model, data)
-    print(data.qpos[0], action[0], action[1], action[2], action[3])
+    if env_id == 0:
+        obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
+        action, _states = PPO_model4.predict(obs)
+        spinal_controllers.neuron_controller(input_action=action, data=data)
+        spinal_controllers.joint0_controller(model, data)
+        print(data.qpos[0], action[0], action[1], action[2], action[3])
+    elif env_id == 1:
+        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
+        action, _states = PPO_model4.predict(obs)
+        double_link_controllers.neuron_controller(input_action=action, data=data)
+        print(data.qpos[0], data.qpos[1])
 
 #get the full path
 dirname = os.path.dirname(__file__)
