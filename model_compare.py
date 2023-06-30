@@ -44,19 +44,6 @@ else:
         # print(data.qpos[0])
 
 try:
-    PPO_model_path3="models/1685079447/1850000.zip"
-    PPO_model3=PPO.load(PPO_model_path3)
-except FileNotFoundError:
-    print("path is not correct")
-    model_is_avaialble[3] = False
-else:
-    def RI_and_stretch_reflex_callback(model, data):
-        obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
-        action, _states = PPO_model3.predict(obs)
-        RI_and_stretch_reflex_controller(input_action=action, data=data)
-        # print(data.qpos[0])
-
-try:
     PPO_model_path4="models/1687587323/8050000.zip"
     PPO_model4=PPO.load(PPO_model_path4)
 except FileNotFoundError:
@@ -121,15 +108,6 @@ if model_is_avaialble[2]:
         mj.mj_step(model, data)
         y2.append(data.qpos[0])
     print("y2 done!")
-
-if model_is_avaialble[3]:
-    mj.mj_resetData(model, data)
-    mj.mj_forward(model, data)
-    mj.set_mjcb_control(RI_and_stretch_reflex_callback)
-    while data.time < target_sim_time:
-        mj.mj_step(model, data)
-        y3.append(data.qpos[0])
-    print("y3 done!")
 
 if model_is_avaialble[4]:
     mj.mj_resetData(model, data)

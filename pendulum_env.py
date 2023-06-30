@@ -118,8 +118,6 @@ class PendulumEnv(gym.Env):
             mj.set_mjcb_control(self.my_stretch_reflex)
         elif self.control_type == Control_Type.RI:
             mj.set_mjcb_control(self.my_RI)
-        elif self.control_type == Control_Type.RI_AND_REFLEX:
-            mj.set_mjcb_control(self.my_RI_and_stretch_reflex_controller)
         elif self.control_type == Control_Type.NEURON:
             mj.set_mjcb_control(self.my_neuron_controller)
 
@@ -151,11 +149,6 @@ class PendulumEnv(gym.Env):
     def my_stretch_reflex(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1])
         stretch_reflex_controller(action, data)
-        joint0_controller(model, data)
-
-    def my_RI_and_stretch_reflex_controller(self, model, data):
-        action = np.array([self.ctrl0, self.ctrl1])
-        RI_and_stretch_reflex_controller(action, data)
         joint0_controller(model, data)
 
     def my_neuron_controller(self, model, data):

@@ -8,7 +8,7 @@ import spinal_controllers
 import double_link_controllers
 
 control_type = spinal_controllers.Control_Type.NEURON
-env_id = 0
+env_id = 1
 xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 if env_id == 1:
     xml_path = 'double_links.xml'
@@ -148,18 +148,6 @@ e1_l = 0
 #     # l0 = max(mb - (kp * (data.actuator_length[1] - gl0) + kd * data.actuator_velocity[1] + ki * e1_r), 0)
 #     # l1 = max(mb - (kp * (data.actuator_length[2] - gl1) + kd * data.actuator_velocity[2] + ki * e1_l), 0)
 
-w = -0.48
-if control_type == spinal_controllers.Control_Type.BASELINE:
-    if env_id == 0:
-        target_pos = compute_target_pos(w, 1)
-        PPO_model_path0 = "models/1687332383/10650000.zip"
-        PPO_model0 = PPO.load(PPO_model_path0)
-    elif env_id == 1:
-        # PPO_model_path0 = "models/1687059231/86880000.zip"
-        PPO_model_path0 = "models/1687307893/85920000.zip"
-        PPO_model0 = PPO.load(PPO_model_path0)
-        target_pos = np.array([0, 0, 1.5])
-        m_target = np.array([0.3, -0.7])
 def baseline_callback(model, data):
     if env_id == 0:
         obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
@@ -176,7 +164,6 @@ def baseline_callback(model, data):
         # print(data.xpos[2])
         # pass
 
-
 # PPO_model_path1="models/1686467696/990000.zip"
 # PPO_model1=PPO.load(PPO_model_path1)
 # def RI_callback(model, data):
@@ -185,9 +172,7 @@ def baseline_callback(model, data):
 #     spinal_controllers.RI_controller(input_action=action, data=data)
 #     print(data.qpos[0])
 #
-if control_type == spinal_controllers.Control_Type.REFLEX:
-    PPO_model_path2="models/1686530946/3980000.zip"
-    PPO_model2=PPO.load(PPO_model_path2)
+
 def stretch_reflex_callback(model, data):
     obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
     action, _states = PPO_model2.predict(obs)
@@ -195,23 +180,6 @@ def stretch_reflex_callback(model, data):
     spinal_controllers.joint0_controller(model, data)
     print(data.qpos[0])
 
-# PPO_model_path3="models/1685079447/1850000.zip"
-# PPO_model3=PPO.load(PPO_model_path3)
-# def RI_and_stretch_reflex_callback(model, data):
-#     obs = np.array([data.qpos[0], data.qvel[0], target_pos, 0])
-#     action, _states = PPO_model3.predict(obs)
-#     RI_and_stretch_reflex_controller(input_action=action, data=data)
-#     print(data.qpos[0])
-
-if control_type == spinal_controllers.Control_Type.NEURON:
-    if env_id == 0:
-        PPO_model_path4 = "models/1687587323/8050000.zip"
-        PPO_model4 = PPO.load(PPO_model_path4)
-        target_pos = compute_target_pos(w, 1)
-    elif env_id == 1:
-        PPO_model_path4 = "models/1687590862/42400000.zip"
-        PPO_model4 = PPO.load(PPO_model_path4)
-        m_target = np.array([0.3, -0.7])
 def neuron_callback(model, data):
     if env_id == 0:
         obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
@@ -220,10 +188,12 @@ def neuron_callback(model, data):
         spinal_controllers.joint0_controller(model, data)
         print(data.qpos[0], action[0], action[1], action[2], action[3])
     elif env_id == 1:
-        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
+        # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
+        obs =  np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
         action, _states = PPO_model4.predict(obs)
         double_link_controllers.neuron_controller(input_action=action, data=data)
-        print(data.qpos[0], data.qpos[1])
+        # print(data.qpos[0], data.qpos[1])
+        print(target_pos, data.xpos[2])
 
 #get the full path
 dirname = os.path.dirname(__file__)
@@ -260,9 +230,43 @@ cam.elevation = -20
 cam.distance = 2
 cam.lookat = np.array([0.0, -1, 2])
 
+#load modes for each controller
+w = -0.48
+if control_type == spinal_controllers.Control_Type.BASELINE:
+    if env_id == 0:
+        target_pos = compute_target_pos(w, 1)
+        PPO_model_path0 = "models/1687332383/10650000.zip"
+        PPO_model0 = PPO.load(PPO_model_path0)
+    elif env_id == 1:
+        # PPO_model_path0 = "models/1687059231/86880000.zip"
+        PPO_model_path0 = "models/1687307893/85920000.zip"
+        PPO_model0 = PPO.load(PPO_model_path0)
+        target_pos = np.array([0, 0, 1.5])
+        m_target = np.array([0.3, -0.7])
+
+if control_type == spinal_controllers.Control_Type.REFLEX:
+    PPO_model_path2="models/1686530946/3980000.zip"
+    PPO_model2=PPO.load(PPO_model_path2)
+
+if control_type == spinal_controllers.Control_Type.NEURON:
+    if env_id == 0:
+        PPO_model_path4 = "models/1687587323/8050000.zip"
+        PPO_model4 = PPO.load(PPO_model_path4)
+        target_pos = compute_target_pos(w, 1)
+    elif env_id == 1:
+        # PPO_model_path4 = "models/1687590862/42400000.zip"
+        PPO_model_path4 = "models/1688105874/73760000.zip"
+        PPO_model4 = PPO.load(PPO_model_path4)
+        m_target = np.array([0.3, 0.3])
+        data.qpos[0] = m_target[0]
+        data.qpos[1] = m_target[1]
+        mj.mj_forward(model, data)
+        target_pos = data.xpos[2].copy()
+        mj.mj_resetData(model, data)
+        mj.mj_forward(model, data)
+
 #initialize the controller
 init_controller(model,data)
-
 #set the controller
 if control_type == spinal_controllers.Control_Type.BASELINE:
     mj.set_mjcb_control(baseline_callback)
