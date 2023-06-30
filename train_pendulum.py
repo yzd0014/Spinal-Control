@@ -6,14 +6,14 @@ import pendulum_env
 import double_links_env
 import time
 
-env_id = 1
+env_id = 0
 
 models_dir = f"models/{int(time.time())}/"
 
 control_type = pendulum_env.Control_Type.NEURON
 logdir = f"logs/{int(time.time())}-{pendulum_env.control_typle_dic[control_type]}/"
 if env_id == 1:
-	control_type = double_links_env.Control_Type.REFLEX
+	control_type = double_links_env.Control_Type.RI
 	logdir = f"logs/{int(time.time())}-{double_links_env.control_typle_dic[control_type]}/"
 
 
@@ -40,7 +40,7 @@ model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=10000, n
 # model.tensorboard_log = logdir
 # model.device="cuda"
 
-# TIMESTEPS = 50000
+#TIMESTEPS = 50000
 TIMESTEPS = m_steps
 iters = 0
 while True:

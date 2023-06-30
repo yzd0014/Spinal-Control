@@ -7,7 +7,7 @@ import os
 from spinal_controllers import *
 
 max_pos = 0.4
-stride = 0.01
+stride = 0.05
 class PendulumEnv(gym.Env):
     """Custom Environment that follows gym interface."""
     def __init__(self, control_type = Control_Type.BASELINE):
