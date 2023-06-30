@@ -5,13 +5,13 @@ class Control_Type(Enum):
     BASELINE = 1
     RI = 2
     REFLEX = 3
-    RI_AND_REFLEX = 4
+    X = 4
     NEURON = 5
 
 control_typle_dic = {Control_Type.BASELINE: "baseline",
                      Control_Type.RI: "RI",
                      Control_Type.REFLEX: "strech reflex",
-                     Control_Type.RI_AND_REFLEX: "RI + stretch refelx",
+                     Control_Type.X: "X",
                      Control_Type.NEURON: "neuron model"}
 
 # all controllers are xml file (model) dependent
@@ -54,5 +54,13 @@ def neuron_controller(input_action, data):
         ctrl_coeff = 1
         data.ctrl[i*2] = max(ctrl_coeff * (r_spindle - length_r - l_diff), 0)
         data.ctrl[i*2+1] = max(ctrl_coeff * (l_spindle - length_l - r_diff), 0)
+
+def x_controller(input_action, data):
+    for i in range(2):
+        descend_ctrl = input_action[i*4, i*4+1, i*4+2, i*4+3]
+        ctrl_mat = np.array([[1, -1, 1, -1],[-1, 1, -1, 1]])
+        ctrl_output = np.matmul(ctrl_mat, descend_ctrl)
+        data.ctrl[i*2] = ctrl_output[0]
+        data.ctrl[i*2+1] = ctrl_output[1]
 
 num_of_targets = 0

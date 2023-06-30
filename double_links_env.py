@@ -19,8 +19,8 @@ class DoubleLinkEnv(gym.Env):
             self.init_window()
 
         self.target_qs = []
-        for i in np.arange(-0.6, 0.6, 0.05):
-            for j in np.arange(-0.6, 0.6, 0.05):
+        for i in np.arange(-0.6, 0.6, 0.2):
+            for j in np.arange(-0.6, 0.6, 0.2):
                 self.target_qs.append(np.array([i, j]))
                 num_of_targets += 1
         # self.target_qs = [np.array([0.195, -0.792])]
@@ -29,7 +29,7 @@ class DoubleLinkEnv(gym.Env):
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
-        if self.control_type == Control_Type.NEURON:
+        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.X:
             self.m_ctrl = np.zeros(8)
             self.action_space = spaces.Box(low=0, high=1.0,shape=(8,), dtype=np.float32)
         else:
@@ -41,7 +41,7 @@ class DoubleLinkEnv(gym.Env):
         # self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(6,), dtype=np.float32)
 
     def step(self, action):
-        if self.control_type == Control_Type.NEURON:
+        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.X:
             for i in range(8):
                 self.m_ctrl[i] = action[i]
         else:
@@ -134,6 +134,8 @@ class DoubleLinkEnv(gym.Env):
             mj.set_mjcb_control(self.my_RI)
         elif self.control_type == Control_Type.NEURON:
             mj.set_mjcb_control(self.my_neuron_controller)
+        elif self.control_type == Control_Type.X:
+            mj.set_mjcb_control(self.my_x_controller)
 
     def init_window(self):
         glfw.init()
@@ -155,3 +157,6 @@ class DoubleLinkEnv(gym.Env):
 
     def my_neuron_controller(self, model, data):
         neuron_controller(self.m_ctrl, data)
+
+    def my_x_controller(self, model, data):
+        x_controller(self.m_ctrl, data)

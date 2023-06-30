@@ -5,13 +5,11 @@ class Control_Type(Enum):
     BASELINE = 1
     RI = 2
     REFLEX = 3
-    RI_AND_REFLEX = 4
     NEURON = 5
 
 control_typle_dic = {Control_Type.BASELINE: "baseline",
                      Control_Type.RI: "RI",
                      Control_Type.REFLEX: "strech reflex",
-                     Control_Type.RI_AND_REFLEX: "RI + stretch refelx",
                      Control_Type.NEURON: "neuron model"}
 
 # all controllers are xml file (model) dependent
