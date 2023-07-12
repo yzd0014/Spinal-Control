@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import spinal_controllers
 import double_link_controllers
 
-control_type = spinal_controllers.Control_Type.NEURON
+control_type = spinal_controllers.Control_Type.BASELINE
 env_id = 1
 xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 if env_id == 1:
@@ -156,13 +156,13 @@ def baseline_callback(model, data):
         spinal_controllers.joint0_controller(model, data)
         print(data.qpos[0], data.ctrl[1], data.ctrl[2])
     elif env_id == 1:
-        obs = np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
-        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
-        action, _states = PPO_model0.predict(obs)
-        double_link_controllers.baseline_controller(input_action=action, data=data)
-        print(data.qpos[0], data.qpos[1])
+        # obs = np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
+        # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
+        # action, _states = PPO_model0.predict(obs)
+        # double_link_controllers.baseline_controller(input_action=action, data=data)
+        # print(data.qpos[0], data.qpos[1])
+        double_link_controllers.joints_controller(data)
         # print(data.xpos[2])
-        # pass
 
 # PPO_model_path1="models/1686467696/990000.zip"
 # PPO_model1=PPO.load(PPO_model_path1)
@@ -239,10 +239,11 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
         PPO_model0 = PPO.load(PPO_model_path0)
     elif env_id == 1:
         # PPO_model_path0 = "models/1687059231/86880000.zip"
-        PPO_model_path0 = "models/1687307893/85920000.zip"
-        PPO_model0 = PPO.load(PPO_model_path0)
-        target_pos = np.array([0, 0, 1.5])
-        m_target = np.array([0.3, -0.7])
+        # PPO_model_path0 = "models/1687307893/85920000.zip"
+        # PPO_model0 = PPO.load(PPO_model_path0)
+        # target_pos = np.array([0, 0, 1.5])
+        # m_target = np.array([0.3, -0.7])
+        pass
 
 if control_type == spinal_controllers.Control_Type.REFLEX:
     PPO_model_path2="models/1686530946/3980000.zip"

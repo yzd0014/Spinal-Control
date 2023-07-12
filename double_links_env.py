@@ -136,6 +136,8 @@ class DoubleLinkEnv(gym.Env):
             mj.set_mjcb_control(self.my_neuron_controller)
         elif self.control_type == Control_Type.X:
             mj.set_mjcb_control(self.my_x_controller)
+        elif self.control_type == Control_Type.NEURON_SIMPLE:
+            mj.set_mjcb_control(self.my_neuron_simple_controller)
 
     def init_window(self):
         glfw.init()
@@ -148,6 +150,7 @@ class DoubleLinkEnv(gym.Env):
 
     def my_baseline(self, model, data):
         baseline_controller(self.m_ctrl, data)
+        joints_controller(data)
 
     def my_RI(self, model, data):
         RI_controller(self.m_ctrl, data)
@@ -157,6 +160,11 @@ class DoubleLinkEnv(gym.Env):
 
     def my_neuron_controller(self, model, data):
         neuron_controller(self.m_ctrl, data)
+        joints_controller(data)
+
+    def my_neuron_simple_controller(self, model, data):
+        neuron_simple_controller(self.m_ctrl, data)
 
     def my_x_controller(self, model, data):
         x_controller(self.m_ctrl, data)
+        joints_controller(data)
