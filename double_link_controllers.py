@@ -10,7 +10,7 @@ class Control_Type(Enum):
     NEURON_SIMPLE = 6
 
 control_typle_dic = {Control_Type.BASELINE: "baseline",
-                     Control_Type.RI: "neuron filter",
+                     Control_Type.NEURON_FILTER: "neuron filter",
                      Control_Type.REFLEX: "strech reflex",
                      Control_Type.X: "X",
                      Control_Type.NEURON: "neuron model",

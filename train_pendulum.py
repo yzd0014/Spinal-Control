@@ -13,7 +13,7 @@ models_dir = f"models/{int(time.time())}/"
 control_type = pendulum_env.Control_Type.NEURON
 logdir = f"logs/{int(time.time())}-{pendulum_env.control_typle_dic[control_type]}/"
 if env_id == 1:
-	control_type = double_links_env.Control_Type.NEURON
+	control_type = double_links_env.Control_Type.NEURON_FILTER
 	logdir = f"logs/{int(time.time())}-{double_links_env.control_typle_dic[control_type]}/"
 
 
