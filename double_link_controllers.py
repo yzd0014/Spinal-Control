@@ -62,6 +62,7 @@ def x_controller(input_action, data):
     for i in range(2):
         descend_ctrl = np.array([input_action[i*4], input_action[i*4+1], input_action[i*4+2], input_action[i*4+3]])
         # ctrl_mat = np.array([[-4, 4.5, 5, 4.5],[4.5, -4, 4.5, 5]])
+        ctrl_mat = np.array([[-1, 1, 1, -1], [1, -1, -1, 1]])
         ctrl_mat = np.array([[-1, 0.5, 0.5, 0.5], [0.5, -1, 0.5, 0.5]])
         ctrl_output = np.matmul(ctrl_mat, descend_ctrl)
         data.ctrl[i*2] = ctrl_output[0]

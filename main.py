@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import spinal_controllers
 import double_link_controllers
 
-control_type = spinal_controllers.Control_Type.BASELINE
+control_type = spinal_controllers.Control_Type.NEURON
 env_id = 1
 xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 if env_id == 1:
@@ -157,21 +157,12 @@ def baseline_callback(model, data):
         print(data.qpos[0], data.ctrl[1], data.ctrl[2])
     elif env_id == 1:
         # obs = np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
-        # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
-        # action, _states = PPO_model0.predict(obs)
-        # double_link_controllers.baseline_controller(input_action=action, data=data)
-        # print(data.qpos[0], data.qpos[1])
-        double_link_controllers.joints_controller(data)
+        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
+        action, _states = PPO_model0.predict(obs)
+        double_link_controllers.baseline_controller(input_action=action, data=data)
+        # double_link_controllers.joints_controller(data)
+        print(data.qpos[0], data.qpos[1])
         # print(data.xpos[2])
-
-# PPO_model_path1="models/1686467696/990000.zip"
-# PPO_model1=PPO.load(PPO_model_path1)
-# def RI_callback(model, data):
-#     obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
-#     action, _states = PPO_model0.predict(obs)
-#     spinal_controllers.RI_controller(input_action=action, data=data)
-#     print(data.qpos[0])
-#
 
 def stretch_reflex_callback(model, data):
     obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
@@ -188,12 +179,12 @@ def neuron_callback(model, data):
         spinal_controllers.joint0_controller(model, data)
         print(data.qpos[0], action[0], action[1], action[2], action[3])
     elif env_id == 1:
-        # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
-        obs =  np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
+        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
+        #obs =  np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
         action, _states = PPO_model4.predict(obs)
         double_link_controllers.neuron_controller(input_action=action, data=data)
-        # print(data.qpos[0], data.qpos[1])
-        print(target_pos, data.xpos[2])
+        print(data.qpos[0], data.qpos[1])
+        # print(target_pos, data.xpos[2])
 
 #get the full path
 dirname = os.path.dirname(__file__)
@@ -232,18 +223,16 @@ cam.lookat = np.array([0.0, -1, 2])
 
 #load modes for each controller
 w = -0.48
+# m_target = np.array([0.55, -0.62])
+m_target = np.array([0, 0])
 if control_type == spinal_controllers.Control_Type.BASELINE:
     if env_id == 0:
         target_pos = compute_target_pos(w, 1)
         PPO_model_path0 = "models/1687332383/10650000.zip"
         PPO_model0 = PPO.load(PPO_model_path0)
     elif env_id == 1:
-        # PPO_model_path0 = "models/1687059231/86880000.zip"
-        # PPO_model_path0 = "models/1687307893/85920000.zip"
-        # PPO_model0 = PPO.load(PPO_model_path0)
-        # target_pos = np.array([0, 0, 1.5])
-        # m_target = np.array([0.3, -0.7])
-        pass
+        PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
+        PPO_model0 = PPO.load(PPO_model_path0)
 
 if control_type == spinal_controllers.Control_Type.REFLEX:
     PPO_model_path2="models/1686530946/3980000.zip"
@@ -256,9 +245,8 @@ if control_type == spinal_controllers.Control_Type.NEURON:
         target_pos = compute_target_pos(w, 1)
     elif env_id == 1:
         # PPO_model_path4 = "models/1687590862/42400000.zip"
-        PPO_model_path4 = "models/1688105874/73760000.zip"
+        PPO_model_path4 = "..\\RL_data\\neuron-training-stable\\models\\1687913383\\56960000.zip"
         PPO_model4 = PPO.load(PPO_model_path4)
-        m_target = np.array([0.3, 0.3])
         data.qpos[0] = m_target[0]
         data.qpos[1] = m_target[1]
         mj.mj_forward(model, data)
