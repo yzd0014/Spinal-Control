@@ -94,7 +94,13 @@ y1 = []
 y2 = []
 y3 = []
 neuron_result = [[],[]]
+
 RI_cmd = [[],[],[],[]]
+baseline_ctrl = [[],[],[],[]]
+neuron_ctrl = [[],[],[],[]]
+
+baseline_total_energy = 0
+neuron_total_energy = 0
 
 if model_is_avaialble[0]:
     mj.mj_resetData(model, data)
@@ -105,6 +111,9 @@ if model_is_avaialble[0]:
         x_time.append(data.time)
         baseline_result[0].append(m_target[0] - data.qpos[0])
         baseline_result[1].append(m_target[1] - data.qpos[1])
+        for i in range(4):
+            baseline_ctrl[i].append(data.ctrl[i])
+            baseline_total_energy += data.ctrl[i]
     print("y0 done!")
 
 if model_is_avaialble[1]:
@@ -133,8 +142,12 @@ if model_is_avaialble[4]:
         mj.mj_step(model, data)
         neuron_result[0].append(m_target[0] - data.qpos[0])
         neuron_result[1].append(m_target[1] - data.qpos[1])
+        for i in range(4):
+            neuron_ctrl[i].append(data.ctrl[i])  # save the neuron command
+            neuron_total_energy += data.ctrl[i]
     print("y4 done!")
 
+plt.figure(1)
 plt.subplot(1, 2, 1)
 if model_is_avaialble[0]:
     plt.plot(x_time, baseline_result[0], label = "baseline")
@@ -149,6 +162,7 @@ if model_is_avaialble[4]:
 # plt.axhline(y = w, color = 'r', linestyle = '-', label = "target position", linewidth = 0.2)
 plt.xlabel('time')
 plt.ylabel('joint 0 position')
+plt.legend()
 
 plt.subplot(1, 2, 2)
 if model_is_avaialble[0]:
@@ -164,15 +178,20 @@ if model_is_avaialble[4]:
 # plt.axhline(y = w, color = 'r', linestyle = '-', label = "target position", linewidth = 0.2)
 plt.xlabel('time')
 plt.ylabel('joint 1 position')
-
 plt.legend()
+
+print(f"baseline total energy: {baseline_total_energy}")
+print(f"neuron total energy: {neuron_total_energy}")
+plt.figure(2)
+for i in range(4):
+    plt.subplot(4, 1, i+1)
+    if model_is_avaialble[0]:
+        plt.plot(x_time, baseline_ctrl[i], label="baseline")
+    if model_is_avaialble[4]:
+        plt.plot(x_time, neuron_ctrl[i], label="neuron")
+    plt.legend()
+
 plt.show()
 
 
-# plt.subplot(1, 2, 2)
-# if model_is_avaialble[4]:
-#     plt.plot(x_time, RI_cmd[0], label="alpha-r")
-#     plt.plot(x_time, RI_cmd[1], label="alpha-l")
-#     plt.plot(x_time, RI_cmd[2], label="internueron-r")
-#     plt.plot(x_time, RI_cmd[3], label="internueron-l")
 
