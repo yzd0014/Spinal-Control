@@ -29,7 +29,7 @@ class DoubleLinkEnv(gym.Env):
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
-        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.X:
+        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.X or self.control_type == Control_Type.NEURON_FILTER:
             self.m_ctrl = np.zeros(8)
             self.action_space = spaces.Box(low=0, high=1.0,shape=(8,), dtype=np.float32)
         else:
@@ -41,7 +41,7 @@ class DoubleLinkEnv(gym.Env):
         self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(6,), dtype=np.float32)
 
     def step(self, action):
-        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.X:
+        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.X or self.control_type == Control_Type.NEURON_FILTER:
             for i in range(8):
                 self.m_ctrl[i] = action[i]
         else:
@@ -130,8 +130,8 @@ class DoubleLinkEnv(gym.Env):
             mj.set_mjcb_control(self.my_baseline)
         elif self.control_type == Control_Type.REFLEX:
             mj.set_mjcb_control(self.my_stretch_reflex)
-        elif self.control_type == Control_Type.RI:
-            mj.set_mjcb_control(self.my_RI)
+        elif self.control_type == Control_Type.NEURON_FILTER:
+            mj.set_mjcb_control(self.my_neuron_filter_controller)
         elif self.control_type == Control_Type.NEURON:
             mj.set_mjcb_control(self.my_neuron_controller)
         elif self.control_type == Control_Type.X:
@@ -152,8 +152,8 @@ class DoubleLinkEnv(gym.Env):
         baseline_controller(self.m_ctrl, data)
         joints_controller(data)
 
-    def my_RI(self, model, data):
-        RI_controller(self.m_ctrl, data)
+    def my_neuron_filter_controller(self, model, data):
+        neuron_filter_controller(self.m_ctrl, data)
 
     def my_stretch_reflex(self, model, data):
         stretch_reflex_controller(self.m_ctrl, data)

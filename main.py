@@ -164,7 +164,7 @@ def baseline_callback(model, data):
         print(data.qpos[0], data.qpos[1])
         # print(data.xpos[2])
 
-def stretch_reflex_callback(model, data):
+def neuron_filter_callback(model, data):
     obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
     action, _states = PPO_model2.predict(obs)
     spinal_controllers.stretch_reflex_controller(input_action=action, data=data)
@@ -259,12 +259,8 @@ init_controller(model,data)
 #set the controller
 if control_type == spinal_controllers.Control_Type.BASELINE:
     mj.set_mjcb_control(baseline_callback)
-# elif control_type == spinal_controllers.Control_Type.RI:
-#     mj.set_mjcb_control(RI_callback)
-elif control_type == spinal_controllers.Control_Type.REFLEX:
-    mj.set_mjcb_control(stretch_reflex_callback)
-# elif control_type == spinal_controllers.Control_Type.RI_AND_REFLEX:
-#     mj.set_mjcb_control()
+elif control_type == spinal_controllers.Control_Type.NEURON_FILTER:
+    mj.set_mjcb_control(neuron_filter_callback())
 elif control_type == spinal_controllers.Control_Type.NEURON:
     mj.set_mjcb_control(neuron_callback)
 
