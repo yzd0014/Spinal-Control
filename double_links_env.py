@@ -6,6 +6,7 @@ from mujoco.glfw import glfw
 import os
 from double_link_controllers import *
 
+env_id = 1
 class DoubleLinkEnv(gym.Env):
     """Custom Environment that follows gym interface."""
     def __init__(self, control_type = Control_Type.BASELINE):
@@ -37,8 +38,11 @@ class DoubleLinkEnv(gym.Env):
             self.action_space = spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
         #current endfactor pos
-        # self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(13,), dtype=np.float32)
-        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(6,), dtype=np.float32)
+        if env_id == 0:
+            # self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(13,), dtype=np.float32)
+            self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
+        elif env_id == 1 or env_id == 2:
+            self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(8,), dtype=np.float32)
 
     def step(self, action):
         if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.X or self.control_type == Control_Type.NEURON_FILTER:
@@ -61,43 +65,56 @@ class DoubleLinkEnv(gym.Env):
             glfw.swap_buffers(self.window)
             glfw.poll_events()
 
-        # pos_diff_new = np.linalg.norm(self.data.xpos[2] - self.target_pos)
-        current_state = np.array([self.data.qpos[0], self.data.qpos[1]])
-        m_target = self.target_qs[self.target_iter]
-        pos_diff_new = np.linalg.norm(current_state - m_target)
-        reward = -pos_diff_new
+        if env_id == 0:
+            # pos_diff_new = np.linalg.norm(self.data.xpos[2] - self.target_pos)
+            current_state = np.array([self.data.qpos[0], self.data.qpos[1]])
+            m_target = self.target_qs[self.target_iter]
+            pos_diff_new = np.linalg.norm(current_state - m_target)
+            reward = -pos_diff_new
+
+            # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
+            observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
+        elif env_id == 1:
+            current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
+            reward = -abs(current_q - np.pi)
+            observation = np.array([0, 0, self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
 
         self.ticks += 1
         if self.ticks >= 10000:
             self.done = True
 
-
-        # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
-        observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
         info = {}
-
         return observation, reward, self.done, info
 
     def reset(self):
+        self.done = False
+        self.ticks = 0
+
         self.target_iter += 1
         if self.target_iter >= num_of_targets:
             self.target_iter = 0
+        if env_id == 0:
+            # forward kinematics to get the target endfactor position
+            # self.data.qpos[0] = self.target_qs[self.target_iter][0]
+            # self.data.qpos[1] = self.target_qs[self.target_iter][1]
+            # mj.mj_forward(self.model, self.data)
+            # self.target_pos = self.data.xpos[2].copy()
+            print(f"{self.target_iter} {self.target_qs[self.target_iter]} {self.target_pos}")
 
-        # forward kinematics to get the target endfactor position
-        self.data.qpos[0] = self.target_qs[self.target_iter][0]
-        self.data.qpos[1] = self.target_qs[self.target_iter][1]
-        mj.mj_forward(self.model, self.data)
-        self.target_pos = self.data.xpos[2].copy()
-        print(f"{self.target_iter} {self.target_qs[self.target_iter]} {self.target_pos}")
+            # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
+            m_target = self.target_qs[self.target_iter]
+            observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
 
-        self.done = False
-        self.ticks = 0
-        mj.mj_resetData(self.model, self.data)
-        mj.mj_forward(self.model, self.data)
-
-        # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
-        m_target = self.target_qs[self.target_iter]
-        observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
+            mj.mj_resetData(self.model, self.data)
+            mj.mj_forward(self.model, self.data)
+        elif env_id == 1:
+            mj.mj_resetData(self.model, self.data)
+            self.data.qpos[0] = 0.4
+            self.data.qpos[1] = -0.87
+            self.data.qpos[2] = -2.17
+            mj.mj_forward(self.model, self.data)
+            observation = np.array([0, 0, self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1],self.data.qvel[2]])
+            print(f"episode #{self.target_iter}")
 
         return observation
 
@@ -109,7 +126,10 @@ class DoubleLinkEnv(gym.Env):
             glfw.terminate()
 
     def init_mujoco(self):
-        xml_path = 'double_links.xml'
+        if env_id == 0:
+            xml_path = 'double_links.xml'
+        elif env_id == 1 or env_id == 2:
+            xml_path = 'inverted_pendulum.xml'
         dirname = os.path.dirname(__file__)
         abspath = os.path.join(dirname + "/" + xml_path)
         xml_path = abspath
