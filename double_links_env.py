@@ -170,7 +170,7 @@ class DoubleLinkEnv(gym.Env):
 
     def my_baseline(self, model, data):
         baseline_controller(self.m_ctrl, data)
-        joints_controller(data)
+        # joints_controller(data)
 
     def my_neuron_filter_controller(self, model, data):
         neuron_filter_controller(self.m_ctrl, data)
@@ -180,11 +180,11 @@ class DoubleLinkEnv(gym.Env):
 
     def my_neuron_controller(self, model, data):
         neuron_controller(self.m_ctrl, data)
-        joints_controller(data)
+        # joints_controller(data)
 
     def my_neuron_simple_controller(self, model, data):
         neuron_simple_controller(self.m_ctrl, data)
 
     def my_x_controller(self, model, data):
         x_controller(self.m_ctrl, data)
-        joints_controller(data)
+        # joints_controller(data)
