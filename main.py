@@ -28,8 +28,9 @@ lasty = 0
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
-        mj.mj_resetData(model, data)
-        mj.mj_forward(model, data)
+        # mj.mj_resetData(model, data)
+        # mj.mj_forward(model, data)
+        init_controller(model, data)
 
 def mouse_button(window, button, act, mods):
     # update button state
@@ -97,7 +98,12 @@ def scroll(window, xoffset, yoffset):
                       yoffset, scene, cam)
 
 def init_controller(model,data):
-    pass
+    if env_id == 2:
+        mj.mj_resetData(model, data)
+        data.qpos[0] = 0.4
+        data.qpos[1] = -0.87
+        data.qpos[2] = -2.17
+        mj.mj_forward(model, data)
 
 h = 0.6
 w = 0.06

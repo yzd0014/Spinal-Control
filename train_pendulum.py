@@ -35,9 +35,10 @@ if env_id == 1:
 	num_episodes = double_links_env.num_of_targets
 	print(f"total number of targets: {num_episodes}")
 m_steps = episode_length * num_episodes
+# m_steps = 50000
 #n_steps=80000 batch_size=80000,n_epochs=10 not working
 #n_steps=50000 batch_size=10000,n_epochs=100 testing
-#n_steps=50000 batch_size=50000,n_epochs=100 testing
+#n_steps=50000 batch_size=50000,n_epochs=100 testing x
 model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=10000, n_epochs=10, verbose=1, tensorboard_log=logdir)
 # model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
 # PPO_model_path="models/1688353130/24640000.zip"
