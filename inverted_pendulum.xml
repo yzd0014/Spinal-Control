@@ -23,7 +23,7 @@
                 <site name="s6" pos="0.06 0 0.4" size="0.02"/>
                 <site name="s7" pos="-0.06 0 0.4" size="0.02"/>
                 <body pos="0 0 -0.5" euler="0 0 0">
-                    <joint name="joint2" type="hinge" axis="0 -1 0" pos="0 0 0.5" damping="0"/>
+                    <joint name="joint2" type="hinge" axis="0 -1 0" pos="0 0 0.5" damping="0" limited="true" range="-168 168"/>
                     <geom name="link2" pos="0 0 0" type="cylinder" size="0.05 .5" rgba="0 0 1 1" mass="1"/>
                 </body>
             </body>
