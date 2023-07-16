@@ -19,12 +19,17 @@ class DoubleLinkEnv(gym.Env):
         if self.rendering == True:
             self.init_window()
 
-        self.target_qs = []
-        for i in np.arange(-0.2, 0.2, 0.1):
-            for j in np.arange(-0.2, 0.2, 0.1):
-                self.target_qs.append(np.array([i, j]))
-                num_of_targets += 1
-        # self.target_qs = [np.array([0.195, -0.792])]
+        num_of_targets = 0
+        if env_id == 0:
+            self.target_qs = []
+            for i in np.arange(-0.2, 0.2, 0.1):
+                for j in np.arange(-0.2, 0.2, 0.1):
+                    self.target_qs.append(np.array([i, j]))
+                    num_of_targets += 1
+            # self.target_qs = [np.array([0.195, -0.792])]
+
+        elif env_id == 1:
+            num_of_targets = 64
 
         self.target_iter = 0
         # Define action and observation space

@@ -7,11 +7,13 @@ import matplotlib.pyplot as plt
 import spinal_controllers
 import double_link_controllers
 
-control_type = spinal_controllers.Control_Type.NEURON
-env_id = 1
+control_type = spinal_controllers.Control_Type.BASELINE
+env_id = 2
 xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 if env_id == 1:
     xml_path = 'double_links.xml'
+elif env_id == 2:
+    xml_path = 'inverted_pendulum.xml'
 
 simend = 5 #simulation time
 print_camera_config = 0 #set to 1 to print camera config
@@ -161,8 +163,12 @@ def baseline_callback(model, data):
         action, _states = PPO_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=action, data=data)
         # double_link_controllers.joints_controller(data)
-        print(data.qpos[0], data.qpos[1])
         # print(data.xpos[2])
+        print(data.qpos[0], data.qpos[1])
+    elif env_id == 2:
+        obs = np.array([0, 0, data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        action, _states = PPO_model0.predict(obs)
+        double_link_controllers.baseline_controller(input_action=action, data=data)
 
 def neuron_filter_callback(model, data):
     obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
@@ -229,10 +235,12 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
     if env_id == 0:
         target_pos = compute_target_pos(w, 1)
         PPO_model_path0 = "models/1687332383/10650000.zip"
-        PPO_model0 = PPO.load(PPO_model_path0)
     elif env_id == 1:
         PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
-        PPO_model0 = PPO.load(PPO_model_path0)
+    elif env_id == 2:
+        PPO_model_path0 = "models\\1689412712\\37400000.zip"
+
+    PPO_model0 = PPO.load(PPO_model_path0)
 
 if control_type == spinal_controllers.Control_Type.REFLEX:
     PPO_model_path2="models/1686530946/3980000.zip"
