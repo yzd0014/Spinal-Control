@@ -19,12 +19,17 @@ class DoubleLinkEnv(gym.Env):
         if self.rendering == True:
             self.init_window()
 
-        self.target_qs = []
-        for i in np.arange(-0.2, 0.2, 0.1):
-            for j in np.arange(-0.2, 0.2, 0.1):
-                self.target_qs.append(np.array([i, j]))
-                num_of_targets += 1
-        # self.target_qs = [np.array([0.195, -0.792])]
+        num_of_targets = 0
+        if env_id == 0:
+            self.target_qs = []
+            for i in np.arange(-0.2, 0.2, 0.1):
+                for j in np.arange(-0.2, 0.2, 0.1):
+                    self.target_qs.append(np.array([i, j]))
+                    num_of_targets += 1
+            # self.target_qs = [np.array([0.195, -0.792])]
+
+        elif env_id == 1:
+            num_of_targets = 64
 
         self.target_iter = 0
         # Define action and observation space
@@ -170,7 +175,7 @@ class DoubleLinkEnv(gym.Env):
 
     def my_baseline(self, model, data):
         baseline_controller(self.m_ctrl, data)
-        joints_controller(data)
+        # joints_controller(data)
 
     def my_neuron_filter_controller(self, model, data):
         neuron_filter_controller(self.m_ctrl, data)
@@ -180,11 +185,11 @@ class DoubleLinkEnv(gym.Env):
 
     def my_neuron_controller(self, model, data):
         neuron_controller(self.m_ctrl, data)
-        joints_controller(data)
+        # joints_controller(data)
 
     def my_neuron_simple_controller(self, model, data):
         neuron_simple_controller(self.m_ctrl, data)
 
     def my_x_controller(self, model, data):
         x_controller(self.m_ctrl, data)
-        joints_controller(data)
+        # joints_controller(data)
