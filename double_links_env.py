@@ -29,7 +29,7 @@ class DoubleLinkEnv(gym.Env):
             # self.target_qs = [np.array([0.195, -0.792])]
 
         elif env_id == 1:
-            num_of_targets = 64
+            num_of_targets = 16
 
         self.target_iter = 0
         # Define action and observation space
@@ -81,7 +81,7 @@ class DoubleLinkEnv(gym.Env):
             observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
         elif env_id == 1:
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
-            reward = -abs(current_q - np.pi)
+            reward = -pow(current_q - np.pi, 2)
             observation = np.array([0, 0, self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
 
         self.ticks += 1
@@ -116,7 +116,7 @@ class DoubleLinkEnv(gym.Env):
             mj.mj_resetData(self.model, self.data)
             self.data.qpos[0] = 0.4
             self.data.qpos[1] = -0.87
-            self.data.qpos[2] = -2.17
+            self.data.qpos[2] = -2.86
             mj.mj_forward(self.model, self.data)
             observation = np.array([0, 0, self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1],self.data.qvel[2]])
             print(f"episode #{self.target_iter}")
