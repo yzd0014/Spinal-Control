@@ -6,32 +6,30 @@ from mujoco.glfw import glfw
 import os
 from double_link_controllers import *
 
-env_id = 1
-target_qs = []
-num_of_targets = 0
-def compute_total_num_of_targets():
-    global num_of_targets
-    if env_id == 0:
-        for i in np.arange(-0.2, 0.2, 0.1):
-            for j in np.arange(-0.2, 0.2, 0.1):
-                target_qs.append(np.array([i, j]))
-                num_of_targets += 1
-        # self.target_qs = [np.array([0.195, -0.792])]
-    elif env_id == 1:
-        num_of_targets = 16
-    return num_of_targets
-
 class DoubleLinkEnv(gym.Env):
     """Custom Environment that follows gym interface."""
-    def __init__(self, control_type = Control_Type.BASELINE, instance_id = 0):
+    def __init__(self, control_type = Control_Type.BASELINE, env_id = 1, instance_id = 0):
         super(DoubleLinkEnv, self).__init__()
 
+        self.env_id = env_id
         self.instance_id = instance_id
         self.control_type = control_type
         self.rendering = False
         self.init_mujoco()
         if self.rendering == True:
             self.init_window()
+
+        self.num_of_targets = 0
+        if self.env_id == 1:
+            self.target_qs = []
+            for i in np.arange(-0.2, 0.2, 0.1):
+                for j in np.arange(-0.2, 0.2, 0.1):
+                    self.target_qs.append(np.array([i, j]))
+                    self.num_of_targets += 1
+            # self.target_qs = [np.array([0.195, -0.792])]
+
+        elif self.env_id == 2:
+            self.num_of_targets = 16
 
         self.target_iter = 0
         # Define action and observation space
@@ -45,10 +43,10 @@ class DoubleLinkEnv(gym.Env):
             self.action_space = spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
         #current endfactor pos
-        if env_id == 0:
+        if self.env_id == 1:
             # self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(13,), dtype=np.float32)
             self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
-        elif env_id == 1 or env_id == 2:
+        elif self.env_id == 2 or self.env_id == 3:
             self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(8,), dtype=np.float32)
 
     def step(self, action):
@@ -72,7 +70,7 @@ class DoubleLinkEnv(gym.Env):
             glfw.swap_buffers(self.window)
             glfw.poll_events()
 
-        if env_id == 0:
+        if self.env_id == 1:
             # pos_diff_new = np.linalg.norm(self.data.xpos[2] - self.target_pos)
             current_state = np.array([self.data.qpos[0], self.data.qpos[1]])
             m_target = self.target_qs[self.target_iter]
@@ -81,7 +79,7 @@ class DoubleLinkEnv(gym.Env):
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
-        elif env_id == 1:
+        elif self.env_id == 2:
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
             # reward = -pow(current_q - np.pi, 2)
             reward = -abs(current_q - np.pi)
@@ -99,30 +97,31 @@ class DoubleLinkEnv(gym.Env):
         self.ticks = 0
 
         self.target_iter += 1
-        if self.target_iter >= num_of_targets:
+        if self.target_iter >= self.num_of_targets:
             self.target_iter = 0
-        if env_id == 0:
+
+        if self.env_id == 1:
             # forward kinematics to get the target endfactor position
             # self.data.qpos[0] = self.target_qs[self.target_iter][0]
             # self.data.qpos[1] = self.target_qs[self.target_iter][1]
             # mj.mj_forward(self.model, self.data)
             # self.target_pos = self.data.xpos[2].copy()
-            print(f"{self.target_iter} {target_qs[self.target_iter]} {self.target_pos}")
+            print(f"{self.target_iter} {self.target_qs[self.target_iter]}")
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
-            m_target = target_qs[self.target_iter]
+            m_target = self.target_qs[self.target_iter]
             observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
 
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
-        elif env_id == 1:
+        elif self.env_id == 2:
             mj.mj_resetData(self.model, self.data)
             self.data.qpos[0] = 0.4
             self.data.qpos[1] = -0.87
             self.data.qpos[2] = -2.86
             mj.mj_forward(self.model, self.data)
             observation = np.array([0, 0, self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1],self.data.qvel[2]])
-            print(f"instace #{self.instance_id} episode #{self.target_iter}\n")
+            # print(f"instace #{self.instance_id} episode #{self.target_iter}\n")
 
         return observation
 
@@ -134,9 +133,9 @@ class DoubleLinkEnv(gym.Env):
             glfw.terminate()
 
     def init_mujoco(self):
-        if env_id == 0:
+        if self.env_id == 1:
             xml_path = 'double_links.xml'
-        elif env_id == 1 or env_id == 2:
+        elif self.env_id == 2 or self.env_id == 3:
             xml_path = 'inverted_pendulum.xml'
         dirname = os.path.dirname(__file__)
         abspath = os.path.join(dirname + "/" + xml_path)
@@ -175,6 +174,9 @@ class DoubleLinkEnv(gym.Env):
 
         self.scene = mj.MjvScene(self.model, maxgeom=10000)
         self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
+
+    def get_num_of_targets(self):
+        return self.num_of_targets;
 
     def my_baseline(self, model, data):
         baseline_controller(self.m_ctrl, data)
