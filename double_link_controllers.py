@@ -114,5 +114,3 @@ def joints_controller(data):
     kp = 0.2
     data.ctrl[4] = kp * np.random.randn(1)
     data.ctrl[5] = kp * np.random.randn(1)
-
-num_of_targets = 0

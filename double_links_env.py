@@ -7,29 +7,31 @@ import os
 from double_link_controllers import *
 
 env_id = 1
+target_qs = []
+num_of_targets = 0
+def compute_total_num_of_targets():
+    global num_of_targets
+    if env_id == 0:
+        for i in np.arange(-0.2, 0.2, 0.1):
+            for j in np.arange(-0.2, 0.2, 0.1):
+                target_qs.append(np.array([i, j]))
+                num_of_targets += 1
+        # self.target_qs = [np.array([0.195, -0.792])]
+    elif env_id == 1:
+        num_of_targets = 16
+    return num_of_targets
+
 class DoubleLinkEnv(gym.Env):
     """Custom Environment that follows gym interface."""
-    def __init__(self, control_type = Control_Type.BASELINE):
+    def __init__(self, control_type = Control_Type.BASELINE, instance_id = 0):
         super(DoubleLinkEnv, self).__init__()
-        global num_of_targets
 
+        self.instance_id = instance_id
         self.control_type = control_type
         self.rendering = False
         self.init_mujoco()
         if self.rendering == True:
             self.init_window()
-
-        num_of_targets = 0
-        if env_id == 0:
-            self.target_qs = []
-            for i in np.arange(-0.2, 0.2, 0.1):
-                for j in np.arange(-0.2, 0.2, 0.1):
-                    self.target_qs.append(np.array([i, j]))
-                    num_of_targets += 1
-            # self.target_qs = [np.array([0.195, -0.792])]
-
-        elif env_id == 1:
-            num_of_targets = 16
 
         self.target_iter = 0
         # Define action and observation space
@@ -81,7 +83,8 @@ class DoubleLinkEnv(gym.Env):
             observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
         elif env_id == 1:
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
-            reward = -pow(current_q - np.pi, 2)
+            # reward = -pow(current_q - np.pi, 2)
+            reward = -abs(current_q - np.pi)
             observation = np.array([0, 0, self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
 
         self.ticks += 1
@@ -104,10 +107,10 @@ class DoubleLinkEnv(gym.Env):
             # self.data.qpos[1] = self.target_qs[self.target_iter][1]
             # mj.mj_forward(self.model, self.data)
             # self.target_pos = self.data.xpos[2].copy()
-            print(f"{self.target_iter} {self.target_qs[self.target_iter]} {self.target_pos}")
+            print(f"{self.target_iter} {target_qs[self.target_iter]} {self.target_pos}")
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
-            m_target = self.target_qs[self.target_iter]
+            m_target = target_qs[self.target_iter]
             observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
 
             mj.mj_resetData(self.model, self.data)
@@ -119,7 +122,7 @@ class DoubleLinkEnv(gym.Env):
             self.data.qpos[2] = -2.86
             mj.mj_forward(self.model, self.data)
             observation = np.array([0, 0, self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1],self.data.qvel[2]])
-            print(f"episode #{self.target_iter}")
+            print(f"instace #{self.instance_id} episode #{self.target_iter}\n")
 
         return observation
 
