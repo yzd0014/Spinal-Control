@@ -22,9 +22,9 @@
                 <geom name="link1" pos="0 0 0.5" type="cylinder" size="0.05 .5" rgba="1 1 1 1" mass="1"/>
                 <site name="s6" pos="0.06 0 0.4" size="0.02"/>
                 <site name="s7" pos="-0.06 0 0.4" size="0.02"/>
-                <body pos="0 -0.1 -0.5" euler="0 0 0">
-                    <joint name="joint2" type="hinge" axis="0 -1 0" pos="0 0 0.5" damping="0"/>
-                    <geom name="link2" pos="0 0 0" type="cylinder" size="0.05 .5" rgba="0 0 1 1" mass="1"/>
+                <body pos="0 -0.1 -0.2" euler="0 0 0">
+                    <joint name="joint2" type="hinge" axis="0 -1 0" pos="0 0 0.2" damping="0.1"/>
+                    <geom name="link2" pos="0 0 0" type="cylinder" size="0.05 .2" rgba="0 0 1 1" mass="1"/>
                 </body>
             </body>
         </body>

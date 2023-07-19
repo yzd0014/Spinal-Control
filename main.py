@@ -102,7 +102,7 @@ def init_controller(model,data):
         mj.mj_resetData(model, data)
         data.qpos[0] = 0.4
         data.qpos[1] = -0.87
-        data.qpos[2] = -2.86
+        data.qpos[2] = -1.88
         mj.mj_forward(model, data)
 
 h = 0.6
@@ -172,7 +172,7 @@ def baseline_callback(model, data):
         # print(data.xpos[2])
         print(data.qpos[0], data.qpos[1])
     elif env_id == 2:
-        obs = np.array([0, 0, data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         action, _states = PPO_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=action, data=data)
 
@@ -214,6 +214,9 @@ glfw.init()
 window = glfw.create_window(1200, 900, "Demo", None, None)
 glfw.make_context_current(window)
 glfw.swap_interval(1)
+# get framebuffer viewport
+viewport_width, viewport_height = glfw.get_framebuffer_size(window)
+viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
 
 # initialize visualization data structures
 mj.mjv_defaultCamera(cam)
@@ -244,7 +247,7 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
     elif env_id == 1:
         PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
     elif env_id == 2:
-        PPO_model_path0 = "models\\1689548375\\35840000.zip"
+        PPO_model_path0 = "models\\1689738449\\1330000.zip"
 
     PPO_model0 = PPO.load(PPO_model_path0)
 
@@ -285,11 +288,6 @@ while not glfw.window_should_close(window):
         mj.mj_step(model, data)
     # if (data.time>=simend):
     #     break;
-
-    # get framebuffer viewport
-    viewport_width, viewport_height = glfw.get_framebuffer_size(
-        window)
-    viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
 
     #print camera configuration (help to initialize the view)
     if print_camera_config==1:

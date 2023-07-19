@@ -46,7 +46,9 @@ class DoubleLinkEnv(gym.Env):
         if self.env_id == 1:
             # self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(13,), dtype=np.float32)
             self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
-        elif self.env_id == 2 or self.env_id == 3:
+        elif self.env_id == 2:
+            self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
+        elif self.env_id == 3:
             self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(8,), dtype=np.float32)
 
     def step(self, action):
@@ -57,16 +59,11 @@ class DoubleLinkEnv(gym.Env):
             for i in range(4):
                 self.m_ctrl[i] = action[i]
 
-        viewport = 0
-        if self.rendering == True:
-            viewport_width, viewport_height = glfw.get_framebuffer_size(self.window)
-            viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
-
         mj.mj_step(self.model, self.data)
 
         if self.rendering == True:
             mj.mjv_updateScene(self.model, self.data, self.opt, None, self.cam, mj.mjtCatBit.mjCAT_ALL.value, self.scene)
-            mj.mjr_render(viewport, self.scene, self.context)
+            mj.mjr_render(self.viewport, self.scene, self.context)
             glfw.swap_buffers(self.window)
             glfw.poll_events()
 
@@ -81,12 +78,17 @@ class DoubleLinkEnv(gym.Env):
             observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
         elif self.env_id == 2:
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
+            # print(current_q)
             # reward = -pow(current_q - np.pi, 2)
-            reward = -abs(current_q - np.pi)
-            observation = np.array([0, 0, self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
+            position_penalty = abs(current_q - np.pi)
+            reward = np.exp(-position_penalty)
+            observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
+            if position_penalty > 0.5 * np.pi:
+                self.done = True
+                reward -= 100
 
         self.ticks += 1
-        if self.ticks >= 10000:
+        if self.ticks >= 15000:
             self.done = True
 
         info = {}
@@ -118,9 +120,9 @@ class DoubleLinkEnv(gym.Env):
             mj.mj_resetData(self.model, self.data)
             self.data.qpos[0] = 0.4
             self.data.qpos[1] = -0.87
-            self.data.qpos[2] = -2.86
+            self.data.qpos[2] = -1.88
             mj.mj_forward(self.model, self.data)
-            observation = np.array([0, 0, self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1],self.data.qvel[2]])
+            observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1],self.data.qvel[2]])
             # print(f"instace #{self.instance_id} episode #{self.target_iter}\n")
 
         return observation
@@ -174,6 +176,10 @@ class DoubleLinkEnv(gym.Env):
 
         self.scene = mj.MjvScene(self.model, maxgeom=10000)
         self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
+
+        viewport_width, viewport_height = glfw.get_framebuffer_size(self.window)
+        self.viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
+
 
     def get_num_of_targets(self):
         return self.num_of_targets;
