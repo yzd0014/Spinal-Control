@@ -102,7 +102,7 @@ def init_controller(model,data):
         mj.mj_resetData(model, data)
         data.qpos[0] = 0.4
         data.qpos[1] = -0.87
-        data.qpos[2] = -1.88
+        data.qpos[2] = -2.32
         mj.mj_forward(model, data)
 
 h = 0.6
@@ -247,7 +247,7 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
     elif env_id == 1:
         PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
     elif env_id == 2:
-        PPO_model_path0 = "models\\1689738449\\1330000.zip"
+        PPO_model_path0 = "models\\1689748350\\995000.zip"
 
     PPO_model0 = PPO.load(PPO_model_path0)
 

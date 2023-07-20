@@ -23,7 +23,7 @@ if __name__ =="__main__":
 		control_type = pendulum_env.Control_Type.NEURON
 		logdir = f"logs/{int(time.time())}-{pendulum_env.control_typle_dic[control_type]}/"
 	elif env_id == 1 or env_id == 2 or env_id == 3:
-		control_type = double_links_env.Control_Type.BASELINE
+		control_type = double_links_env.Control_Type.NEURON
 		logdir = f"logs/{int(time.time())}-{double_links_env.control_typle_dic[control_type]}/"
 
 
@@ -56,7 +56,7 @@ if __name__ =="__main__":
 	#n_steps=50000 batch_size=10000,n_epochs=10 tested
 	#model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=1000, n_epochs=100, verbose=1, tensorboard_log=logdir) - 1689548375
 	#model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=500, n_epochs=16, learning_rate=0.0002, verbose=1, tensorboard_log=logdir)
-	model = PPO('MlpPolicy', env, device='auto', n_steps=5000, batch_size=1000, n_epochs=10, verbose=1,tensorboard_log=logdir)
+	model = PPO('MlpPolicy', env, device='auto', n_steps=10000, batch_size=10000, n_epochs=10, verbose=1,tensorboard_log=logdir)
 	# model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
 	# PPO_model_path="models/1688353130/24640000.zip"
 	# model=PPO.load(PPO_model_path, env=env)

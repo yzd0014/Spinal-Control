@@ -88,7 +88,7 @@ class DoubleLinkEnv(gym.Env):
                 reward -= 100
 
         self.ticks += 1
-        if self.ticks >= 15000:
+        if self.ticks >= 10000:
             self.done = True
 
         info = {}
@@ -120,7 +120,7 @@ class DoubleLinkEnv(gym.Env):
             mj.mj_resetData(self.model, self.data)
             self.data.qpos[0] = 0.4
             self.data.qpos[1] = -0.87
-            self.data.qpos[2] = -1.88
+            self.data.qpos[2] = -2.32
             mj.mj_forward(self.model, self.data)
             observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1],self.data.qvel[2]])
             # print(f"instace #{self.instance_id} episode #{self.target_iter}\n")
