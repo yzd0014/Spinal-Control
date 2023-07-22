@@ -3,14 +3,19 @@ from enum import Enum
 
 class Control_Type(Enum):
     BASELINE = 1
-    RI = 2
+    NEURON_FILTER = 2
     REFLEX = 3
+    X = 4
     NEURON = 5
+    NEURON_SIMPLE = 6
 
 control_typle_dic = {Control_Type.BASELINE: "baseline",
-                     Control_Type.RI: "RI",
+                     Control_Type.NEURON_FILTER: "neuron filter",
                      Control_Type.REFLEX: "strech reflex",
-                     Control_Type.NEURON: "neuron model"}
+                     Control_Type.X: "X",
+                     Control_Type.NEURON: "neuron model",
+                     Control_Type.NEURON_SIMPLE: "neuron model simple"
+                     }
 
 # all controllers are xml file (model) dependent
 def baseline_controller(input_action, data):

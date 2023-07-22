@@ -79,13 +79,15 @@ class DoubleLinkEnv(gym.Env):
         elif self.env_id == 2:
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
             # print(current_q)
-            # reward = -pow(current_q - np.pi, 2)
             position_penalty = abs(current_q - np.pi)
             reward = np.exp(-position_penalty)
+            x_position_penalty = abs(self.data.xpos[3][0])
+            reward += 2 * np.exp(-x_position_penalty)
+
             observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
             if position_penalty > 0.5 * np.pi:
                 self.done = True
-                reward -= 100
+                reward -= 1000
 
         self.ticks += 1
         if self.ticks >= 10000:

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import spinal_controllers
 import double_link_controllers
 
-control_type = spinal_controllers.Control_Type.BASELINE
+control_type = spinal_controllers.Control_Type.NEURON
 env_id = 2
 xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 if env_id == 1:
@@ -197,6 +197,10 @@ def neuron_callback(model, data):
         double_link_controllers.neuron_controller(input_action=action, data=data)
         print(data.qpos[0], data.qpos[1])
         # print(target_pos, data.xpos[2])
+    elif env_id == 2:
+        obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        action, _states = PPO_model4.predict(obs)
+        double_link_controllers.neuron_controller(input_action=action, data=data)
 
 #get the full path
 dirname = os.path.dirname(__file__)
@@ -247,7 +251,7 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
     elif env_id == 1:
         PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
     elif env_id == 2:
-        PPO_model_path0 = "models\\1689748350\\995000.zip"
+        PPO_model_path0 = "models\\1689932830\\25930000.zip"
 
     PPO_model0 = PPO.load(PPO_model_path0)
 
@@ -270,6 +274,9 @@ if control_type == spinal_controllers.Control_Type.NEURON:
         target_pos = data.xpos[2].copy()
         mj.mj_resetData(model, data)
         mj.mj_forward(model, data)
+    elif env_id == 2:
+        PPO_model_path4 = "models\\1689881350\\11240000.zip"
+        PPO_model4 = PPO.load(PPO_model_path4)
 
 #initialize the controller
 init_controller(model,data)
