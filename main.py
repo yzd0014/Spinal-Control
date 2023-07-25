@@ -1,4 +1,5 @@
 from stable_baselines3 import PPO
+from stable_baselines3 import TD3
 import mujoco as mj
 from mujoco.glfw import glfw
 import numpy as np
@@ -7,10 +8,16 @@ import matplotlib.pyplot as plt
 import spinal_controllers
 import double_link_controllers
 
-control_type = spinal_controllers.Control_Type.NEURON
-env_id = 2
-xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
-if env_id == 1:
+PPO_MODE = 0
+TD3_MODE = 1
+
+control_type = spinal_controllers.Control_Type.BASELINE
+env_id = 1
+RL_mode = PPO_MODE
+
+if env_id == 0:
+    xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
+elif env_id == 1:
     xml_path = 'double_links.xml'
 elif env_id == 2:
     xml_path = 'inverted_pendulum.xml'
@@ -166,7 +173,10 @@ def baseline_callback(model, data):
     elif env_id == 1:
         # obs = np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
         obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
-        action, _states = PPO_model0.predict(obs)
+        if RL_mode == PPO_MODE:
+            action, _states = PPO_model0.predict(obs)
+        elif RL_mode == TD3_MODE:
+            action, _states = TD3_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=action, data=data)
         # double_link_controllers.joints_controller(data)
         # print(data.xpos[2])
@@ -242,18 +252,25 @@ cam.lookat = np.array([0.0, -1, 2])
 
 #load modes for each controller
 w = -0.48
-# m_target = np.array([0.55, -0.62])
-m_target = np.array([0, 0])
+# m_target = np.array([0, 0])
+m_target = np.array([0.85, -0.76])
 if control_type == spinal_controllers.Control_Type.BASELINE:
     if env_id == 0:
         target_pos = compute_target_pos(w, 1)
         PPO_model_path0 = "models/1687332383/10650000.zip"
+        PPO_model0 = PPO.load(PPO_model_path0)
     elif env_id == 1:
-        PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
+        if RL_mode == PPO_MODE:
+            # PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
+            PPO_model_path0 =  "models\\1690239043\\1872000.zip"
+            PPO_model0 = PPO.load(PPO_model_path0)
+        elif RL_mode == TD3_MODE:
+            TD3_model_path0 = "models\\1690085218\\4760000.zip"
+            TD3_model0 = TD3.load(TD3_model_path0)
     elif env_id == 2:
         PPO_model_path0 = "models\\1689932830\\25930000.zip"
+        PPO_model0 = PPO.load(PPO_model_path0)
 
-    PPO_model0 = PPO.load(PPO_model_path0)
 
 if control_type == spinal_controllers.Control_Type.REFLEX:
     PPO_model_path2="models/1686530946/3980000.zip"

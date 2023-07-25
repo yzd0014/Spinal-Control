@@ -5,12 +5,15 @@ import mujoco as mj
 from mujoco.glfw import glfw
 import os
 from double_link_controllers import *
+SLOW = 0
+FAST = 1
 
 class DoubleLinkEnv(gym.Env):
     """Custom Environment that follows gym interface."""
-    def __init__(self, control_type = Control_Type.BASELINE, env_id = 1, instance_id = 0):
+    def __init__(self, control_type = Control_Type.BASELINE, env_id = 1, instance_id = 0, speed_mode = FAST):
         super(DoubleLinkEnv, self).__init__()
 
+        self.speed_mode = speed_mode
         self.env_id = env_id
         self.instance_id = instance_id
         self.control_type = control_type
@@ -24,6 +27,8 @@ class DoubleLinkEnv(gym.Env):
             self.target_qs = []
             for i in np.arange(-0.2, 0.2, 0.1):
                 for j in np.arange(-0.2, 0.2, 0.1):
+            # for i in np.arange(-0.6, 0.6, 0.2):
+            #     for j in np.arange(-0.6, 0.6, 0.2):
                     self.target_qs.append(np.array([i, j]))
                     self.num_of_targets += 1
             # self.target_qs = [np.array([0.195, -0.792])]
@@ -90,7 +95,11 @@ class DoubleLinkEnv(gym.Env):
                 reward -= 1000
 
         self.ticks += 1
-        if self.ticks >= 10000:
+        if self.speed_mode == SLOW:
+            episode_length = 10000
+        elif self.speed_mode == FAST:
+            episode_length = 500
+        if self.ticks >= episode_length:
             self.done = True
 
         info = {}
@@ -138,7 +147,10 @@ class DoubleLinkEnv(gym.Env):
 
     def init_mujoco(self):
         if self.env_id == 1:
-            xml_path = 'double_links.xml'
+            if self.speed_mode == SLOW:
+                xml_path = 'double_links.xml'
+            elif self.speed_mode == FAST:
+                xml_path = 'double_links_fast.xml'
         elif self.env_id == 2 or self.env_id == 3:
             xml_path = 'inverted_pendulum.xml'
         dirname = os.path.dirname(__file__)
