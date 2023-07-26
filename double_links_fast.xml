@@ -52,10 +52,10 @@
        </spatial>
    </tendon>
    <actuator> 
-        <muscle  name="r-muscle" tendon="r-tendon" range="0.75 1.15" scale="40"/>
-        <muscle  name="l-muscle" tendon="l-tendon" range="0.75 1.15" scale="40"/>
-        <muscle  name="r-ctrl" tendon="r-middle" range="0.75 1.15" scale="40"/>
-        <muscle  name="l-ctrl" tendon="l-middle" range="0.75 1.15" scale="40"/>
+        <muscle  name="r-muscle" tendon="r-tendon" range="0.75 1.15" scale="400"/>
+        <muscle  name="l-muscle" tendon="l-tendon" range="0.75 1.15" scale="400"/>
+        <muscle  name="r-ctrl" tendon="r-middle" range="0.75 1.15" scale="400"/>
+        <muscle  name="l-ctrl" tendon="l-middle" range="0.75 1.15" scale="400"/>
         <motor name="motor0" joint="joint0"/>
         <motor name="motor1" joint="joint1"/>
    </actuator>

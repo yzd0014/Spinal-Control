@@ -23,7 +23,7 @@ def make_env(instance_id, env_id):
 if __name__ =="__main__":
 	# 0: single pendulum, 1: double pendulum, 2: inverted pendulum, 3: double pendulum with extra observation
 	speed_mode = FAST
-	env_id = INVERTED_PENDULUM
+	env_id = DOUBLE_PENDULUM
 	models_dir = f"models/{int(time.time())}/"
 
 	if env_id == 0:
@@ -43,7 +43,7 @@ if __name__ =="__main__":
 	if speed_mode == SLOW:
 		episode_length = 10000
 	elif speed_mode == FAST:
-		episode_length = 500
+		episode_length = 1000
 	if env_id == 0:
 		num_episodes = 5
 		env = pendulum_env.PendulumEnv(control_type=control_type)
@@ -61,13 +61,13 @@ if __name__ =="__main__":
 		env_fns = [make_env(i, env_id) for i in range(THREADS_NUM)]
 		env = SubprocVecEnv(env_fns)
 
-	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[128, 128, 64], vf=[128, 128, 64]))
+	# policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[128, 128, 64], vf=[128, 128, 64]))
 	m_steps = episode_length * num_episodes
 	#n_steps=50000 batch_size=10000,n_epochs=10 tested
 	#model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=1000, n_epochs=100, verbose=1, tensorboard_log=logdir) - 1689548375
-	#model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=500, n_epochs=16, learning_rate=0.0002, verbose=1, tensorboard_log=logdir)
-	model = PPO('MlpPolicy', env, device='auto', n_steps=m_steps, policy_kwargs=policy_kwargs, batch_size=1000, n_epochs=10, verbose=1,tensorboard_log=logdir)
-	print(model.policy)
+	# model = PPO('MlpPolicy', env, device='cpu', n_steps=1000, batch_size=1000, n_epochs=10, verbose=1, tensorboard_log=logdir)
+	model = PPO('MlpPolicy', env, device='auto', n_steps=m_steps, batch_size=1000, n_epochs=10, verbose=1,tensorboard_log=logdir)
+	# print(model.policy)
 	# model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
 	# PPO_model_path="models/1688353130/24640000.zip"
 	# model=PPO.load(PPO_model_path, env=env)
@@ -79,7 +79,7 @@ if __name__ =="__main__":
 	# model = TD3('MlpPolicy', env, device='cpu', gamma=0.98, buffer_size=200000, learning_starts=10000, policy_kwargs=dict(net_arch=[400, 300]), verbose=1, tensorboard_log=logdir)
 	# model =TD3('MlpPolicy', env, device='cpu', verbose=1,tensorboard_log=logdir)
 
-	TIMESTEPS = m_steps
+	TIMESTEPS = 10000
 	iters = 0
 	while True:
 		iters += 1

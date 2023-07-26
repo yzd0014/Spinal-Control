@@ -82,23 +82,40 @@ class DoubleLinkEnv(gym.Env):
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
         elif self.env_id == 2:
-            current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
-            # print(current_q)
-            position_penalty = abs(current_q - np.pi)
-            reward = np.exp(-position_penalty)
-            x_position_penalty = abs(self.data.xpos[3][0])
-            reward += 2 * np.exp(-x_position_penalty)
+            # current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
+            # # print(current_q)
+            # position_penalty = abs(current_q - np.pi)
+            # reward = np.exp(-position_penalty)
+            #
+            # x_position_penalty = abs(self.data.xpos[3][0])
+            # d_hat = 0.2
+            # if x_position_penalty < d_hat:
+            #     reward += -pow(x_position_penalty-d_hat, 2) * np.log(x_position_penalty/d_hat)
+            #
+            # observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
+            # if position_penalty > 0.25 * np.pi:
+            #     self.done = True
+            #     reward -= 1000
 
-            observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
-            if position_penalty > 0.5 * np.pi:
+            reward = 1
+            current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
+            position_penalty = abs(current_q - np.pi)
+            if position_penalty > 0.25 * np.pi:
                 self.done = True
-                reward -= 1000
+            observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
 
         self.ticks += 1
-        if self.speed_mode == SLOW:
-            episode_length = 10000
-        elif self.speed_mode == FAST:
-            episode_length = 500
+        if self.env_id == 1:
+            if self.speed_mode == SLOW:
+                episode_length = 10000
+            elif self.speed_mode == FAST:
+                episode_length = 1000
+        elif self.env_id == 2:
+            if self.speed_mode == SLOW:
+                episode_length = 50000
+            elif self.speed_mode == FAST:
+                episode_length = 50000
+
         if self.ticks >= episode_length:
             self.done = True
 
@@ -152,7 +169,10 @@ class DoubleLinkEnv(gym.Env):
             elif self.speed_mode == FAST:
                 xml_path = 'double_links_fast.xml'
         elif self.env_id == 2 or self.env_id == 3:
-            xml_path = 'inverted_pendulum.xml'
+            if self.speed_mode == SLOW:
+                xml_path = 'inverted_pendulum.xml'
+            elif self.speed_mode == FAST:
+                xml_path = 'inverted_pendulum_fast.xml'
         dirname = os.path.dirname(__file__)
         abspath = os.path.join(dirname + "/" + xml_path)
         xml_path = abspath

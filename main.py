@@ -11,8 +11,8 @@ import double_link_controllers
 PPO_MODE = 0
 TD3_MODE = 1
 
-control_type = spinal_controllers.Control_Type.BASELINE
-env_id = 1
+control_type = spinal_controllers.Control_Type.NEURON
+env_id = 2
 RL_mode = PPO_MODE
 
 if env_id == 0:
@@ -253,7 +253,7 @@ cam.lookat = np.array([0.0, -1, 2])
 #load modes for each controller
 w = -0.48
 # m_target = np.array([0, 0])
-m_target = np.array([0.85, -0.76])
+m_target = np.array([0.25, -0.22])
 if control_type == spinal_controllers.Control_Type.BASELINE:
     if env_id == 0:
         target_pos = compute_target_pos(w, 1)
@@ -262,13 +262,13 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
     elif env_id == 1:
         if RL_mode == PPO_MODE:
             # PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
-            PPO_model_path0 =  "models\\1690239043\\1872000.zip"
+            PPO_model_path0 =  "models\\1690329421\\8460000.zip"
             PPO_model0 = PPO.load(PPO_model_path0)
         elif RL_mode == TD3_MODE:
             TD3_model_path0 = "models\\1690085218\\4760000.zip"
             TD3_model0 = TD3.load(TD3_model_path0)
     elif env_id == 2:
-        PPO_model_path0 = "models\\1689932830\\25930000.zip"
+        PPO_model_path0 = "models\\1690272718\\2590000.zip"
         PPO_model0 = PPO.load(PPO_model_path0)
 
 
@@ -282,8 +282,8 @@ if control_type == spinal_controllers.Control_Type.NEURON:
         PPO_model4 = PPO.load(PPO_model_path4)
         target_pos = compute_target_pos(w, 1)
     elif env_id == 1:
-        # PPO_model_path4 = "models/1687590862/42400000.zip"
-        PPO_model_path4 = "..\\RL_data\\neuron-training-stable\\models\\1687913383\\56960000.zip"
+        PPO_model_path4 = "models/1690328720/9240000.zip"
+        # PPO_model_path4 = "..\\RL_data\\neuron-training-stable\\models\\1687913383\\56960000.zip"
         PPO_model4 = PPO.load(PPO_model_path4)
         data.qpos[0] = m_target[0]
         data.qpos[1] = m_target[1]
@@ -292,7 +292,7 @@ if control_type == spinal_controllers.Control_Type.NEURON:
         mj.mj_resetData(model, data)
         mj.mj_forward(model, data)
     elif env_id == 2:
-        PPO_model_path4 = "models\\1689881350\\11240000.zip"
+        PPO_model_path4 = "models\\1690274397\\2130000.zip"
         PPO_model4 = PPO.load(PPO_model_path4)
 
 #initialize the controller
