@@ -4,3 +4,6 @@ WARNING: mju_openResource: unknown file '/muscle_control_narrow.xml'
 Sat Jun 10 23:04:49 2023
 ERROR: Python exception raised
 
+Tue Aug  1 12:52:17 2023
+WARNING: mju_openResource: unknown file 'C:\Users\yidai\Desktop\PyMujoco/inverted_pendulum_fast.xml.xml'
+

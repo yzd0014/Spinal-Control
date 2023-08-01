@@ -10,7 +10,7 @@ FAST = 1
 
 class DoubleLinkEnv(gym.Env):
     """Custom Environment that follows gym interface."""
-    def __init__(self, control_type = Control_Type.BASELINE, env_id = 1, instance_id = 0, speed_mode = FAST):
+    def __init__(self, control_type = Control_Type.BASELINE, env_id = 1, instance_id = 0, speed_mode = SLOW):
         super(DoubleLinkEnv, self).__init__()
 
         self.speed_mode = speed_mode
@@ -21,6 +21,17 @@ class DoubleLinkEnv(gym.Env):
         self.init_mujoco()
         if self.rendering == True:
             self.init_window()
+
+        if self.env_id == 1:
+            if self.speed_mode == SLOW:
+                self.episode_length = 5000
+            elif self.speed_mode == FAST:
+                self.episode_length = 500
+        elif self.env_id == 2:
+            if self.speed_mode == SLOW:
+                self.episode_length = 150000
+            elif self.speed_mode == FAST:
+                self.episode_length = 50000
 
         self.num_of_targets = 0
         if self.env_id == 1:
@@ -35,6 +46,7 @@ class DoubleLinkEnv(gym.Env):
 
         elif self.env_id == 2:
             self.num_of_targets = 16
+            self.episode_reward = 0
 
         self.target_iter = 0
         # Define action and observation space
@@ -50,11 +62,9 @@ class DoubleLinkEnv(gym.Env):
         #current endfactor pos
         if self.env_id == 1:
             # self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(13,), dtype=np.float32)
-            self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
+            self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(8,), dtype=np.float32)
         elif self.env_id == 2:
             self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
-        elif self.env_id == 3:
-            self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(8,), dtype=np.float32)
 
     def step(self, action):
         if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.X or self.control_type == Control_Type.NEURON_FILTER:
@@ -72,6 +82,10 @@ class DoubleLinkEnv(gym.Env):
             glfw.swap_buffers(self.window)
             glfw.poll_events()
 
+        self.ticks += 1
+        if self.ticks >= self.episode_length:
+            self.done = True
+
         if self.env_id == 1:
             # pos_diff_new = np.linalg.norm(self.data.xpos[2] - self.target_pos)
             current_state = np.array([self.data.qpos[0], self.data.qpos[1]])
@@ -80,44 +94,17 @@ class DoubleLinkEnv(gym.Env):
             reward = -pos_diff_new
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
-            observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
+            # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
+            observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], 0, 0])
         elif self.env_id == 2:
-            # current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
-            # # print(current_q)
-            # position_penalty = abs(current_q - np.pi)
-            # reward = np.exp(-position_penalty)
-            #
-            # x_position_penalty = abs(self.data.xpos[3][0])
-            # d_hat = 0.2
-            # if x_position_penalty < d_hat:
-            #     reward += -pow(x_position_penalty-d_hat, 2) * np.log(x_position_penalty/d_hat)
-            #
-            # observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
-            # if position_penalty > 0.25 * np.pi:
-            #     self.done = True
-            #     reward -= 1000
-
             reward = 1
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
             position_penalty = abs(current_q - np.pi)
             if position_penalty > 0.25 * np.pi:
                 self.done = True
             observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
+            # observation = np.array( [0, 0, self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], self.data.qpos[2], self.data.qvel[2]])
 
-        self.ticks += 1
-        if self.env_id == 1:
-            if self.speed_mode == SLOW:
-                episode_length = 10000
-            elif self.speed_mode == FAST:
-                episode_length = 1000
-        elif self.env_id == 2:
-            if self.speed_mode == SLOW:
-                episode_length = 50000
-            elif self.speed_mode == FAST:
-                episode_length = 50000
-
-        if self.ticks >= episode_length:
-            self.done = True
 
         info = {}
         return observation, reward, self.done, info
@@ -140,17 +127,20 @@ class DoubleLinkEnv(gym.Env):
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             m_target = self.target_qs[self.target_iter]
-            observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
+            # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
+            observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], 0, 0])
 
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
         elif self.env_id == 2:
+            self.episode_reward = 0
             mj.mj_resetData(self.model, self.data)
             self.data.qpos[0] = 0.4
             self.data.qpos[1] = -0.87
             self.data.qpos[2] = -2.32
             mj.mj_forward(self.model, self.data)
             observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1],self.data.qvel[2]])
+            # observation = np.array([0, 0, self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], self.data.qpos[2], self.data.qvel[2]])
             # print(f"instace #{self.instance_id} episode #{self.target_iter}\n")
 
         return observation
@@ -168,7 +158,7 @@ class DoubleLinkEnv(gym.Env):
                 xml_path = 'double_links.xml'
             elif self.speed_mode == FAST:
                 xml_path = 'double_links_fast.xml'
-        elif self.env_id == 2 or self.env_id == 3:
+        elif self.env_id == 2:
             if self.speed_mode == SLOW:
                 xml_path = 'inverted_pendulum.xml'
             elif self.speed_mode == FAST:
