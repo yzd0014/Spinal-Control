@@ -72,7 +72,7 @@ else:
             double_link_controllers.neuron_controller(input_action=action, data=data)
 
 #get the full path
-xml_path = 'double_links.xml' #xml file (assumes this is in the same folder as this file)
+xml_path = 'double_links_fast.xml' #xml file (assumes this is in the same folder as this file)
 dirname = os.path.dirname(__file__)
 abspath = os.path.join(dirname + "/" + xml_path)
 xml_path = abspath

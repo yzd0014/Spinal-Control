@@ -60,7 +60,7 @@ if __name__ =="__main__":
 		env_fns = [make_env(i, env_id, speed_mode, control_type) for i in range(THREADS_NUM)]
 		env = SubprocVecEnv(env_fns)
 
-	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[64, 64], vf=[64, 64]))
+	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[8, 8], vf=[8, 8]))
 	m_steps = episode_length * num_episodes
 	#n_steps=50000 batch_size=10000,n_epochs=10 tested
 	#model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=1000, n_epochs=100, verbose=1, tensorboard_log=logdir) - 1689548375

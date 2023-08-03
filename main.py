@@ -11,7 +11,7 @@ import double_link_controllers
 PPO_MODE = 0
 TD3_MODE = 1
 
-control_type = spinal_controllers.Control_Type.BASELINE
+control_type = spinal_controllers.Control_Type.NEURON
 env_id = 2
 RL_mode = PPO_MODE
 
@@ -20,7 +20,7 @@ if env_id == 0:
 elif env_id == 1:
     xml_path = 'double_links.xml'
 elif env_id == 2:
-    xml_path = 'inverted_pendulum.xml'
+    xml_path = 'inverted_pendulum_fast.xml'
 
 simend = 5 #simulation time
 print_camera_config = 0 #set to 1 to print camera config
@@ -179,7 +179,6 @@ def baseline_callback(model, data):
         elif RL_mode == TD3_MODE:
             action, _states = TD3_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=action, data=data)
-        # double_link_controllers.joints_controller(data)
         # print(data.xpos[2])
         print(data.qpos[0], data.qpos[1])
 
@@ -187,6 +186,7 @@ def baseline_callback(model, data):
         obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         action, _states = PPO_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=action, data=data)
+        # double_link_controllers.joints_controller(data)
 
 def neuron_filter_callback(model, data):
     obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
@@ -214,6 +214,7 @@ def neuron_callback(model, data):
         obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         action, _states = PPO_model4.predict(obs)
         double_link_controllers.neuron_controller(input_action=action, data=data)
+        double_link_controllers.joints_controller(data)
 
 #get the full path
 dirname = os.path.dirname(__file__)
@@ -272,7 +273,7 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
             TD3_model0 = TD3.load(TD3_model_path0)
     elif env_id == 2:
         # PPO_model_path0 = "..\\RL_data\\first_working_inverted_pendulum\\models\\1690272718\\2590000.zip"
-        PPO_model_path0 = "models\\1690921461\\2400000.zip"
+        PPO_model_path0 = "models\\1690927529\\5390000.zip"
         PPO_model0 = PPO.load(PPO_model_path0)
 
 
@@ -286,7 +287,7 @@ if control_type == spinal_controllers.Control_Type.NEURON:
         PPO_model4 = PPO.load(PPO_model_path4)
         target_pos = compute_target_pos(w, 1)
     elif env_id == 1:
-        PPO_model_path4 = "models/1690581473/9040000.zip"
+        PPO_model_path4 = "models/1690837225/4112000.zip"
         # PPO_model_path4 = "..\\RL_data\\neuron-training-stable\\models\\1687913383\\56960000.zip"
         PPO_model4 = PPO.load(PPO_model_path4)
         data.qpos[0] = m_target[0]
@@ -296,7 +297,8 @@ if control_type == spinal_controllers.Control_Type.NEURON:
         mj.mj_resetData(model, data)
         mj.mj_forward(model, data)
     elif env_id == 2:
-        PPO_model_path4 = "..\\RL_data\\first_working_inverted_pendulum\\models\\1690274397\\2130000.zip"
+        # PPO_model_path4 = "..\\RL_data\\first_working_inverted_pendulum\\models\\1690274397\\2130000.zip"
+        PPO_model_path4 = "models\\1690928259\\4700000.zip"
         PPO_model4 = PPO.load(PPO_model_path4)
 
 #initialize the controller
