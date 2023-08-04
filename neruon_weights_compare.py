@@ -40,7 +40,7 @@ mj.mj_resetData(model, data)
 mj.mj_forward(model, data)
 mj.set_mjcb_control(neuron_callback)
 
-beta_list = [0, 0.9, 2]
+beta_list = [0, 0.5, 0.9]
 alpha_list = [0, 0.4691358024691358, 2]
 joint_positions = []
 x_time = []

@@ -5,14 +5,14 @@ class Control_Type(Enum):
     BASELINE = 1
     NEURON_FILTER = 2
     REFLEX = 3
-    X = 4
+    NEURON_TEST = 4
     NEURON = 5
     NEURON_SIMPLE = 6
 
 control_typle_dic = {Control_Type.BASELINE: "baseline",
                      Control_Type.NEURON_FILTER: "neuron filter",
                      Control_Type.REFLEX: "strech reflex",
-                     Control_Type.X: "X",
+                     Control_Type.NEURON_TEST: "neuron test",
                      Control_Type.NEURON: "neuron model",
                      Control_Type.NEURON_SIMPLE: "neuron model simple"
                      }
@@ -80,15 +80,22 @@ def neuron_controller(input_action, data):
         data.ctrl[i*2] = max(ctrl_coeff * (r_spindle - length_r - l_diff), 0)
         data.ctrl[i*2+1] = max(ctrl_coeff * (l_spindle - length_l - r_diff), 0)
 
-def x_controller(input_action, data):
+def neuron_test_controller(input_action, data, i_alpha, i_beta):
+    normalize_factor = 0.677
     for i in range(2):
-        descend_ctrl = np.array([input_action[i*4], input_action[i*4+1], input_action[i*4+2], input_action[i*4+3]])
-        # ctrl_mat = np.array([[-4, 4.5, 5, 4.5],[4.5, -4, 4.5, 5]])
-        ctrl_mat = np.array([[-1, 1, 1, -1], [1, -1, -1, 1]])
-        ctrl_mat = np.array([[-1, 0.5, 0.5, 0.5], [0.5, -1, 0.5, 0.5]])
-        ctrl_output = np.matmul(ctrl_mat, descend_ctrl)
-        data.ctrl[i*2] = ctrl_output[0]
-        data.ctrl[i*2+1] = ctrl_output[1]
+        length_r = input_action[i * 4] * normalize_factor
+        length_l = input_action[i * 4 + 1] * normalize_factor
+
+        r_spindle = 0.05 * data.actuator_velocity[i * 2] + data.actuator_length[i * 2]
+        l_spindle = 0.05 * data.actuator_velocity[i * 2 + 1] + data.actuator_length[i * 2 + 1]
+        inhibition_coeff = i_alpha
+        beta = i_beta
+        l_diff = inhibition_coeff / (1 - beta * beta) * max((l_spindle - beta * r_spindle + beta * input_action[i * 4 + 2] - input_action[i * 4 + 3]), 0)
+        r_diff = inhibition_coeff / (1 - beta * beta) * max((r_spindle - beta * l_spindle + beta * input_action[i * 4 + 3] - input_action[i * 4 + 2]), 0)
+
+        ctrl_coeff = 1
+        data.ctrl[i * 2] = max(ctrl_coeff * (r_spindle - length_r - l_diff), 0)
+        data.ctrl[i * 2 + 1] = max(ctrl_coeff * (l_spindle - length_l - r_diff), 0)
 
 def neuron_simple_controller(input_action, data):
     normalize_factor = 0.677

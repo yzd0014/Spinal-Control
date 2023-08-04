@@ -13,6 +13,8 @@ class DoubleLinkEnv(gym.Env):
     def __init__(self, control_type = Control_Type.BASELINE, env_id = 1, instance_id = 0, speed_mode = SLOW):
         super(DoubleLinkEnv, self).__init__()
 
+        self.alpha =  0.4691358024691358
+        self.beta = 0.9
         self.speed_mode = speed_mode
         self.env_id = env_id
         self.instance_id = instance_id
@@ -52,7 +54,7 @@ class DoubleLinkEnv(gym.Env):
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
-        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.X or self.control_type == Control_Type.NEURON_FILTER:
+        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.NEURON_TEST or self.control_type == Control_Type.NEURON_FILTER:
             self.m_ctrl = np.zeros(8)
             self.action_space = spaces.Box(low=0, high=1.0,shape=(8,), dtype=np.float32)
         else:
@@ -67,14 +69,16 @@ class DoubleLinkEnv(gym.Env):
             self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
 
     def step(self, action):
-        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.X or self.control_type == Control_Type.NEURON_FILTER:
+        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.NEURON_TEST or self.control_type == Control_Type.NEURON_FILTER:
             for i in range(8):
                 self.m_ctrl[i] = action[i]
         else:
             for i in range(4):
                 self.m_ctrl[i] = action[i]
 
-        mj.mj_step(self.model, self.data)
+        n = 10
+        for i in range(n):
+            mj.mj_step(self.model, self.data)
 
         if self.rendering == True:
             mj.mjv_updateScene(self.model, self.data, self.opt, None, self.cam, mj.mjtCatBit.mjCAT_ALL.value, self.scene)
@@ -123,7 +127,7 @@ class DoubleLinkEnv(gym.Env):
             # self.data.qpos[1] = self.target_qs[self.target_iter][1]
             # mj.mj_forward(self.model, self.data)
             # self.target_pos = self.data.xpos[2].copy()
-            print(f"{self.target_iter} {self.target_qs[self.target_iter]}")
+            # print(f"{self.target_iter} {self.target_qs[self.target_iter]}")
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             m_target = self.target_qs[self.target_iter]
@@ -187,8 +191,8 @@ class DoubleLinkEnv(gym.Env):
             mj.set_mjcb_control(self.my_neuron_filter_controller)
         elif self.control_type == Control_Type.NEURON:
             mj.set_mjcb_control(self.my_neuron_controller)
-        elif self.control_type == Control_Type.X:
-            mj.set_mjcb_control(self.my_x_controller)
+        elif self.control_type == Control_Type.NEURON_TEST:
+            mj.set_mjcb_control(self.my_neuron_test_controller)
         elif self.control_type == Control_Type.NEURON_SIMPLE:
             mj.set_mjcb_control(self.my_neuron_simple_controller)
 
@@ -204,6 +208,10 @@ class DoubleLinkEnv(gym.Env):
         viewport_width, viewport_height = glfw.get_framebuffer_size(self.window)
         self.viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
 
+
+    def update_neuron_weights(self, x):
+        self.alpha = x[0]
+        self.beta = x[1]
 
     def get_num_of_targets(self):
         return self.num_of_targets;
@@ -225,6 +233,6 @@ class DoubleLinkEnv(gym.Env):
     def my_neuron_simple_controller(self, model, data):
         neuron_simple_controller(self.m_ctrl, data)
 
-    def my_x_controller(self, model, data):
-        x_controller(self.m_ctrl, data)
+    def my_neuron_test_controller(self, model, data):
+        neuron_test_controller(self.m_ctrl, data, self.alpha, self.beta)
         # joints_controller(data)
