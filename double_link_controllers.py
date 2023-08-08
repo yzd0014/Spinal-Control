@@ -1,6 +1,13 @@
 import numpy as np
 from enum import Enum
 
+qpos0_history = []
+qvel0_history = []
+qpos1_history = []
+qvel1_history = []
+qpos2_history = []
+qvel2_history = []
+
 class Control_Type(Enum):
     BASELINE = 1
     NEURON_FILTER = 2

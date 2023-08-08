@@ -11,21 +11,21 @@ import double_link_controllers
 PPO_MODE = 0
 TD3_MODE = 1
 
-control_type = spinal_controllers.Control_Type.NEURON
-env_id = 2
+control_type = spinal_controllers.Control_Type.BASELINE
+env_id = 1
 RL_mode = PPO_MODE
+dt_brain = 1.0/50.0
 
 if env_id == 0:
     xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 elif env_id == 1:
-    xml_path = 'double_links.xml'
+    xml_path = 'double_links_fast.xml'
 elif env_id == 2:
     xml_path = 'inverted_pendulum_fast.xml'
 
 simend = 5 #simulation time
 print_camera_config = 0 #set to 1 to print camera config
                         #this is useful for initializing view of the model)
-
 # For callback functions
 button_left = False
 button_middle = False
@@ -112,58 +112,27 @@ def init_controller(model,data):
         data.qpos[2] = -2.32
         mj.mj_forward(model, data)
 
-h = 0.6
-w = 0.06
-S = 0.1
-L = np.sqrt(h*h+w*w)
-theta_offset = np.arctan(w/h)
-
-def get_length_from_angle(theta):
-    lsqr0 = S*S+L*L-2*S*L*np.cos(np.pi*0.5-theta-theta_offset)
-    lsqr1 = S*S+L*L-2*S*L*np.cos(np.pi*0.5+theta-theta_offset)
-    l_right = np.sqrt(lsqr0)
-    l_left = np.sqrt(lsqr1)
-    return l_left, l_right
-
-def compute_target_pos(w, r):
-    x = r * np.cos(-0.5 * np.pi + w)
-    z = r * np.sin(-0.5 * np.pi + w) + 2
-    output = np.array([x, 0, z])
-    return output
-
-e0_r = 0
-e0_l = 0
-def pid_controller(model, data):
-    global e0_r
-    global e0_l
-    kp = 40
-    ki = 2
-    kd = 5
-    l1, l0 = get_length_from_angle(0.7)
-    e0_r += (data.actuator_length[1] - l0) * model.opt.timestep
-    e0_l += (data.actuator_length[2] - l1) * model.opt.timestep
-    r_spindle = 0.05 * data.actuator_velocity[1] + data.actuator_length[1]
-    l_spindle = 0.05 * data.actuator_velocity[2] + data.actuator_length[2]
-    data.ctrl[1] = kp * (r_spindle - l0) + kd * data.actuator_velocity[1] + ki * e0_r
-    data.ctrl[2] = kp * (l_spindle - l1) + kd * data.actuator_velocity[2] + ki * e0_l
-    print(data.qpos[0])
-
-e1_r = 0
-e1_l = 0
-# def spinal_controller(model, data):
-#     # global e1_r
-#     # global e1_l
-#     # kp = 50
-#     # kd = 8
-#     # ki = 8
-#     # gl1, gl0 = get_length_from_angle(-0.45)
-#     # e1_r += (data.actuator_length[1] - gl0) * model.opt.timestep
-#     # e1_l += (data.actuator_length[2] - gl1) * model.opt.timestep
-#     # mb = 0.1
-#     # l0 = max(mb - (kp * (data.actuator_length[1] - gl0) + kd * data.actuator_velocity[1] + ki * e1_r), 0)
-#     # l1 = max(mb - (kp * (data.actuator_length[2] - gl1) + kd * data.actuator_velocity[2] + ki * e1_l), 0)
-
 def baseline_callback(model, data):
+    global global_timer
+
+    #accumlate observation
+    if len(spinal_controllers.qpos0_history) * model.opt.timestep > dt_brain:
+        spinal_controllers.qpos0_history.pop(0)
+        spinal_controllers.qvel0_history.pop(0)
+        spinal_controllers.qpos1_history.pop(0)
+        spinal_controllers.qvel1_history.pop(0)
+        if env_id == 2:
+            spinal_controllers.qpos2_history.pop(0)
+            spinal_controllers.qvel2_history.pop(0)
+
+        spinal_controllers.qpos0_history.append(data.qpos[0])
+        spinal_controllers.qvel0_history.append(data.qvel[0])
+        spinal_controllers.qpos1_history.append(data.qpos[1])
+        spinal_controllers.qvel1_history.append(data.qvel[1])
+        if env_id == 2:
+            spinal_controllers.qpos2_history.append(data.qpos[2])
+            spinal_controllers.qvel2_history.append(data.qvel[2])
+
     if env_id == 0:
         obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
         action, _states = PPO_model0.predict(obs)
@@ -171,50 +140,58 @@ def baseline_callback(model, data):
         spinal_controllers.joint0_controller(model, data)
         print(data.qpos[0], data.ctrl[1], data.ctrl[2])
     elif env_id == 1:
-        # obs = np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
-        # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
-        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
-        if RL_mode == PPO_MODE:
-            action, _states = PPO_model0.predict(obs)
-        elif RL_mode == TD3_MODE:
-            action, _states = TD3_model0.predict(obs)
+        if data.time - global_timer > dt_brain:
+            global_timer = data.time
+            # obs = np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
+            # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
+            history_length = len(spinal_controllers.qpos0_history)
+            obs = np.array([m_target[0], m_target[1],
+                            sum(spinal_controllers.qpos0_history)/history_length, sum(spinal_controllers.qvel0_history)/history_length,
+                            sum(spinal_controllers.qpos1_history)/history_length, sum(spinal_controllers.qvel1_history)/history_length, 0, 0])
+            if RL_mode == PPO_MODE:
+                action, _states = PPO_model0.predict(obs)
+            elif RL_mode == TD3_MODE:
+                action, _states = TD3_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=action, data=data)
         # print(data.xpos[2])
         print(data.qpos[0], data.qpos[1])
 
     elif env_id == 2:
-        obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        action, _states = PPO_model0.predict(obs)
-        double_link_controllers.baseline_controller(input_action=action, data=data)
+        if data.time - global_timer > dt_brain:
+            global_timer = data.time
+            history_length = len(spinal_controllers.qpos0_history)
+            obs = np.array([sum(spinal_controllers.qpos0_history)/history_length, sum(spinal_controllers.qpos1_history)/history_length,
+                            sum(spinal_controllers.qpos2_history)/history_length, sum(spinal_controllers.qvel0_history)/history_length,
+                            sum(spinal_controllers.qvel1_history)/history_length, sum(spinal_controllers.qvel2_history)/history_length])
+            action, _states = PPO_model0.predict(obs)
+            double_link_controllers.baseline_controller(input_action=action, data=data)
         # double_link_controllers.joints_controller(data)
 
-def neuron_filter_callback(model, data):
-    obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
-    action, _states = PPO_model2.predict(obs)
-    spinal_controllers.stretch_reflex_controller(input_action=action, data=data)
-    spinal_controllers.joint0_controller(model, data)
-    print(data.qpos[0])
+
 
 def neuron_callback(model, data):
-    if env_id == 0:
-        obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
-        action, _states = PPO_model4.predict(obs)
-        spinal_controllers.neuron_controller(input_action=action, data=data)
-        spinal_controllers.joint0_controller(model, data)
-        print(data.qpos[0], action[0], action[1], action[2], action[3])
-    elif env_id == 1:
-        # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
-        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
-        #obs =  np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
-        action, _states = PPO_model4.predict(obs)
-        double_link_controllers.neuron_controller(input_action=action, data=data)
-        print(data.qpos[0], data.qpos[1])
+    global global_timer
+    if data.time - global_timer >= dt_brain:
+        global_timer = data.time
+        if env_id == 0:
+            obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
+            action, _states = PPO_model4.predict(obs)
+            spinal_controllers.neuron_controller(input_action=action, data=data)
+            spinal_controllers.joint0_controller(model, data)
+            print(data.qpos[0], action[0], action[1], action[2], action[3])
+        elif env_id == 1:
+            # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
+            obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
+            #obs =  np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
+            action, _states = PPO_model4.predict(obs)
+            double_link_controllers.neuron_controller(input_action=action, data=data)
+            print(data.qpos[0], data.qpos[1])
 
-    elif env_id == 2:
-        obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        action, _states = PPO_model4.predict(obs)
-        double_link_controllers.neuron_controller(input_action=action, data=data)
-        double_link_controllers.joints_controller(data)
+        elif env_id == 2:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+            action, _states = PPO_model4.predict(obs)
+            double_link_controllers.neuron_controller(input_action=action, data=data)
+            double_link_controllers.joints_controller(data)
 
 #get the full path
 dirname = os.path.dirname(__file__)
@@ -266,20 +243,15 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
     elif env_id == 1:
         if RL_mode == PPO_MODE:
             # PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
-            PPO_model_path0 =  "models\\1690832298\\1936000.zip"
+            PPO_model_path0 =  "models\\1690836337\\4896000.zip"
             PPO_model0 = PPO.load(PPO_model_path0)
         elif RL_mode == TD3_MODE:
-            TD3_model_path0 = "models\\1690085218\\4760000.zip"
+            TD3_model_path0 = "models\\1690836337\\4760000.zip"
             TD3_model0 = TD3.load(TD3_model_path0)
     elif env_id == 2:
         # PPO_model_path0 = "..\\RL_data\\first_working_inverted_pendulum\\models\\1690272718\\2590000.zip"
         PPO_model_path0 = "models\\1690927529\\5390000.zip"
         PPO_model0 = PPO.load(PPO_model_path0)
-
-
-if control_type == spinal_controllers.Control_Type.REFLEX:
-    PPO_model_path2="models/1686530946/3980000.zip"
-    PPO_model2=PPO.load(PPO_model_path2)
 
 if control_type == spinal_controllers.Control_Type.NEURON:
     if env_id == 0:
@@ -306,11 +278,10 @@ init_controller(model,data)
 #set the controller
 if control_type == spinal_controllers.Control_Type.BASELINE:
     mj.set_mjcb_control(baseline_callback)
-elif control_type == spinal_controllers.Control_Type.NEURON_FILTER:
-    mj.set_mjcb_control(neuron_filter_callback())
 elif control_type == spinal_controllers.Control_Type.NEURON:
     mj.set_mjcb_control(neuron_callback)
 
+global_timer = data.time
 while not glfw.window_should_close(window):
     time_prev = data.time
 
