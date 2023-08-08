@@ -114,7 +114,6 @@ def init_controller(model,data):
 
 def baseline_callback(model, data):
     global global_timer
-
     #accumlate observation
     if len(spinal_controllers.qpos0_history) * model.opt.timestep > dt_brain:
         spinal_controllers.qpos0_history.pop(0)
@@ -171,27 +170,61 @@ def baseline_callback(model, data):
 
 def neuron_callback(model, data):
     global global_timer
-    if data.time - global_timer >= dt_brain:
-        global_timer = data.time
-        if env_id == 0:
-            obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
-            action, _states = PPO_model4.predict(obs)
-            spinal_controllers.neuron_controller(input_action=action, data=data)
-            spinal_controllers.joint0_controller(model, data)
-            print(data.qpos[0], action[0], action[1], action[2], action[3])
-        elif env_id == 1:
+    if len(spinal_controllers.qpos0_history) * model.opt.timestep > dt_brain:
+        spinal_controllers.qpos0_history.pop(0)
+        spinal_controllers.qvel0_history.pop(0)
+        spinal_controllers.qpos1_history.pop(0)
+        spinal_controllers.qvel1_history.pop(0)
+        if env_id == 2:
+            spinal_controllers.qpos2_history.pop(0)
+            spinal_controllers.qvel2_history.pop(0)
+
+        spinal_controllers.qpos0_history.append(data.qpos[0])
+        spinal_controllers.qvel0_history.append(data.qvel[0])
+        spinal_controllers.qpos1_history.append(data.qpos[1])
+        spinal_controllers.qvel1_history.append(data.qvel[1])
+        if env_id == 2:
+            spinal_controllers.qpos2_history.append(data.qpos[2])
+            spinal_controllers.qvel2_history.append(data.qvel[2])
+
+    if env_id == 0:
+        obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
+        action, _states = PPO_model4.predict(obs)
+        spinal_controllers.neuron_controller(input_action=action, data=data)
+        spinal_controllers.joint0_controller(model, data)
+        print(data.qpos[0], action[0], action[1], action[2], action[3])
+    elif env_id == 1:
+        if data.time - global_timer > dt_brain:
+            global_timer = data.time
+            history_length = len(spinal_controllers.qpos0_history)
+            obs = np.array([m_target[0], m_target[1],
+                            sum(spinal_controllers.qpos0_history) / history_length,
+                            sum(spinal_controllers.qvel0_history) / history_length,
+                            sum(spinal_controllers.qpos1_history) / history_length,
+                            sum(spinal_controllers.qvel1_history) / history_length, 0, 0])
+
             # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
-            obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
-            #obs =  np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
+            # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
+            # obs =  np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
             action, _states = PPO_model4.predict(obs)
             double_link_controllers.neuron_controller(input_action=action, data=data)
             print(data.qpos[0], data.qpos[1])
 
-        elif env_id == 2:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+    elif env_id == 2:
+        if data.time - global_timer > dt_brain:
+            global_timer = data.time
+            history_length = len(spinal_controllers.qpos0_history)
+            obs = np.array([sum(spinal_controllers.qpos0_history) / history_length,
+                            sum(spinal_controllers.qpos1_history) / history_length,
+                            sum(spinal_controllers.qpos2_history) / history_length,
+                            sum(spinal_controllers.qvel0_history) / history_length,
+                            sum(spinal_controllers.qvel1_history) / history_length,
+                            sum(spinal_controllers.qvel2_history) / history_length])
+            # obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
             action, _states = PPO_model4.predict(obs)
             double_link_controllers.neuron_controller(input_action=action, data=data)
-            double_link_controllers.joints_controller(data)
+        double_link_controllers.joints_controller(data)
+
 
 #get the full path
 dirname = os.path.dirname(__file__)
@@ -231,6 +264,11 @@ cam.elevation = -20
 cam.distance = 2
 cam.lookat = np.array([0.0, -1, 2])
 
+def compute_target_pos(w, r):
+    x = r * np.cos(-0.5 * np.pi + w)
+    z = r * np.sin(-0.5 * np.pi + w) + 2
+    output = np.array([x, 0, z])
+    return output
 #load modes for each controller
 w = -0.48
 # m_target = np.array([0, 0])
