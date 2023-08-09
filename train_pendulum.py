@@ -22,14 +22,14 @@ def make_env(instance_id, env_id, speed_mode, control_type):
 if __name__ =="__main__":
 	# 0: single pendulum, 1: double pendulum, 2: inverted pendulum, 3: double pendulum with extra observation
 	speed_mode = FAST
-	env_id = INVERTED_PENDULUM
+	env_id = DOUBLE_PENDULUM
 	models_dir = f"models/{int(time.time())}/"
 
 	if env_id == 0:
 		control_type = pendulum_env.Control_Type.NEURON
 		logdir = f"logs/{int(time.time())}-{pendulum_env.control_typle_dic[control_type]}/"
 	elif env_id == 1 or env_id == 2 or env_id == 3:
-		control_type = double_links_env.Control_Type.BASELINE
+		control_type = double_links_env.Control_Type.NEURON
 		logdir = f"logs/{int(time.time())}-{double_links_env.control_typle_dic[control_type]}/"
 
 
@@ -42,7 +42,7 @@ if __name__ =="__main__":
 	if speed_mode == SLOW:
 		episode_length = 5000
 	elif speed_mode == FAST:
-		episode_length = 1000
+		episode_length = 500
 	if env_id == 0:
 		num_episodes = 5
 		env = pendulum_env.PendulumEnv(control_type=control_type, speed_mode=speed_mode)

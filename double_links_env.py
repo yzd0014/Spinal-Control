@@ -19,7 +19,7 @@ class DoubleLinkEnv(gym.Env):
         self.qvel1_history = []
         self.qpos2_history = []
         self.qvel2_history = []
-        self.dt_brain = 1.0/50.0
+        self.dt_brain = 1.0/100.0
 
         self.alpha =  0.4691358024691358
         self.beta = 0.9
@@ -85,14 +85,14 @@ class DoubleLinkEnv(gym.Env):
                 self.m_ctrl[i] = action[i]
 
         time_prev = self.data.time
-        while self.data.time - time_prev <= self.dt_brain:
+        while self.data.time - time_prev < self.dt_brain:
             mj.mj_step(self.model, self.data)
-            if len(self.qpos0_history) * self.model.opt.timestep > self.dt_brain:
+            if len(self.qpos0_history) * self.model.opt.timestep >= self.dt_brain:
                 self.qpos0_history.pop(0)
                 self.qvel0_history.pop(0)
                 self.qpos1_history.pop(0)
                 self.qvel1_history.pop(0)
-                if self.evn_id == 2:
+                if self.env_id == 2:
                     self.qpos2_history.pop(0)
                     self.qvel2_history.pop(0)
             self.qpos0_history.append(self.data.qpos[0])
@@ -137,7 +137,7 @@ class DoubleLinkEnv(gym.Env):
             # observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
             # observation = np.array( [0, 0, self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], self.data.qpos[2], self.data.qvel[2]])
             history_length = len(self.qpos0_history)
-            bservation = np.array(
+            observation = np.array(
                 [sum(self.qpos0_history)/history_length, sum(self.qpos1_history)/history_length, sum(self.qpos2_history)/history_length,
                  sum(self.qvel0_history)/history_length, sum(self.qvel1_history)/history_length, sum(self.qvel2_history)/history_length])
 

@@ -14,7 +14,10 @@ TD3_MODE = 1
 control_type = spinal_controllers.Control_Type.BASELINE
 env_id = 1
 RL_mode = PPO_MODE
-dt_brain = 1.0/50.0
+
+dt_brain = 1.0/100.0
+baseline_action = np.array([0.0, 0.0, 0.0, 0.0])
+neuron_action = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
 if env_id == 0:
     xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
@@ -114,23 +117,24 @@ def init_controller(model,data):
 
 def baseline_callback(model, data):
     global global_timer
+    global baseline_action
     #accumlate observation
-    if len(spinal_controllers.qpos0_history) * model.opt.timestep > dt_brain:
-        spinal_controllers.qpos0_history.pop(0)
-        spinal_controllers.qvel0_history.pop(0)
-        spinal_controllers.qpos1_history.pop(0)
-        spinal_controllers.qvel1_history.pop(0)
+    if len(double_link_controllers.qpos0_history) * model.opt.timestep >= dt_brain:
+        double_link_controllers.qpos0_history.pop(0)
+        double_link_controllers.qvel0_history.pop(0)
+        double_link_controllers.qpos1_history.pop(0)
+        double_link_controllers.qvel1_history.pop(0)
         if env_id == 2:
-            spinal_controllers.qpos2_history.pop(0)
-            spinal_controllers.qvel2_history.pop(0)
+            double_link_controllers.qpos2_history.pop(0)
+            double_link_controllers.qvel2_history.pop(0)
 
-        spinal_controllers.qpos0_history.append(data.qpos[0])
-        spinal_controllers.qvel0_history.append(data.qvel[0])
-        spinal_controllers.qpos1_history.append(data.qpos[1])
-        spinal_controllers.qvel1_history.append(data.qvel[1])
-        if env_id == 2:
-            spinal_controllers.qpos2_history.append(data.qpos[2])
-            spinal_controllers.qvel2_history.append(data.qvel[2])
+    double_link_controllers.qpos0_history.append(data.qpos[0])
+    double_link_controllers.qvel0_history.append(data.qvel[0])
+    double_link_controllers.qpos1_history.append(data.qpos[1])
+    double_link_controllers.qvel1_history.append(data.qvel[1])
+    if env_id == 2:
+        double_link_controllers.qpos2_history.append(data.qpos[2])
+        double_link_controllers.qvel2_history.append(data.qvel[2])
 
     if env_id == 0:
         obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
@@ -139,29 +143,33 @@ def baseline_callback(model, data):
         spinal_controllers.joint0_controller(model, data)
         print(data.qpos[0], data.ctrl[1], data.ctrl[2])
     elif env_id == 1:
-        if data.time - global_timer > dt_brain:
+        if data.time - global_timer >= dt_brain:
+        # if True:
+            # global_timer = global_timer + dt_brain
             global_timer = data.time
             # obs = np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
             # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
-            history_length = len(spinal_controllers.qpos0_history)
+            # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
+            history_length = len(double_link_controllers.qpos0_history)
             obs = np.array([m_target[0], m_target[1],
-                            sum(spinal_controllers.qpos0_history)/history_length, sum(spinal_controllers.qvel0_history)/history_length,
-                            sum(spinal_controllers.qpos1_history)/history_length, sum(spinal_controllers.qvel1_history)/history_length, 0, 0])
+                            sum(double_link_controllers.qpos0_history)/history_length, sum(double_link_controllers.qvel0_history)/history_length,
+                            sum(double_link_controllers.qpos1_history)/history_length, sum(double_link_controllers.qvel1_history)/history_length, 0, 0])
+
             if RL_mode == PPO_MODE:
-                action, _states = PPO_model0.predict(obs)
+                baseline_action, _states = PPO_model0.predict(obs)
             elif RL_mode == TD3_MODE:
-                action, _states = TD3_model0.predict(obs)
-        double_link_controllers.baseline_controller(input_action=action, data=data)
+                baseline_action, _states = TD3_model0.predict(obs)
+        double_link_controllers.baseline_controller(input_action=baseline_action, data=data)
         # print(data.xpos[2])
         print(data.qpos[0], data.qpos[1])
 
     elif env_id == 2:
-        if data.time - global_timer > dt_brain:
+        if data.time - global_timer >= dt_brain:
             global_timer = data.time
-            history_length = len(spinal_controllers.qpos0_history)
-            obs = np.array([sum(spinal_controllers.qpos0_history)/history_length, sum(spinal_controllers.qpos1_history)/history_length,
-                            sum(spinal_controllers.qpos2_history)/history_length, sum(spinal_controllers.qvel0_history)/history_length,
-                            sum(spinal_controllers.qvel1_history)/history_length, sum(spinal_controllers.qvel2_history)/history_length])
+            history_length = len(double_link_controllers.qpos0_history)
+            obs = np.array([sum(double_link_controllers.qpos0_history)/history_length, sum(double_link_controllers.qpos1_history)/history_length,
+                            sum(double_link_controllers.qpos2_history)/history_length, sum(double_link_controllers.qvel0_history)/history_length,
+                            sum(double_link_controllers.qvel1_history)/history_length, sum(double_link_controllers.qvel2_history)/history_length])
             action, _states = PPO_model0.predict(obs)
             double_link_controllers.baseline_controller(input_action=action, data=data)
         # double_link_controllers.joints_controller(data)
@@ -170,22 +178,23 @@ def baseline_callback(model, data):
 
 def neuron_callback(model, data):
     global global_timer
-    if len(spinal_controllers.qpos0_history) * model.opt.timestep > dt_brain:
-        spinal_controllers.qpos0_history.pop(0)
-        spinal_controllers.qvel0_history.pop(0)
-        spinal_controllers.qpos1_history.pop(0)
-        spinal_controllers.qvel1_history.pop(0)
+    global neron_action
+    if len(double_link_controllers.qpos0_history) * model.opt.timestep > dt_brain:
+        double_link_controllers.qpos0_history.pop(0)
+        double_link_controllers.qvel0_history.pop(0)
+        double_link_controllers.qpos1_history.pop(0)
+        double_link_controllers.qvel1_history.pop(0)
         if env_id == 2:
-            spinal_controllers.qpos2_history.pop(0)
-            spinal_controllers.qvel2_history.pop(0)
+            double_link_controllers.qpos2_history.pop(0)
+            double_link_controllers.qvel2_history.pop(0)
 
-        spinal_controllers.qpos0_history.append(data.qpos[0])
-        spinal_controllers.qvel0_history.append(data.qvel[0])
-        spinal_controllers.qpos1_history.append(data.qpos[1])
-        spinal_controllers.qvel1_history.append(data.qvel[1])
-        if env_id == 2:
-            spinal_controllers.qpos2_history.append(data.qpos[2])
-            spinal_controllers.qvel2_history.append(data.qvel[2])
+    double_link_controllers.qpos0_history.append(data.qpos[0])
+    double_link_controllers.qvel0_history.append(data.qvel[0])
+    double_link_controllers.qpos1_history.append(data.qpos[1])
+    double_link_controllers.qvel1_history.append(data.qvel[1])
+    if env_id == 2:
+        double_link_controllers.qpos2_history.append(data.qpos[2])
+        double_link_controllers.qvel2_history.append(data.qvel[2])
 
     if env_id == 0:
         obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
@@ -194,35 +203,35 @@ def neuron_callback(model, data):
         spinal_controllers.joint0_controller(model, data)
         print(data.qpos[0], action[0], action[1], action[2], action[3])
     elif env_id == 1:
-        if data.time - global_timer > dt_brain:
+        if data.time - global_timer >= dt_brain:
             global_timer = data.time
-            history_length = len(spinal_controllers.qpos0_history)
+            history_length = len(double_link_controllers.qpos0_history)
             obs = np.array([m_target[0], m_target[1],
-                            sum(spinal_controllers.qpos0_history) / history_length,
-                            sum(spinal_controllers.qvel0_history) / history_length,
-                            sum(spinal_controllers.qpos1_history) / history_length,
-                            sum(spinal_controllers.qvel1_history) / history_length, 0, 0])
+                            sum(double_link_controllers.qpos0_history) / history_length,
+                            sum(double_link_controllers.qvel0_history) / history_length,
+                            sum(double_link_controllers.qpos1_history) / history_length,
+                            sum(double_link_controllers.qvel1_history) / history_length, 0, 0])
 
             # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
             # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
             # obs =  np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
-            action, _states = PPO_model4.predict(obs)
-            double_link_controllers.neuron_controller(input_action=action, data=data)
+            neron_action, _states = PPO_model4.predict(obs)
+            double_link_controllers.neuron_controller(input_action=neron_action, data=data)
             print(data.qpos[0], data.qpos[1])
 
     elif env_id == 2:
-        if data.time - global_timer > dt_brain:
+        if data.time - global_timer >= dt_brain:
             global_timer = data.time
-            history_length = len(spinal_controllers.qpos0_history)
-            obs = np.array([sum(spinal_controllers.qpos0_history) / history_length,
-                            sum(spinal_controllers.qpos1_history) / history_length,
-                            sum(spinal_controllers.qpos2_history) / history_length,
-                            sum(spinal_controllers.qvel0_history) / history_length,
-                            sum(spinal_controllers.qvel1_history) / history_length,
-                            sum(spinal_controllers.qvel2_history) / history_length])
+            history_length = len(double_link_controllers.qpos0_history)
+            obs = np.array([sum(double_link_controllers.qpos0_history) / history_length,
+                            sum(double_link_controllers.qpos1_history) / history_length,
+                            sum(double_link_controllers.qpos2_history) / history_length,
+                            sum(double_link_controllers.qvel0_history) / history_length,
+                            sum(double_link_controllers.qvel1_history) / history_length,
+                            sum(double_link_controllers.qvel2_history) / history_length])
             # obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-            action, _states = PPO_model4.predict(obs)
-            double_link_controllers.neuron_controller(input_action=action, data=data)
+            neron_action, _states = PPO_model4.predict(obs)
+            double_link_controllers.neuron_controller(input_action=neron_action, data=data)
         double_link_controllers.joints_controller(data)
 
 
@@ -271,7 +280,6 @@ def compute_target_pos(w, r):
     return output
 #load modes for each controller
 w = -0.48
-# m_target = np.array([0, 0])
 m_target = np.array([-0.82, 0.65])
 if control_type == spinal_controllers.Control_Type.BASELINE:
     if env_id == 0:
@@ -280,11 +288,11 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
         PPO_model0 = PPO.load(PPO_model_path0)
     elif env_id == 1:
         if RL_mode == PPO_MODE:
-            # PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
-            PPO_model_path0 =  "models\\1690836337\\4896000.zip"
+            # PPO_model_path0 = "..\\RL_data\\\inverted_large_dt\\models\\1690833133\\3424000.zip"
+            PPO_model_path0 =  "models\\1691539970\\2216000.zip"
             PPO_model0 = PPO.load(PPO_model_path0)
         elif RL_mode == TD3_MODE:
-            TD3_model_path0 = "models\\1690836337\\4760000.zip"
+            TD3_model_path0 = "models\\1691540760\\4760000.zip"
             TD3_model0 = TD3.load(TD3_model_path0)
     elif env_id == 2:
         # PPO_model_path0 = "..\\RL_data\\first_working_inverted_pendulum\\models\\1690272718\\2590000.zip"
