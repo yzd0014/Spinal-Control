@@ -95,7 +95,12 @@ class DoubleLinkEnv(gym.Env):
             current_state = np.array([self.data.qpos[0], self.data.qpos[1]])
             m_target = self.target_qs[self.target_iter]
             pos_diff_new = np.linalg.norm(current_state - m_target)
-            reward = -pos_diff_new
+
+            control_penalty = 0
+            for i in range(4):
+                control_penalty += self.data.ctrl[i]
+
+            reward = -pos_diff_new - 0.01 * control_penalty
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
@@ -218,7 +223,7 @@ class DoubleLinkEnv(gym.Env):
 
     def my_baseline(self, model, data):
         baseline_controller(self.m_ctrl, data)
-        # joints_controller(data)
+        joints_controller(data)
 
     def my_neuron_filter_controller(self, model, data):
         neuron_filter_controller(self.m_ctrl, data)
@@ -228,7 +233,7 @@ class DoubleLinkEnv(gym.Env):
 
     def my_neuron_controller(self, model, data):
         neuron_controller(self.m_ctrl, data)
-        # joints_controller(data)
+        joints_controller(data)
 
     def my_neuron_simple_controller(self, model, data):
         neuron_simple_controller(self.m_ctrl, data)
