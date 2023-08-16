@@ -11,14 +11,14 @@ import double_link_controllers
 PPO_MODE = 0
 TD3_MODE = 1
 
-control_type = spinal_controllers.Control_Type.NEURON
-env_id = 2
+control_type = spinal_controllers.Control_Type.REFLEX
+env_id = 1
 RL_mode = PPO_MODE
 
 if env_id == 0:
     xml_path = 'muscle_control_narrow.xml'  # xml file (assumes this is in the same folder as this file)
 elif env_id == 1:
-    xml_path = 'double_links.xml'
+    xml_path = 'double_links_fast.xml'
 elif env_id == 2:
     xml_path = 'inverted_pendulum_fast.xml'
 
@@ -174,11 +174,9 @@ def baseline_callback(model, data):
         # obs = np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
         # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
         obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
-        if RL_mode == PPO_MODE:
-            action, _states = PPO_model0.predict(obs)
-        elif RL_mode == TD3_MODE:
-            action, _states = TD3_model0.predict(obs)
+        action, _states = PPO_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=action, data=data)
+        # double_link_controllers.joints_controller(data)
         # print(data.xpos[2])
         print(data.qpos[0], data.qpos[1])
 
@@ -188,12 +186,14 @@ def baseline_callback(model, data):
         double_link_controllers.baseline_controller(input_action=action, data=data)
         # double_link_controllers.joints_controller(data)
 
-def neuron_filter_callback(model, data):
-    obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
-    action, _states = PPO_model2.predict(obs)
-    spinal_controllers.stretch_reflex_controller(input_action=action, data=data)
-    spinal_controllers.joint0_controller(model, data)
-    print(data.qpos[0])
+def reflex_callback(model, data):
+    if env_id == 1:
+        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
+        action, _states = PPO_model2.predict(obs)
+        double_link_controllers.stretch_reflex_controller(input_action=action, data=data)
+        # spinal_controllers.joint0_controller(model, data)
+        print(data.ctrl[0], data.ctrl[1])
+        # print(data.qpos[0], data.qpos[1])
 
 def neuron_callback(model, data):
     if env_id == 0:
@@ -257,20 +257,16 @@ cam.lookat = np.array([0.0, -1, 2])
 #load modes for each controller
 w = -0.48
 # m_target = np.array([0, 0])
-m_target = np.array([-0.82, 0.65])
+m_target = np.array([-0.52, 0.65])
 if control_type == spinal_controllers.Control_Type.BASELINE:
     if env_id == 0:
         target_pos = compute_target_pos(w, 1)
         PPO_model_path0 = "models/1687332383/10650000.zip"
         PPO_model0 = PPO.load(PPO_model_path0)
     elif env_id == 1:
-        if RL_mode == PPO_MODE:
-            # PPO_model_path0 = "..\\RL_data\\neuron-training-stable\\models\\1687820950\\39520000.zip"
-            PPO_model_path0 =  "models\\1690832298\\1936000.zip"
-            PPO_model0 = PPO.load(PPO_model_path0)
-        elif RL_mode == TD3_MODE:
-            TD3_model_path0 = "models\\1690085218\\4760000.zip"
-            TD3_model0 = TD3.load(TD3_model_path0)
+        # PPO_model_path0 = "..\\RL_data\\decouple_sim\\models\\1691616507\\11520000.zip"
+        PPO_model_path0 =  "models\\1692134613\\912000.zip"
+        PPO_model0 = PPO.load(PPO_model_path0)
     elif env_id == 2:
         # PPO_model_path0 = "..\\RL_data\\first_working_inverted_pendulum\\models\\1690272718\\2590000.zip"
         PPO_model_path0 = "models\\1690927529\\5390000.zip"
@@ -278,8 +274,9 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
 
 
 if control_type == spinal_controllers.Control_Type.REFLEX:
-    PPO_model_path2="models/1686530946/3980000.zip"
-    PPO_model2=PPO.load(PPO_model_path2)
+    if env_id == 1:
+        PPO_model_path2="models/1692132925/2568000.zip"
+        PPO_model2=PPO.load(PPO_model_path2)
 
 if control_type == spinal_controllers.Control_Type.NEURON:
     if env_id == 0:
@@ -306,10 +303,10 @@ init_controller(model,data)
 #set the controller
 if control_type == spinal_controllers.Control_Type.BASELINE:
     mj.set_mjcb_control(baseline_callback)
-elif control_type == spinal_controllers.Control_Type.NEURON_FILTER:
-    mj.set_mjcb_control(neuron_filter_callback())
 elif control_type == spinal_controllers.Control_Type.NEURON:
     mj.set_mjcb_control(neuron_callback)
+elif control_type == spinal_controllers.Control_Type.REFLEX:
+    mj.set_mjcb_control(reflex_callback)
 
 while not glfw.window_should_close(window):
     time_prev = data.time

@@ -29,7 +29,7 @@ if __name__ =="__main__":
 		control_type = pendulum_env.Control_Type.NEURON
 		logdir = f"logs/{int(time.time())}-{pendulum_env.control_typle_dic[control_type]}/"
 	elif env_id == 1 or env_id == 2 or env_id == 3:
-		control_type = double_links_env.Control_Type.NEURON
+		control_type = double_links_env.Control_Type.BASELINE
 		logdir = f"logs/{int(time.time())}-{double_links_env.control_typle_dic[control_type]}/"
 
 
@@ -60,16 +60,19 @@ if __name__ =="__main__":
 		env_fns = [make_env(i, env_id, speed_mode, control_type) for i in range(THREADS_NUM)]
 		env = SubprocVecEnv(env_fns)
 
-	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[8, 8], vf=[64, 64]))
+	# policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[8, 8], vf=[64, 64]))
+	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[128, 128, 64], vf=[128, 128, 64]))
 	m_steps = episode_length * num_episodes
 	#n_steps=50000 batch_size=10000,n_epochs=10 tested
 	#model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=1000, n_epochs=100, verbose=1, tensorboard_log=logdir) - 1689548375
 	if env_id == INVERTED_PENDULUM:
 		TIMESTEPS = 10000
-		model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, device='auto', n_steps=1000, batch_size=1000, n_epochs=10, verbose=1, tensorboard_log=logdir)
+		model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, device='cpu', n_steps=1000, batch_size=1000, n_epochs=10, verbose=1, tensorboard_log=logdir)
 	else:
 		TIMESTEPS = m_steps
-		model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, device='auto', n_steps=m_steps, batch_size=episode_length, n_epochs=10, verbose=1, tensorboard_log=logdir)
+		# model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, device='cpu', n_steps=m_steps, batch_size=episode_length, n_epochs=10, verbose=1, tensorboard_log=logdir)
+		model = PPO('MlpPolicy', env, device='auto', n_steps=m_steps, policy_kwargs=policy_kwargs, batch_size=1000,
+					n_epochs=10, verbose=1, tensorboard_log=logdir)
 		print(model.policy)
 	# model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
 	# PPO_model_path="models/1688353130/24640000.zip"

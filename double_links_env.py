@@ -76,9 +76,7 @@ class DoubleLinkEnv(gym.Env):
             for i in range(4):
                 self.m_ctrl[i] = action[i]
 
-        n = 10
-        for i in range(n):
-            mj.mj_step(self.model, self.data)
+        mj.mj_step(self.model, self.data)
 
         if self.rendering == True:
             mj.mjv_updateScene(self.model, self.data, self.opt, None, self.cam, mj.mjtCatBit.mjCAT_ALL.value, self.scene)
@@ -98,9 +96,9 @@ class DoubleLinkEnv(gym.Env):
 
             control_penalty = 0
             for i in range(4):
-                control_penalty += self.data.ctrl[i]
+                control_penalty += np.linalg.norm(self.data.ctrl[i])
 
-            reward = -pos_diff_new - 0.01 * control_penalty
+            reward = -pos_diff_new
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
@@ -132,7 +130,7 @@ class DoubleLinkEnv(gym.Env):
             # self.data.qpos[1] = self.target_qs[self.target_iter][1]
             # mj.mj_forward(self.model, self.data)
             # self.target_pos = self.data.xpos[2].copy()
-            # print(f"{self.target_iter} {self.target_qs[self.target_iter]}")
+            print(f"{self.target_iter} {self.target_qs[self.target_iter]}")
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             m_target = self.target_qs[self.target_iter]
@@ -223,13 +221,14 @@ class DoubleLinkEnv(gym.Env):
 
     def my_baseline(self, model, data):
         baseline_controller(self.m_ctrl, data)
-        joints_controller(data)
+        # joints_controller(data)
 
     def my_neuron_filter_controller(self, model, data):
         neuron_filter_controller(self.m_ctrl, data)
 
     def my_stretch_reflex(self, model, data):
         stretch_reflex_controller(self.m_ctrl, data)
+        joints_controller(data)
 
     def my_neuron_controller(self, model, data):
         neuron_controller(self.m_ctrl, data)
