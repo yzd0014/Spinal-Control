@@ -15,7 +15,7 @@ control_type = spinal_controllers.Control_Type.BASELINE
 env_id = 1
 RL_mode = PPO_MODE
 
-dt_brain = 1.0/100.0
+dt_brain = 1.0/10.0
 baseline_action = np.array([0.0, 0.0, 0.0, 0.0])
 neuron_action = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
@@ -160,8 +160,8 @@ def baseline_callback(model, data):
             elif RL_mode == TD3_MODE:
                 baseline_action, _states = TD3_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=baseline_action, data=data)
-        # print(data.xpos[2])
-        print(data.qpos[0], data.qpos[1])
+        # print(data.qpos[0], data.qpos[1])
+        print(data.ctrl[0], data.ctrl[1])
 
     elif env_id == 2:
         if data.time - global_timer >= dt_brain:
@@ -171,14 +171,13 @@ def baseline_callback(model, data):
                             sum(double_link_controllers.qpos2_history)/history_length, sum(double_link_controllers.qvel0_history)/history_length,
                             sum(double_link_controllers.qvel1_history)/history_length, sum(double_link_controllers.qvel2_history)/history_length])
             action, _states = PPO_model0.predict(obs)
-            double_link_controllers.baseline_controller(input_action=action, data=data)
-        # double_link_controllers.joints_controller(data)
+        double_link_controllers.baseline_controller(input_action=action, data=data)
 
 
 
 def neuron_callback(model, data):
     global global_timer
-    global neron_action
+    global neuron_action
     if len(double_link_controllers.qpos0_history) * model.opt.timestep > dt_brain:
         double_link_controllers.qpos0_history.pop(0)
         double_link_controllers.qvel0_history.pop(0)
@@ -215,9 +214,9 @@ def neuron_callback(model, data):
             # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
             # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
             # obs =  np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
-            neron_action, _states = PPO_model4.predict(obs)
-            double_link_controllers.neuron_controller(input_action=neron_action, data=data)
-            print(data.qpos[0], data.qpos[1])
+            neuron_action, _states = PPO_model4.predict(obs)
+        double_link_controllers.neuron_controller(input_action=neuron_action, data=data)
+        print(data.qpos[0], data.qpos[1])
 
     elif env_id == 2:
         if data.time - global_timer >= dt_brain:
@@ -230,9 +229,8 @@ def neuron_callback(model, data):
                             sum(double_link_controllers.qvel1_history) / history_length,
                             sum(double_link_controllers.qvel2_history) / history_length])
             # obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-            neron_action, _states = PPO_model4.predict(obs)
-            double_link_controllers.neuron_controller(input_action=neron_action, data=data)
-        double_link_controllers.joints_controller(data)
+            neuron_action, _states = PPO_model4.predict(obs)
+        double_link_controllers.neuron_controller(input_action=neuron_action, data=data)
 
 
 #get the full path
@@ -280,7 +278,7 @@ def compute_target_pos(w, r):
     return output
 #load modes for each controller
 w = -0.48
-m_target = np.array([-0.82, 0.65])
+m_target = np.array([0.52, -0.64])
 if control_type == spinal_controllers.Control_Type.BASELINE:
     if env_id == 0:
         target_pos = compute_target_pos(w, 1)
@@ -289,7 +287,7 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
     elif env_id == 1:
         if RL_mode == PPO_MODE:
             # PPO_model_path0 = "..\\RL_data\\\inverted_large_dt\\models\\1690833133\\3424000.zip"
-            PPO_model_path0 =  "models\\1691539970\\2216000.zip"
+            PPO_model_path0 =  "models\\1692307395\\446400.zip"
             PPO_model0 = PPO.load(PPO_model_path0)
         elif RL_mode == TD3_MODE:
             TD3_model_path0 = "models\\1691540760\\4760000.zip"
@@ -305,7 +303,7 @@ if control_type == spinal_controllers.Control_Type.NEURON:
         PPO_model4 = PPO.load(PPO_model_path4)
         target_pos = compute_target_pos(w, 1)
     elif env_id == 1:
-        PPO_model_path4 = "models/1690837225/4112000.zip"
+        PPO_model_path4 = "models/1692307556/422400.zip"
         # PPO_model_path4 = "..\\RL_data\\neuron-training-stable\\models\\1687913383\\56960000.zip"
         PPO_model4 = PPO.load(PPO_model_path4)
         data.qpos[0] = m_target[0]

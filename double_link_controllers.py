@@ -130,6 +130,6 @@ def neuron_simple_controller(input_action, data):
     #     data.ctrl[i * 2 + 1] = ctrl_output[1]
 
 def joints_controller(data):
-    kp = 0.2
+    kp = 1
     data.ctrl[4] = kp * np.random.randn(1)
     data.ctrl[5] = kp * np.random.randn(1)

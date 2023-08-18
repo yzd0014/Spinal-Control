@@ -19,7 +19,7 @@ class DoubleLinkEnv(gym.Env):
         self.qvel1_history = []
         self.qpos2_history = []
         self.qvel2_history = []
-        self.dt_brain = 1.0/100.0
+        self.dt_brain = 1.0/10.0
 
         self.alpha =  0.4691358024691358
         self.beta = 0.9
@@ -36,12 +36,17 @@ class DoubleLinkEnv(gym.Env):
             if self.speed_mode == SLOW:
                 self.episode_length = 5000
             elif self.speed_mode == FAST:
-                self.episode_length = 500
+                self.episode_length = 50
         elif self.env_id == 2:
             if self.speed_mode == SLOW:
                 self.episode_length = 150000
             elif self.speed_mode == FAST:
                 self.episode_length = 50000
+
+        self.ep_position_reward = 0
+        self.ep_ctrl_reward = 0
+        self.ep_smoothing_reward = 0
+        self.ep_ctrl = [[], [], [], []]
 
         self.num_of_targets = 0
         if self.env_id == 1:
@@ -109,16 +114,35 @@ class DoubleLinkEnv(gym.Env):
             glfw.swap_buffers(self.window)
             glfw.poll_events()
 
+        ctrl_reward = 0
+        for i in range(4):
+            ctrl_reward += -np.linalg.norm(self.data.ctrl[i])
+        self.ep_ctrl_reward += ctrl_reward
+
+        for i in range(4):
+            self.ep_ctrl[i].append(self.data.ctrl[i])
+
         self.ticks += 1
+        Sm = [0, 0, 0, 0]
         if self.ticks >= self.episode_length:
             self.done = True
+            for i in range(4):
+                x = np.array(self.ep_ctrl[i])
+                X = np.fft.fft(x)
+                M = np.absolute(X)
+                for freq in range(len(X)):
+                    Sm[i] += freq * M[freq]
+                Sm[i] = 2 * Sm[i] / (len(X) * self.episode_length)
+            self.ep_smoothing_reward = -np.sum(Sm)
 
         if self.env_id == 1:
             # pos_diff_new = np.linalg.norm(self.data.xpos[2] - self.target_pos)
             current_state = np.array([self.data.qpos[0], self.data.qpos[1]])
             m_target = self.target_qs[self.target_iter]
             pos_diff_new = np.linalg.norm(current_state - m_target)
-            reward = -pos_diff_new
+            position_reward = -pos_diff_new
+            self.ep_position_reward += position_reward
+            reward = position_reward + 0.001 * self.ep_smoothing_reward
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
@@ -160,16 +184,10 @@ class DoubleLinkEnv(gym.Env):
             self.target_iter = 0
 
         if self.env_id == 1:
-            # forward kinematics to get the target endfactor position
-            # self.data.qpos[0] = self.target_qs[self.target_iter][0]
-            # self.data.qpos[1] = self.target_qs[self.target_iter][1]
-            # mj.mj_forward(self.model, self.data)
-            # self.target_pos = self.data.xpos[2].copy()
-            print(f"{self.target_iter} {self.target_qs[self.target_iter]}")
-
-            # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
+            # print(f"{self.target_iter} position reward: {self.ep_position_reward}, smooth reward: {self.ep_smoothing_reward}")
             m_target = self.target_qs[self.target_iter]
             # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
+            # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], 0, 0])
 
             mj.mj_resetData(self.model, self.data)
@@ -183,7 +201,10 @@ class DoubleLinkEnv(gym.Env):
             mj.mj_forward(self.model, self.data)
             observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1],self.data.qvel[2]])
             # observation = np.array([0, 0, self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], self.data.qpos[2], self.data.qvel[2]])
-            # print(f"instace #{self.instance_id} episode #{self.target_iter}\n")
+
+        self.ep_position_reward = 0
+        self.ep_ctrl_reward = 0
+        self.ep_smoothing_reward = 0
 
         return observation
 
@@ -263,6 +284,7 @@ class DoubleLinkEnv(gym.Env):
 
     def my_stretch_reflex(self, model, data):
         stretch_reflex_controller(self.m_ctrl, data)
+        joints_controller(data)  # add noise
 
     def my_neuron_controller(self, model, data):
         neuron_controller(self.m_ctrl, data)

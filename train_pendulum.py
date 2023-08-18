@@ -42,7 +42,7 @@ if __name__ =="__main__":
 	if speed_mode == SLOW:
 		episode_length = 5000
 	elif speed_mode == FAST:
-		episode_length = 500
+		episode_length = 50
 	if env_id == 0:
 		num_episodes = 5
 		env = pendulum_env.PendulumEnv(control_type=control_type, speed_mode=speed_mode)
@@ -60,16 +60,16 @@ if __name__ =="__main__":
 		env_fns = [make_env(i, env_id, speed_mode, control_type) for i in range(THREADS_NUM)]
 		env = SubprocVecEnv(env_fns)
 
-	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[8, 8], vf=[8, 8]))
+	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[8, 8], vf=[64, 64]))
 	m_steps = episode_length * num_episodes
 	#n_steps=50000 batch_size=10000,n_epochs=10 tested
 	#model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=1000, n_epochs=100, verbose=1, tensorboard_log=logdir) - 1689548375
 	if env_id == INVERTED_PENDULUM:
 		TIMESTEPS = 10000
-		model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, device='auto', n_steps=1000, batch_size=1000, n_epochs=10, verbose=1, tensorboard_log=logdir)
+		model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, device='cpu', n_steps=1000, batch_size=1000, n_epochs=10, verbose=1, tensorboard_log=logdir)
 	else:
 		TIMESTEPS = m_steps
-		model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, device='auto', n_steps=m_steps, batch_size=episode_length, n_epochs=10, verbose=1, tensorboard_log=logdir)
+		model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, device='cpu', n_steps=m_steps, batch_size=episode_length, n_epochs=10, verbose=1, tensorboard_log=logdir)
 		print(model.policy)
 	# model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
 	# PPO_model_path="models/1688353130/24640000.zip"
