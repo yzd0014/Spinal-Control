@@ -38,8 +38,8 @@ class DoubleLinkEnv(gym.Env):
         self.num_of_targets = 0
         if self.env_id == 1:
             self.target_qs = []
-            for i in np.arange(-0.2, 0.2, 0.1):
-                for j in np.arange(-0.2, 0.2, 0.1):
+            for i in np.arange(-0.5, 0.5, 0.25):
+                for j in np.arange(-0.5, 0.5, 0.25):
             # for i in np.arange(-0.6, 0.6, 0.2):
             #     for j in np.arange(-0.6, 0.6, 0.2):
                     self.target_qs.append(np.array([i, j]))
@@ -64,7 +64,8 @@ class DoubleLinkEnv(gym.Env):
         #current endfactor pos
         if self.env_id == 1:
             # self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(13,), dtype=np.float32)
-            self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(8,), dtype=np.float32)
+            # self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(8,), dtype=np.float32)
+            self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(2,), dtype=np.float32)
         elif self.env_id == 2:
             self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
 
@@ -75,6 +76,7 @@ class DoubleLinkEnv(gym.Env):
         else:
             for i in range(4):
                 self.m_ctrl[i] = action[i]
+
 
         mj.mj_step(self.model, self.data)
 
@@ -89,20 +91,16 @@ class DoubleLinkEnv(gym.Env):
             self.done = True
 
         if self.env_id == 1:
-            # pos_diff_new = np.linalg.norm(self.data.xpos[2] - self.target_pos)
             current_state = np.array([self.data.qpos[0], self.data.qpos[1]])
             m_target = self.target_qs[self.target_iter]
+
             pos_diff_new = np.linalg.norm(current_state - m_target)
-
-            control_penalty = 0
-            for i in range(4):
-                control_penalty += np.linalg.norm(self.data.ctrl[i])
-
-            reward = -pos_diff_new
+            reward = -pow(pos_diff_new, 2)
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
-            observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], 0, 0])
+            # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], 0, 0])
+            observation = np.array([m_target[0], m_target[1]])
         elif self.env_id == 2:
             reward = 1
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
@@ -135,7 +133,8 @@ class DoubleLinkEnv(gym.Env):
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             m_target = self.target_qs[self.target_iter]
             # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
-            observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], 0, 0])
+            # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], 0, 0])
+            observation = np.array([m_target[0], m_target[1]])
 
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
@@ -232,7 +231,7 @@ class DoubleLinkEnv(gym.Env):
 
     def my_neuron_controller(self, model, data):
         neuron_controller(self.m_ctrl, data)
-        joints_controller(data)
+        # joints_controller(data)
 
     def my_neuron_simple_controller(self, model, data):
         neuron_simple_controller(self.m_ctrl, data)

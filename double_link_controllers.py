@@ -56,7 +56,7 @@ def neuron_filter_controller(input_action, data):
 def stretch_reflex_controller(input_action, data):
     normalize_factor = 0.677
     for i in range(4):
-        data.ctrl[i] = data.actuator_length[i] / normalize_factor - input_action[i]
+        data.ctrl[i] = max(data.actuator_length[i] / normalize_factor - input_action[i], 0)
 
 def neuron_controller(input_action, data):
     normalize_factor = 0.677
@@ -123,6 +123,6 @@ def neuron_simple_controller(input_action, data):
     #     data.ctrl[i * 2 + 1] = ctrl_output[1]
 
 def joints_controller(data):
-    kp = 2
+    kp = 0.5
     data.ctrl[4] = kp * np.random.randn(1)
     data.ctrl[5] = kp * np.random.randn(1)

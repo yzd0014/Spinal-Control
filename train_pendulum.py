@@ -61,7 +61,7 @@ if __name__ =="__main__":
 		env = SubprocVecEnv(env_fns)
 
 	# policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[8, 8], vf=[64, 64]))
-	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[128, 128, 64], vf=[128, 128, 64]))
+	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[64, 64], vf=[64, 64]))
 	m_steps = episode_length * num_episodes
 	#n_steps=50000 batch_size=10000,n_epochs=10 tested
 	#model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=1000, n_epochs=100, verbose=1, tensorboard_log=logdir) - 1689548375
@@ -71,8 +71,7 @@ if __name__ =="__main__":
 	else:
 		TIMESTEPS = m_steps
 		# model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, device='cpu', n_steps=m_steps, batch_size=episode_length, n_epochs=10, verbose=1, tensorboard_log=logdir)
-		model = PPO('MlpPolicy', env, device='auto', n_steps=m_steps, policy_kwargs=policy_kwargs, batch_size=1000,
-					n_epochs=10, verbose=1, tensorboard_log=logdir)
+		model = PPO('MlpPolicy', env, device='auto', n_steps=episode_length, policy_kwargs=policy_kwargs, batch_size=episode_length, n_epochs=10, verbose=1, tensorboard_log=logdir)
 		print(model.policy)
 	# model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
 	# PPO_model_path="models/1688353130/24640000.zip"

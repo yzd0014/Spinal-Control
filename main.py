@@ -11,7 +11,7 @@ import double_link_controllers
 PPO_MODE = 0
 TD3_MODE = 1
 
-control_type = spinal_controllers.Control_Type.REFLEX
+control_type = spinal_controllers.Control_Type.BASELINE
 env_id = 1
 RL_mode = PPO_MODE
 
@@ -162,7 +162,6 @@ e1_l = 0
 #     # mb = 0.1
 #     # l0 = max(mb - (kp * (data.actuator_length[1] - gl0) + kd * data.actuator_velocity[1] + ki * e1_r), 0)
 #     # l1 = max(mb - (kp * (data.actuator_length[2] - gl1) + kd * data.actuator_velocity[2] + ki * e1_l), 0)
-
 def baseline_callback(model, data):
     if env_id == 0:
         obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
@@ -173,12 +172,15 @@ def baseline_callback(model, data):
     elif env_id == 1:
         # obs = np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
         # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
-        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
+        # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
+        obs = np.array([m_target[0], m_target[1]])
         action, _states = PPO_model0.predict(obs)
         double_link_controllers.baseline_controller(input_action=action, data=data)
         # double_link_controllers.joints_controller(data)
         # print(data.xpos[2])
-        print(data.qpos[0], data.qpos[1])
+        # print(data.qpos[0], data.qpos[1])
+        # print(data.ctrl[0], data.ctrl[1])
+        compute_reward(model, data)
 
     elif env_id == 2:
         obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
@@ -188,12 +190,13 @@ def baseline_callback(model, data):
 
 def reflex_callback(model, data):
     if env_id == 1:
-        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
+        # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
+        obs = np.array([m_target[0], m_target[1]])
         action, _states = PPO_model2.predict(obs)
         double_link_controllers.stretch_reflex_controller(input_action=action, data=data)
         # spinal_controllers.joint0_controller(model, data)
-        print(data.ctrl[0], data.ctrl[1])
-        # print(data.qpos[0], data.qpos[1])
+        # print(data.ctrl[0], data.ctrl[1])
+        print(data.qpos[0], data.qpos[1])
 
 def neuron_callback(model, data):
     if env_id == 0:
@@ -204,12 +207,12 @@ def neuron_callback(model, data):
         print(data.qpos[0], action[0], action[1], action[2], action[3])
     elif env_id == 1:
         # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
-        obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
-        #obs =  np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
+        #  obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
+        obs = np.array([m_target[0], m_target[1]])
         action, _states = PPO_model4.predict(obs)
         double_link_controllers.neuron_controller(input_action=action, data=data)
-        print(data.qpos[0], data.qpos[1])
-
+        # print(data.qpos[0], data.qpos[1])
+        print(data.ctrl[0], data.ctrl[1])
     elif env_id == 2:
         obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         action, _states = PPO_model4.predict(obs)
@@ -257,7 +260,7 @@ cam.lookat = np.array([0.0, -1, 2])
 #load modes for each controller
 w = -0.48
 # m_target = np.array([0, 0])
-m_target = np.array([-0.52, 0.65])
+m_target = np.array([-0.25, 0.25])
 if control_type == spinal_controllers.Control_Type.BASELINE:
     if env_id == 0:
         target_pos = compute_target_pos(w, 1)
@@ -265,7 +268,7 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
         PPO_model0 = PPO.load(PPO_model_path0)
     elif env_id == 1:
         # PPO_model_path0 = "..\\RL_data\\decouple_sim\\models\\1691616507\\11520000.zip"
-        PPO_model_path0 =  "models\\1692134613\\912000.zip"
+        PPO_model_path0 =  "models\\1692382479\\11024000.zip"
         PPO_model0 = PPO.load(PPO_model_path0)
     elif env_id == 2:
         # PPO_model_path0 = "..\\RL_data\\first_working_inverted_pendulum\\models\\1690272718\\2590000.zip"
@@ -275,7 +278,7 @@ if control_type == spinal_controllers.Control_Type.BASELINE:
 
 if control_type == spinal_controllers.Control_Type.REFLEX:
     if env_id == 1:
-        PPO_model_path2="models/1692132925/2568000.zip"
+        PPO_model_path2="models/1692341722/1008000.zip"
         PPO_model2=PPO.load(PPO_model_path2)
 
 if control_type == spinal_controllers.Control_Type.NEURON:
@@ -284,7 +287,7 @@ if control_type == spinal_controllers.Control_Type.NEURON:
         PPO_model4 = PPO.load(PPO_model_path4)
         target_pos = compute_target_pos(w, 1)
     elif env_id == 1:
-        PPO_model_path4 = "models/1690837225/4112000.zip"
+        PPO_model_path4 = "models/1692336103/648000.zip"
         # PPO_model_path4 = "..\\RL_data\\neuron-training-stable\\models\\1687913383\\56960000.zip"
         PPO_model4 = PPO.load(PPO_model_path4)
         data.qpos[0] = m_target[0]
@@ -297,6 +300,21 @@ if control_type == spinal_controllers.Control_Type.NEURON:
         # PPO_model_path4 = "..\\RL_data\\first_working_inverted_pendulum\\models\\1690274397\\2130000.zip"
         PPO_model_path4 = "models\\1690928259\\4700000.zip"
         PPO_model4 = PPO.load(PPO_model_path4)
+
+tick_count = 0
+ep_reward = 0
+def compute_reward(model, data):
+    global tick_count
+    global ep_reward
+    tick_count += 1
+    episode_length = 500
+    current_state = np.array([data.qpos[0], data.qpos[1]])
+    pos_diff_new = np.linalg.norm(current_state - m_target)
+    ep_reward += -pow(pos_diff_new, 2)
+    if tick_count == episode_length:
+        print("ep_reward: ", ep_reward)
+        tick_count = 0
+        ep_reward = 0
 
 #initialize the controller
 init_controller(model,data)
