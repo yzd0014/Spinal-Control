@@ -45,7 +45,8 @@ class DoubleLinkEnv(gym.Env):
                     self.target_qs.append(np.array([i, j]))
                     self.num_of_targets += 1
             # self.target_qs = [np.array([0.195, -0.792])]
-
+            self.ep_pos_penalty = 0
+            self.ep_action_penalty = 0
         elif self.env_id == 2:
             self.num_of_targets = 16
             self.episode_reward = 0
@@ -56,28 +57,33 @@ class DoubleLinkEnv(gym.Env):
         # Example when using discrete actions:
         if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.NEURON_TEST or self.control_type == Control_Type.NEURON_FILTER:
             self.m_ctrl = np.zeros(8)
+            self.m_ctrl_old = np.zeros(8)
             self.action_space = spaces.Box(low=0, high=1.0,shape=(8,), dtype=np.float32)
         else:
             self.m_ctrl = np.zeros(4)
+            self.m_ctrl_old = np.zeros(4)
             self.action_space = spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
         #current endfactor pos
         if self.env_id == 1:
             # self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(13,), dtype=np.float32)
+            self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
             # self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(8,), dtype=np.float32)
-            self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(2,), dtype=np.float32)
+            # self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(10,), dtype=np.float32)
         elif self.env_id == 2:
             self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
 
     def step(self, action):
         if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.NEURON_TEST or self.control_type == Control_Type.NEURON_FILTER:
-            for i in range(8):
-                self.m_ctrl[i] = action[i]
+            loop_counter = 8
         else:
-            for i in range(4):
-                self.m_ctrl[i] = action[i]
+            loop_counter = 4
+        for i in range(loop_counter):
+            # self.m_ctrl_old[i] = self.m_ctrl[i]
+            self.m_ctrl[i] = action[i]
 
-
+        for i in range(4):
+            self.m_ctrl_old[i] = self.data.ctrl[i]
         mj.mj_step(self.model, self.data)
 
         if self.rendering == True:
@@ -94,13 +100,28 @@ class DoubleLinkEnv(gym.Env):
             current_state = np.array([self.data.qpos[0], self.data.qpos[1]])
             m_target = self.target_qs[self.target_iter]
 
-            pos_diff_new = np.linalg.norm(current_state - m_target)
-            reward = -pow(pos_diff_new, 2)
+            control_penalty = 0
+            for i in range(4):
+                control_penalty += -abs(self.data.ctrl[i])
+
+            ctrl_change_penalty = 0
+            for i in range(4):
+                ctrl_change_penalty += -abs(self.data.ctrl[i] - self.m_ctrl_old[i])
+
+            pos_penalty = -np.linalg.norm(current_state - m_target)
+            self.ep_pos_penalty += pos_penalty
+            self.ep_action_penalty += control_penalty
+            # reward = pos_penalty + 0.1 * control_penalty + ctrl_change_penalty
+            reward = pos_penalty + ctrl_change_penalty
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
-            # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
+            observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
             # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], 0, 0])
-            observation = np.array([m_target[0], m_target[1]])
+            # observation = np.array([m_target[0], m_target[1]])
+            # observation = np.array([m_target[0], m_target[1], self.data.actuator_length[0], self.data.actuator_velocity[0],
+            #                         self.data.actuator_length[1], self.data.actuator_velocity[1],
+            #                         self.data.actuator_length[2], self.data.actuator_velocity[2],
+            #                         self.data.actuator_length[3], self.data.actuator_velocity[3]])
         elif self.env_id == 2:
             reward = 1
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
@@ -117,7 +138,7 @@ class DoubleLinkEnv(gym.Env):
     def reset(self):
         self.done = False
         self.ticks = 0
-
+        self.m_ctrl_old = np.zeros(4)
         self.target_iter += 1
         if self.target_iter >= self.num_of_targets:
             self.target_iter = 0
@@ -132,9 +153,14 @@ class DoubleLinkEnv(gym.Env):
 
             # observation = np.concatenate((self.target_pos, self.data.xpos[1], self.data.xpos[2], np.array([self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])))
             m_target = self.target_qs[self.target_iter]
-            # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
+            observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qpos[1], self.data.qvel[0], self.data.qvel[1]])
             # observation = np.array([m_target[0], m_target[1], self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], self.data.qvel[1], 0, 0])
-            observation = np.array([m_target[0], m_target[1]])
+            # observation = np.array([m_target[0], m_target[1]])
+            # observation = np.array(
+            #     [m_target[0], m_target[1], self.data.actuator_length[0], self.data.actuator_velocity[0],
+            #      self.data.actuator_length[1], self.data.actuator_velocity[1],
+            #      self.data.actuator_length[2], self.data.actuator_velocity[2],
+            #      self.data.actuator_length[3], self.data.actuator_velocity[3]])
 
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
@@ -220,7 +246,7 @@ class DoubleLinkEnv(gym.Env):
 
     def my_baseline(self, model, data):
         baseline_controller(self.m_ctrl, data)
-        # joints_controller(data)
+        joints_controller(data)
 
     def my_neuron_filter_controller(self, model, data):
         neuron_filter_controller(self.m_ctrl, data)
@@ -231,10 +257,11 @@ class DoubleLinkEnv(gym.Env):
 
     def my_neuron_controller(self, model, data):
         neuron_controller(self.m_ctrl, data)
-        # joints_controller(data)
+        joints_controller(data)
 
     def my_neuron_simple_controller(self, model, data):
         neuron_simple_controller(self.m_ctrl, data)
+        joints_controller(data)
 
     def my_neuron_test_controller(self, model, data):
         neuron_test_controller(self.m_ctrl, data, self.alpha, self.beta)

@@ -71,7 +71,7 @@ if __name__ =="__main__":
 	else:
 		TIMESTEPS = m_steps
 		# model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, device='cpu', n_steps=m_steps, batch_size=episode_length, n_epochs=10, verbose=1, tensorboard_log=logdir)
-		model = PPO('MlpPolicy', env, device='auto', n_steps=episode_length, policy_kwargs=policy_kwargs, batch_size=episode_length, n_epochs=10, verbose=1, tensorboard_log=logdir)
+		model = PPO('MlpPolicy', env, device='auto', n_steps=m_steps, policy_kwargs=policy_kwargs, batch_size=episode_length, n_epochs=10, verbose=1, tensorboard_log=logdir)
 		print(model.policy)
 	# model = PPO('MlpPolicy', env, device='cpu', n_steps=50000, batch_size=10000, n_epochs=100, verbose=1, tensorboard_log=logdir)
 	# PPO_model_path="models/1688353130/24640000.zip"

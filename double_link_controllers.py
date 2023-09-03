@@ -54,9 +54,9 @@ def neuron_filter_controller(input_action, data):
 
 
 def stretch_reflex_controller(input_action, data):
-    normalize_factor = 0.677
+    normalize_factor = 0.7
     for i in range(4):
-        data.ctrl[i] = max(data.actuator_length[i] / normalize_factor - input_action[i], 0)
+        data.ctrl[i] = max((data.actuator_length[i] + data.actuator_velocity[i] * 0.05) / normalize_factor - input_action[i], 0)
 
 def neuron_controller(input_action, data):
     normalize_factor = 0.677
