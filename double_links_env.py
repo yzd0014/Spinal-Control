@@ -58,10 +58,12 @@ class DoubleLinkEnv(gym.Env):
         if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.NEURON_TEST or self.control_type == Control_Type.NEURON_FILTER:
             self.m_ctrl = np.zeros(8)
             self.m_ctrl_old = np.zeros(8)
+            self.loop_counter = 8
             self.action_space = spaces.Box(low=0, high=1.0,shape=(8,), dtype=np.float32)
         else:
             self.m_ctrl = np.zeros(4)
             self.m_ctrl_old = np.zeros(4)
+            self.loop_counter = 4
             self.action_space = spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
         # Example for using image as input (channel-first; channel-last also works):
         #current endfactor pos
@@ -74,11 +76,7 @@ class DoubleLinkEnv(gym.Env):
             self.observation_space = spaces.Box(low=-50.0, high=50.0, shape=(6,), dtype=np.float32)
 
     def step(self, action):
-        if self.control_type == Control_Type.NEURON or self.control_type == Control_Type.NEURON_TEST or self.control_type == Control_Type.NEURON_FILTER:
-            loop_counter = 8
-        else:
-            loop_counter = 4
-        for i in range(loop_counter):
+        for i in range(self.loop_counter):
             # self.m_ctrl_old[i] = self.m_ctrl[i]
             self.m_ctrl[i] = action[i]
 

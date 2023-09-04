@@ -22,7 +22,7 @@ def make_env(instance_id, env_id, speed_mode, control_type):
 if __name__ =="__main__":
 	# 0: single pendulum, 1: double pendulum, 2: inverted pendulum, 3: double pendulum with extra observation
 	speed_mode = FAST
-	env_id = DOUBLE_PENDULUM
+	env_id = SINGLE_PENDULUM
 	models_dir = f"models/{int(time.time())}/"
 
 	if env_id == 0:
@@ -44,8 +44,8 @@ if __name__ =="__main__":
 	elif speed_mode == FAST:
 		episode_length = 500
 	if env_id == 0:
-		num_episodes = 5
-		env = pendulum_env.PendulumEnv(control_type=control_type, speed_mode=speed_mode)
+		num_episodes = 1
+		env = pendulum_env.PendulumEnv(control_type=control_type)
 		# vec_env = make_vec_env(lambda: pendulum_env.PendulumEnv(control_type=control_type), n_envs=4)
 	elif env_id == 1:
 		env = double_links_env.DoubleLinkEnv(control_type=control_type, speed_mode=speed_mode)

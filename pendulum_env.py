@@ -17,74 +17,63 @@ class PendulumEnv(gym.Env):
         self.init_mujoco()
         if self.rendering == True:
             self.init_window()
-        self.w_t = -max_pos
-        self.pos_t = np.array([0, 0, 1])
-        self.dx = stride
-        self.ctrl0 = 0
-        self.ctrl1 = 0
+
+        self.episode_length = 500
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
         if self.control_type == Control_Type.NEURON:
             self.action_space = spaces.Box(low=0, high=1.0,shape=(4,), dtype=np.float32)
-            self.ctrl2 = 0
-            self.ctrl3 = 0
+            self.m_ctrl = np.zeros(4)
+            self.m_ctrl_old = np.zeros(4)
+            self.loop_counter = 4
         else:
             self.action_space = spaces.Box(low=0, high=1.0,shape=(2,), dtype=np.float32)
+            self.m_ctrl = np.zeros(2)
+            self.m_ctrl_old = np.zeros(2)
+            self.loop_counter = 2
         # Example for using image as input (channel-first; channel-last also works):
-        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(7,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-50.0, high=50.0,shape=(1,), dtype=np.float32)
 
     def step(self, action):
-        self.ctrl0 = action[0]
-        self.ctrl1 = action[1]
-        if self.control_type == Control_Type.NEURON:
-            self.ctrl2 = action[2]
-            self.ctrl3 = action[3]
-
-        viewport_width = 0
-        viewport_height = 0
-        viewport = 0
-        if self.rendering == True:
-            viewport_width, viewport_height = glfw.get_framebuffer_size(self.window)
-            viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
+        for i in range(self.loop_counter):
+            self.m_ctrl_old[i] = self.m_ctrl[i]
+        for i in range(self.loop_counter):
+            self.m_ctrl[i] = action[i]
 
         mj.mj_step(self.model, self.data)
 
         if self.rendering == True:
             mj.mjv_updateScene(self.model, self.data, self.opt, None, self.cam, mj.mjtCatBit.mjCAT_ALL.value, self.scene)
-            mj.mjr_render(viewport, self.scene, self.context)
+            mj.mjr_render(self.viewport, self.scene, self.context)
             glfw.swap_buffers(self.window)
             glfw.poll_events()
 
-        reward = -np.linalg.norm(self.pos_t - self.data.xpos[1])
+        ctrl_grad_penalty = -np.linalg.norm(self.m_ctrl - self.m_ctrl_old)
+        pos_error_penalty = -np.linalg.norm(0 - self.data.qpos[1])
+        reward = ctrl_grad_penalty + pos_error_penalty
 
         self.ticks += 1
-        if self.ticks >= 10000:
+        if self.ticks >= self.episode_length:
             self.done = True
 
-        observation = np.concatenate((self.pos_t, self.data.xpos[1], np.array([self.data.qvel[0]])))
+        observation = np.array([0])
         info = {}
 
         return observation, reward, self.done, info
 
     def reset(self):
-        # print(self.w_t)
-        self.compute_target_pos()
-        print(self.pos_t)
-        self.w_t += self.dx
-        if self.w_t > max_pos:
-            self.dx = -stride
-            self.w_t = max_pos
-        if self.w_t < -max_pos:
-            self.dx = stride
-            self.w_t = -max_pos
-        self.vel_t = 0
         self.done = False
         self.ticks = 0
+        for i in range(self.loop_counter):
+            self.m_ctrl_old[i] = 0
+            self.m_ctrl[i] = 0
+
         mj.mj_resetData(self.model, self.data)
+        self.data.qvel[0] = 2
         mj.mj_forward(self.model, self.data)
 
-        observation = np.concatenate((self.pos_t, self.data.xpos[1], np.array([self.data.qvel[0]])))
+        observation =  np.array([0])
         return observation
 
     # def render(self):
@@ -130,28 +119,25 @@ class PendulumEnv(gym.Env):
         self.scene = mj.MjvScene(self.model, maxgeom=10000)
         self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
-    def compute_target_pos(self):
-        x = np.cos(-0.5 * np.pi + self.w_t)
-        z = np.sin(-0.5 * np.pi + self.w_t) + 2
-        self.pos_t = np.array([x, 0, z])
-
+        viewport_width, viewport_height = glfw.get_framebuffer_size(self.window)
+        self.viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
 
     def my_baseline(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1])
         baseline_controller(action, data)
-        joint0_controller(model, data)
+        # joint0_controller(model, data)
 
     def my_RI(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1])
         RI_controller(action, data)
-        joint0_controller(model, data)
+        # joint0_controller(model, data)
 
     def my_stretch_reflex(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1])
         stretch_reflex_controller(action, data)
-        joint0_controller(model, data)
+        # joint0_controller(model, data)
 
     def my_neuron_controller(self, model, data):
         action = np.array([self.ctrl0, self.ctrl1, self.ctrl2, self.ctrl3])
         neuron_controller(action, data)
-        joint0_controller(model, data)
+        # joint0_controller(model, data)
