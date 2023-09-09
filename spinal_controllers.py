@@ -32,11 +32,10 @@ def RI_controller(input_action, data):
         data.ctrl[2] = 0
 
 def stretch_reflex_controller(input_action, data):
-    normalize_factor = 0.677
-    r_spindle = data.actuator_length[1] / normalize_factor
-    l_spindle = data.actuator_length[2] / normalize_factor
-    data.ctrl[1] = r_spindle - input_action[0]
-    data.ctrl[2] = l_spindle - input_action[1]
+    normalize_factor = 0.7
+    for i in range(2):
+        spindle_output = (data.actuator_length[i+1] + data.actuator_velocity[i+1] * 0.05)/ normalize_factor
+        data.ctrl[i+1] = max(spindle_output - input_action[i], 0)
 
 def neuron_controller(input_action, data):
     normalize_factor = 0.677

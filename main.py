@@ -12,7 +12,7 @@ PPO_MODE = 0
 TD3_MODE = 1
 
 control_type = spinal_controllers.Control_Type.REFLEX
-env_id = 1
+env_id = 0
 RL_mode = PPO_MODE
 
 if env_id == 0:
@@ -105,7 +105,11 @@ def scroll(window, xoffset, yoffset):
                       yoffset, scene, cam)
 
 def init_controller(model,data):
-    if env_id == 2:
+    if env_id == 0:
+        mj.mj_resetData(model, data)
+        data.qvel[0] = 1
+        mj.mj_forward(model, data)
+    elif env_id == 2:
         mj.mj_resetData(model, data)
         data.qpos[0] = 0.4
         data.qpos[1] = -0.87
@@ -164,11 +168,11 @@ e1_l = 0
 #     # l1 = max(mb - (kp * (data.actuator_length[2] - gl1) + kd * data.actuator_velocity[2] + ki * e1_l), 0)
 def baseline_callback(model, data):
     if env_id == 0:
-        obs = np.concatenate((target_pos, data.xpos[1], np.array([data.qvel[0]])))
+        obs = np.array([0, 0.1, 0.6, 0.06])
         action, _states = PPO_model0.predict(obs)
         spinal_controllers.baseline_controller(input_action=action, data=data)
-        spinal_controllers.joint0_controller(model, data)
-        print(data.qpos[0], data.ctrl[1], data.ctrl[2])
+        # print(data.qpos[0])
+        print(data.ctrl[1], data.ctrl[2])
     elif env_id == 1:
         # obs = np.concatenate((target_pos, data.xpos[1], data.xpos[2], np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])))
         obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
@@ -189,7 +193,13 @@ def baseline_callback(model, data):
         # double_link_controllers.joints_controller(data)
 
 def reflex_callback(model, data):
-    if env_id == 1:
+    if env_id == 0:
+        obs = np.array([0, 0.1, 0.6, 0.06])
+        action, _states = PPO_model2.predict(obs)
+        spinal_controllers.stretch_reflex_controller(input_action=action, data=data)
+        # print(data.ctrl[1], data.ctrl[2])
+        print(action)
+    elif env_id == 1:
         obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[1]])
         # obs = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1], 0, 0])
         # obs = np.array([m_target[0], m_target[1]])
@@ -268,33 +278,30 @@ w = -0.48
 m_target = np.array([-0.65, 0.44])
 if control_type == spinal_controllers.Control_Type.BASELINE:
     if env_id == 0:
-        target_pos = compute_target_pos(w, 1)
-        PPO_model_path0 = "models/1687332383/10650000.zip"
-        PPO_model0 = PPO.load(PPO_model_path0)
+        PPO_model_path0 = "models/1693873419/1370000.zip"
     elif env_id == 1:
         # PPO_model_path0 = "..\\RL_data\\decouple_sim\\models\\1691616507\\11520000.zip"
         PPO_model_path0 =  "models\\1693531574\\4328000.zip"
-        PPO_model0 = PPO.load(PPO_model_path0)
     elif env_id == 2:
         # PPO_model_path0 = "..\\RL_data\\first_working_inverted_pendulum\\models\\1690272718\\2590000.zip"
         PPO_model_path0 = "models\\1690927529\\5390000.zip"
-        PPO_model0 = PPO.load(PPO_model_path0)
+    PPO_model0 = PPO.load(PPO_model_path0)
 
 
 if control_type == spinal_controllers.Control_Type.REFLEX:
-    if env_id == 1:
+    if env_id == 0:
+        PPO_model_path2 = "models/1694066694/775000.zip"
+    elif env_id == 1:
         PPO_model_path2="models/1693584791/880000.zip"
-        PPO_model2=PPO.load(PPO_model_path2)
+    PPO_model2=PPO.load(PPO_model_path2)
 
 if control_type == spinal_controllers.Control_Type.NEURON:
     if env_id == 0:
         PPO_model_path4 = "models/1687587323/19360000.zip"
-        PPO_model4 = PPO.load(PPO_model_path4)
         target_pos = compute_target_pos(w, 1)
     elif env_id == 1:
         PPO_model_path4 = "models/1693531592/4048000.zip"
         # PPO_model_path4 = "..\\RL_data\\neuron-training-stable\\models\\1687913383\\56960000.zip"
-        PPO_model4 = PPO.load(PPO_model_path4)
         data.qpos[0] = m_target[0]
         data.qpos[1] = m_target[1]
         mj.mj_forward(model, data)
@@ -304,7 +311,7 @@ if control_type == spinal_controllers.Control_Type.NEURON:
     elif env_id == 2:
         # PPO_model_path4 = "..\\RL_data\\first_working_inverted_pendulum\\models\\1690274397\\2130000.zip"
         PPO_model_path4 = "models\\1690928259\\4700000.zip"
-        PPO_model4 = PPO.load(PPO_model_path4)
+    PPO_model4 = PPO.load(PPO_model_path4)
 
 tick_count = 0
 ep_reward = 0

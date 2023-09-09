@@ -26,7 +26,7 @@ if __name__ =="__main__":
 	models_dir = f"models/{int(time.time())}/"
 
 	if env_id == 0:
-		control_type = pendulum_env.Control_Type.NEURON
+		control_type = pendulum_env.Control_Type.REFLEX
 		logdir = f"logs/{int(time.time())}-{pendulum_env.control_typle_dic[control_type]}/"
 	elif env_id == 1 or env_id == 2 or env_id == 3:
 		control_type = double_links_env.Control_Type.BASELINE
@@ -44,7 +44,7 @@ if __name__ =="__main__":
 	elif speed_mode == FAST:
 		episode_length = 500
 	if env_id == 0:
-		num_episodes = 1
+		num_episodes = 5
 		env = pendulum_env.PendulumEnv(control_type=control_type)
 		# vec_env = make_vec_env(lambda: pendulum_env.PendulumEnv(control_type=control_type), n_envs=4)
 	elif env_id == 1:
@@ -61,7 +61,7 @@ if __name__ =="__main__":
 		env = SubprocVecEnv(env_fns)
 
 	# policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[8, 8], vf=[64, 64]))
-	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[64, 64], vf=[64, 64]))
+	policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[128, 128], vf=[64, 64]))
 	m_steps = episode_length * num_episodes
 	#n_steps=50000 batch_size=10000,n_epochs=10 tested
 	#model = PPO('MlpPolicy', env, device='cpu', n_steps=m_steps, batch_size=1000, n_epochs=100, verbose=1, tensorboard_log=logdir) - 1689548375
