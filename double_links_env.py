@@ -51,10 +51,10 @@ class DoubleLinkEnv(gym.Env):
         self.num_of_targets = 0
         if self.env_id == 1:
             self.target_qs = []
-            for i in np.arange(-0.2, 0.2, 0.1):
-                for j in np.arange(-0.2, 0.2, 0.1):
-            # for i in np.arange(-0.6, 0.6, 0.2):
-            #     for j in np.arange(-0.6, 0.6, 0.2):
+            # for i in np.arange(-0.2, 0.2, 0.1):
+            #     for j in np.arange(-0.2, 0.2, 0.1):
+            for i in np.arange(-0.6, 0.6, 0.2):
+                for j in np.arange(-0.6, 0.6, 0.2):
                     self.target_qs.append(np.array([i, j]))
                     self.num_of_targets += 1
             # self.target_qs = [np.array([0.195, -0.792])]

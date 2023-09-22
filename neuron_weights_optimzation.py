@@ -3,41 +3,65 @@ import mujoco as mj
 import numpy as np
 import os
 import double_links_env
+import my_double_pendulum_env
 import torch as th
 from scipy.optimize import minimize
+from scipy.optimize import OptimizeResult
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 
-SLOW = 0
-FAST = 1
-
-env = double_links_env.DoubleLinkEnv(env_id=1, control_type=double_links_env.Control_Type.NEURON_TEST, speed_mode=FAST)
-env_with_monitor = Monitor(env)
+episode_length =100
+# env = double_links_env.DoubleLinkEnv(env_id=1, control_type=double_links_env.Control_Type.NEURON_TEST, speed_mode=FAST)
+# env_with_monitor = Monitor(env)
+env = my_double_pendulum_env.MyDoublePendulumEnv(i_episode_length=episode_length)
 num_episodes = env.get_num_of_targets()
 
-policy_kwargs = dict(activation_fn=th.nn.Tanh, net_arch=dict(pi=[3, 3], vf=[3, 3]))
-episode_length = 500
-m_steps = episode_length * num_episodes
-
 def callback_function(xk):
-    print(f"alpha: {xk[0]}, beta: {xk[1]}")
+    current_value = my_f(xk)
+    print(f"current value: {current_value}")
 
-def f(x):
-    env.update_neuron_weights(x)
-    env.reset()
+def my_f(x):
+    A = np.zeros((4, 8))
+    for i in range(4):
+        A[0, i] = x[i]
+    for i in range(0, 4, 2):
+        A[1, i] = A[0, i+1]
+        A[1, i+1] = A[0, i]
+    for i in range(3, -1, -1):
+        A[3, i] = x[i]
+    for i in range(0, 4, 2):
+        A[2, i] = A[3, i+1]
+        A[2, i+1] = A[3, i]
 
-    #train the model
-    model = PPO('MlpPolicy', env_with_monitor, policy_kwargs=policy_kwargs, device='auto', n_steps=m_steps, batch_size=episode_length, n_epochs=10, verbose=1)
-    training_steps = 500
-    model.learn(total_timesteps=training_steps)
+    A[0, 4] = x[4]
+    A[0, 5] = x[5]
+    A[1, 4] =  A[0, 5]
+    A[1, 5] =  A[0, 4]
+    A[2, 6] =  A[0, 4]
+    A[2, 7] =  A[0, 5]
+    A[3, 6] =  A[0, 5]
+    A[3, 7] =  A[0, 4]
 
-    #evaluate the model
-    mean_reward, std_reward = evaluate_policy(model, env_with_monitor, n_eval_episodes=2)
-    print(f"reward after {training_steps} steps: {mean_reward}")
-    return mean_reward
+    env.set_spinal_weights(A)
 
-x0 = [0.47, 0.9]
-bounds = ((0, 4), (0, 0.9999))
-result = minimize(f, x0, bounds=bounds, callback=callback_function)
+    total_pen = 0
+    for i in range(num_episodes):
+        env.reset()
+        ep_pen = 0
+        for j in range(episode_length):
+            ep_pen += env.step()
+        total_pen += ep_pen
+
+    # print("objective function evaluated!")
+    return total_pen
+
+x0 = np.zeros(6)
+bnds=[(0, 1)] * 6
+# reward = my_f(x0)
+# print(reward)
+# result = minimize(my_f, x0, bounds=bnds, callback=callback_function)
+result = minimize(my_f, x0, method='CG', callback=callback_function)
 if result.success:
     print(f"success with x: {result.x}")
+
+env.close()
