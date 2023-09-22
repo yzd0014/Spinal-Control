@@ -1,6 +1,8 @@
 import numpy as np
 from enum import Enum
 from scipy import signal
+import mujoco as mj
+import os
 
 import iir
 import fir
@@ -171,3 +173,23 @@ class BaselineController(object):
     v0_est = self.fv0.filter(data.qvel[0])
     v1_est = self.fv1.filter(data.qvel[1])
     self.obs = np.array([q0_est,q1_est,v0_est,v1_est])
+
+# -----------------------------------------------------------------------------
+# Baseline Controller
+# -----------------------------------------------------------------------------
+class SpinalOptimalController():
+  def __init__(self):
+    xml_path = 'double_links_fast.xml'
+    dirname = os.path.dirname(__file__)
+    abspath = os.path.join(dirname + "/" + xml_path)
+    xml_path = abspath
+    self.m_model = mj.MjModel.from_xml_path(xml_path)
+    self.m_data = mj.MjData(self.m_model)
+
+    self.inputs = np.zeros(4)
+
+    def set_inputs(self, i_inputs):
+      self.inputs = i_inputs
+
+    def callback(self, model, data):
+      pass
