@@ -3,7 +3,7 @@ from control import *
 # Choose controller here
 
 # Neuron Parameters
-control_type = Control_Type.NEURON
+control_type = Control_Type.NEURON_OPTIMAL
 controller_params = NeuronParams(alpha=0.4691358024691358, \
                                   beta=0.9, \
                                   gamma=1, \

@@ -6,35 +6,44 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import pickle
-
+import parameters
 from control import *
 
-modelid = "1694208977"
+if parameters.control_type != Control_Type.NEURON_OPTIMAL:
+    modelid = "1694208977"
 
-# Load Params
-print("\n\n")
-print("loading env and control parameters " + "./models/" + modelid + "\n")
+    # Load Params
+    print("\n\n")
+    print("loading env and control parameters " + "./models/" + modelid + "\n")
 
-control_type, \
-episode_length, \
-fs_brain_factor, \
-controller_params  = pickle.load(open("./models/" + modelid + "/" \
-                                    + "env_contr_params.p", "rb"))
+    control_type, \
+    episode_length, \
+    fs_brain_factor, \
+    controller_params  = pickle.load(open("./models/" + modelid + "/" \
+                                        + "env_contr_params.p", "rb"))
 
-dt_brain = 1.0/controller_params.fs * fs_brain_factor
-# For saving data
-fdata = open("./datalog/" + modelid,'w')
+    dt_brain = 1.0/controller_params.fs * fs_brain_factor
+    # For saving data
+    fdata = open("./datalog/" + modelid,'w')
 
-# Find most recent model
-models_dir = "./models/" + modelid + "/"
-allmodels = sorted(os.listdir(models_dir))
-allmodels.sort(key=lambda fn: \
-               os.path.getmtime(os.path.join(models_dir, fn)))
+    # Find most recent model
+    models_dir = "./models/" + modelid + "/"
+    allmodels = sorted(os.listdir(models_dir))
+    allmodels.sort(key=lambda fn: \
+                   os.path.getmtime(os.path.join(models_dir, fn)))
 
-runid = allmodels[-1].split(".")
-runid = runid[0]
+    runid = allmodels[-1].split(".")
+    runid = runid[0]
 
+    PPO_model_path0 = "./models/" + modelid + "/" + runid
+    PPO_model = PPO.load(PPO_model_path0)
+else:
+    control_type = parameters.control_type
+    episode_length = parameters.episode_length
+    fs_brain_factor = parameters.fs_brain_factor
+    controller_params = parameters.controller_params
 
+    dt_brain = 1.0 / controller_params.fs * fs_brain_factor
 
 xml_path = 'double_links_fast.xml'
 
@@ -50,19 +59,22 @@ lasty = 0
 
 # Neuron Controller
 if control_type == Control_Type.NEURON:
-  controller = NeuronController(controller_params)
+    controller = NeuronController(controller_params)
 # Neuron Controller
 elif control_type == Control_Type.NEURON_SIMPLE:
-  controller = NeuronSimpleController(controller_params)
+    controller = NeuronSimpleController(controller_params)
 # Baseline Controller
 elif control_type == Control_Type.BASELINE:
-  controller = BaselineController(controller_params)
+    controller = BaselineController(controller_params)
+# Optimal neuron Controller
+elif control_type == Control_Type.NEURON_OPTIMAL:
+    controller = SpinalOptimalController()
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
         mj.mj_resetData(model, data)
         mj.mj_forward(model, data)
-        init_controller(model, data)
+        # init_controller(model, data)
 
 def mouse_button(window, button, act, mods):
     # update button state
@@ -130,32 +142,35 @@ def scroll(window, xoffset, yoffset):
                       yoffset, scene, cam)
 
 def init_controller(model,data):
-    if env_id == 2:
-        mj.mj_resetData(model, data)
-        data.qpos[0] = 0.4
-        data.qpos[1] = -0.87
-        data.qpos[2] = -2.32
-        mj.mj_forward(model, data)
+    pass
 
 def callback(model, data):
   global global_timer
   if data.time - global_timer >= dt_brain:
-    observation = np.concatenate(([m_target[0], m_target[1]], \
-                                  controller.obs, \
-                                  np.array([0,0])))
-    action, _states = PPO_model.predict(observation)
-    controller.set_action(action)
+    if control_type == Control_Type.NEURON_OPTIMAL:
+        mj.set_mjcb_control(None)
+        controller.set_inputs(data, np.array([m_target[0], m_target[1], 0.2, 0.2]))
+        mj.set_mjcb_control(callback)
+    else:
+        observation = np.concatenate(([m_target[0], m_target[1]], \
+                                      controller.obs, \
+                                      np.array([0,0])))
+        action, _states = PPO_model.predict(observation)
+        controller.set_action(action)
     global_timer = data.time
 
   controller.callback(model,data)
-  data2write = np.concatenate(([m_target[0],m_target[1]], \
-                              data.qpos, \
-                              controller.obs, \
-                              data.actuator_length, \
-                              data.ctrl, \
-                              controller.action))
-  datastr = ','.join(str(x) for x in data2write)
-  fdata.write(datastr + '\n')
+  print(data.ctrl[2], data.ctrl[3])
+
+  if control_type != Control_Type.NEURON_OPTIMAL:
+      data2write = np.concatenate(([m_target[0],m_target[1]], \
+                                  data.qpos, \
+                                  controller.obs, \
+                                  data.actuator_length, \
+                                  data.ctrl, \
+                                  controller.action))
+      datastr = ','.join(str(x) for x in data2write)
+      fdata.write(datastr + '\n')
 
 
 #get the full path
@@ -196,16 +211,7 @@ cam.elevation = -20
 cam.distance = 2
 cam.lookat = np.array([0.0, -1, 2])
 
-def compute_target_pos(w, r):
-    x = r * np.cos(-0.5 * np.pi + w)
-    z = r * np.sin(-0.5 * np.pi + w) + 2
-    output = np.array([x, 0, z])
-    return output
-#load modes for each controller
-w = -0.48
-m_target = np.array([0.2, -0.15])
-PPO_model_path0 = "./models/" + modelid + "/" + runid
-PPO_model = PPO.load(PPO_model_path0)
+m_target = np.array([0.2, 0.5])
 
 #initialize the controller
 #init_controller(model,data)

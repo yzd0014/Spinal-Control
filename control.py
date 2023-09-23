@@ -8,13 +8,15 @@ import iir
 import fir
 
 class Control_Type(Enum):
-    BASELINE = 1
-    NEURON = 2
-    NEURON_SIMPLE = 3
+  BASELINE = 1
+  NEURON = 2
+  NEURON_SIMPLE = 3
+  NEURON_OPTIMAL = 4
 
 control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.NEURON: "neuron",
-                    Control_Type.NEURON_SIMPLE: "neuron-simple"}
+                    Control_Type.NEURON_SIMPLE: "neuron-simple",
+                    Control_Type.NEURON_SIMPLE: "neuron-optimal"}
 
 
 # -----------------------------------------------------------------------------
@@ -186,10 +188,43 @@ class SpinalOptimalController():
     self.m_model = mj.MjModel.from_xml_path(xml_path)
     self.m_data = mj.MjData(self.m_model)
 
-    self.inputs = np.zeros(4)
+    self.actions = np.zeros(4)
+    self.lmax = 0.677
 
-    def set_inputs(self, i_inputs):
-      self.inputs = i_inputs
+  def set_inputs(self, data, inputs):
+    mj.mj_resetData(self.m_model, self.m_data)
+    self.m_data.qpos[0:2] = inputs[0:2]
+    mj.mj_forward(self.m_model, self.m_data)
 
-    def callback(self, model, data):
-      pass
+    l_desired = np.zeros(4)
+    l_desired[0:4] = self.m_data.actuator_length[0:4]
+
+    for i in range(2):
+      u0_temp = 0
+      u1_temp = 0
+      if np.absolute(data.qpos[i] - inputs[i]) > 0.2:
+        if data.qpos[i] > inputs[i]:
+          u1_temp = 1
+          u0_temp = 0
+        else:
+          u1_temp = 0
+          u0_temp = 1
+        self.actions[i * 2] = data.actuator_length[i * 2] - self.lmax * u0_temp
+        self.actions[i * 2 + 1] = data.actuator_length[i * 2 + 1] - self.lmax * u1_temp
+      else:
+        moment_ratio = abs(self.m_data.actuator_moment[i * 2 + 1][i]) / abs(self.m_data.actuator_moment[i * 2][i])
+        co_contraction_level = inputs[2 + i]
+        if moment_ratio < 1:
+          u0_temp = co_contraction_level
+          u1_temp = co_contraction_level * moment_ratio
+        else:
+          moment_ratio = 1 / moment_ratio
+          u0_temp = co_contraction_level * moment_ratio
+          u1_temp = co_contraction_level
+
+        self.actions[i * 2] = l_desired[i * 2] - self.lmax * u0_temp
+        self.actions[i * 2 + 1] = l_desired[i * 2 + 1] - self.lmax * u1_temp
+
+  def callback(self, model, data):
+    for i in range(4):
+      data.ctrl[i] = (data.actuator_length[i] + data.actuator_velocity[i] - self.actions[i])/self.lmax
