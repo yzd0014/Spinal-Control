@@ -19,7 +19,7 @@ controller_params = NeuronParams(alpha=0.4691358024691358, \
 episode_length = 50
 
 # loop factor for brain sampling
-fs_brain_factor = 20
+fs_brain_factor = 10
 
 # For Simulations
 #modelid = "neuron-iir-10hz-best"

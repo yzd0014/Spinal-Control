@@ -46,11 +46,11 @@ if __name__=="__main__":
   TIMESTEPS = m_steps
   model = PPO('MlpPolicy', env, \
                 policy_kwargs=policy_kwargs, \
-                device='auto', \
+                device='cpu', \
                 n_steps=m_steps, \
                 batch_size=episode_length, \
                 n_epochs=10, \
-                verbose=0, \
+                verbose=1, \
                 tensorboard_log=logdir)
   print(model.policy)
 
@@ -58,5 +58,5 @@ if __name__=="__main__":
   while True:
     iters += 1
     model.learn(total_timesteps=TIMESTEPS,reset_num_timesteps=False, \
-                tb_log_name=f"PPO",progress_bar=True)
+                tb_log_name=f"PPO")
     model.save(f"{models_dir}/{TIMESTEPS * iters}")

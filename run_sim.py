@@ -10,7 +10,7 @@ import parameters
 from control import *
 
 if parameters.control_type != Control_Type.NEURON_OPTIMAL:
-    modelid = "1694208977"
+    modelid = "1695538104"
 
     # Load Params
     print("\n\n")
@@ -68,7 +68,7 @@ elif control_type == Control_Type.BASELINE:
     controller = BaselineController(controller_params)
 # Optimal neuron Controller
 elif control_type == Control_Type.NEURON_OPTIMAL:
-    controller = SpinalOptimalController()
+    controller = SpinalOptimalController(controller_params)
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
@@ -144,35 +144,34 @@ def scroll(window, xoffset, yoffset):
 def init_controller(model,data):
     pass
 
+
 def callback(model, data):
-  global global_timer
-  if data.time - global_timer >= dt_brain:
-    if control_type == Control_Type.NEURON_OPTIMAL:
-        mj.set_mjcb_control(None)
-        controller.set_inputs(data, np.array([m_target[0], m_target[1], 0.2, 0.2]))
-        mj.set_mjcb_control(callback)
-    else:
-        observation = np.concatenate(([m_target[0], m_target[1]], \
-                                      controller.obs, \
-                                      np.array([0,0])))
-        action, _states = PPO_model.predict(observation)
-        controller.set_action(action)
-    global_timer = data.time
+    global global_timer
+    if data.time - global_timer >= dt_brain:
+        if control_type == Control_Type.NEURON_OPTIMAL:
+            controller.set_action(np.array([m_target[0], m_target[1], 0.5, 0.5]))
+        else:
+            observation = np.concatenate(([m_target[0], m_target[1]], \
+                                          controller.obs, \
+                                          np.array([0, 0])))
+            action, _states = PPO_model.predict(observation)
+            controller.set_action(action)
+        global_timer = data.time
 
-  controller.callback(model,data)
-  # print(controller.l_desired)
-  # print(data.ctrl[2], data.ctrl[3])
-  print(data.qpos[0], data.qpos[1])
+    controller.callback(model, data)
+    # print(controller.l_desired)
+    # print(data.ctrl[2], data.ctrl[3])
+    print(data.qpos[0], data.qpos[1])
 
-  if control_type != Control_Type.NEURON_OPTIMAL:
-      data2write = np.concatenate(([m_target[0],m_target[1]], \
-                                  data.qpos, \
-                                  controller.obs, \
-                                  data.actuator_length, \
-                                  data.ctrl, \
-                                  controller.action))
-      datastr = ','.join(str(x) for x in data2write)
-      fdata.write(datastr + '\n')
+    if control_type != Control_Type.NEURON_OPTIMAL:
+        data2write = np.concatenate(([m_target[0], m_target[1]], \
+                                     data.qpos, \
+                                     controller.obs, \
+                                     data.actuator_length, \
+                                     data.ctrl, \
+                                     controller.action))
+        datastr = ','.join(str(x) for x in data2write)
+        fdata.write(datastr + '\n')
 
 
 #get the full path
@@ -213,7 +212,7 @@ cam.elevation = -20
 cam.distance = 2
 cam.lookat = np.array([0.0, -1, 2])
 
-m_target = np.array([0.12, 0.27])
+m_target = np.array([0.1, 0.02])
 
 #initialize the controller
 #init_controller(model,data)
