@@ -199,32 +199,49 @@ class SpinalOptimalController():
     l_desired = np.zeros(4)
     l_desired[0:4] = self.m_data.actuator_length[0:4]
 
-    for i in range(2):
-      u0_temp = 0
-      u1_temp = 0
-      if np.absolute(data.qpos[i] - inputs[i]) > 0.2:
-        if data.qpos[i] > inputs[i]:
-          u1_temp = 1
-          u0_temp = 0
-        else:
-          u1_temp = 0
-          u0_temp = 1
-        self.actions[i * 2] = data.actuator_length[i * 2] - self.lmax * u0_temp
-        self.actions[i * 2 + 1] = data.actuator_length[i * 2 + 1] - self.lmax * u1_temp
-      else:
-        moment_ratio = abs(self.m_data.actuator_moment[i * 2 + 1][i]) / abs(self.m_data.actuator_moment[i * 2][i])
-        co_contraction_level = inputs[2 + i]
-        if moment_ratio < 1:
-          u0_temp = co_contraction_level
-          u1_temp = co_contraction_level * moment_ratio
-        else:
-          moment_ratio = 1 / moment_ratio
-          u0_temp = co_contraction_level * moment_ratio
-          u1_temp = co_contraction_level
-
-        self.actions[i * 2] = l_desired[i * 2] - self.lmax * u0_temp
-        self.actions[i * 2 + 1] = l_desired[i * 2 + 1] - self.lmax * u1_temp
+    # Kp = 1
+    # Kd = 0.1
+    # for i in range(2):
+    #   if np.absolute(data.qpos[i] - inputs[i]) > 0.1:
+    #     tao = Kp * (inputs[i] - data.qpos[i]) - Kd * data.qvel[i]
+    #     if tao > 0:
+    #       u0_temp = tao
+    #       u1_temp = 0
+    #     else:
+    #       u0_temp = 0
+    #       u1_temp = -tao
+    #
+    #     self.actions[i * 2] = data.actuator_length[i * 2] + 0.1 * data.actuator_velocity[2 * i]- self.lmax * u0_temp
+    #     self.actions[i * 2 + 1] = data.actuator_length[i * 2 + 1] + 0.1 * data.actuator_velocity[2 * i + 1]- self.lmax * u1_temp
+    #   else:
+    #     moment_ratio = abs(self.m_data.actuator_moment[i * 2 + 1][i]) / abs(self.m_data.actuator_moment[i * 2][i])
+    #     co_contraction_level = inputs[2 + i]
+    #     if moment_ratio < 1:
+    #       u0_temp = co_contraction_level
+    #       u1_temp = co_contraction_level * moment_ratio
+    #     else:
+    #       moment_ratio = 1 / moment_ratio
+    #       u0_temp = co_contraction_level * moment_ratio
+    #       u1_temp = co_contraction_level
+    #
+    #     self.actions[i * 2] = l_desired[i * 2] - self.lmax * u0_temp
+    #     self.actions[i * 2 + 1] = l_desired[i * 2 + 1] - self.lmax * u1_temp
 
   def callback(self, model, data):
-    for i in range(4):
-      data.ctrl[i] = (data.actuator_length[i] + data.actuator_velocity[i] - self.actions[i])/self.lmax
+    # for i in range(4):
+    #   data.ctrl[i] = (data.actuator_length[i] + 0.1 * data.actuator_velocity[i] - self.actions[i])/self.lmax
+
+    Kp = 1
+    Kd = 0.1
+    for i in range(2):
+      tao = Kp * (self.m_data.qpos[i] - data.qpos[i]) - Kd * data.qvel[i]
+      print(tao)
+      if tao > 0:
+        u0_temp = tao
+        u1_temp = 0
+      else:
+        u0_temp = 0
+        u1_temp = -tao
+
+      data.ctrl[i * 2] = u0_temp
+      data.ctrl[i * 2 + 1] = u1_temp

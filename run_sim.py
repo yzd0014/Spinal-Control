@@ -160,7 +160,9 @@ def callback(model, data):
     global_timer = data.time
 
   controller.callback(model,data)
-  print(data.ctrl[2], data.ctrl[3])
+  # print(controller.l_desired)
+  # print(data.ctrl[2], data.ctrl[3])
+  print(data.qpos[0], data.qpos[1])
 
   if control_type != Control_Type.NEURON_OPTIMAL:
       data2write = np.concatenate(([m_target[0],m_target[1]], \
@@ -211,7 +213,7 @@ cam.elevation = -20
 cam.distance = 2
 cam.lookat = np.array([0.0, -1, 2])
 
-m_target = np.array([0.2, 0.5])
+m_target = np.array([0.12, 0.27])
 
 #initialize the controller
 #init_controller(model,data)
