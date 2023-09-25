@@ -14,14 +14,13 @@ class DoubleLinkEnv(gym.Env):
     def __init__(self, \
                  control_type=Control_Type.NEURON, \
                  instance_id=0, \
-                 episode_length=50, \
-                 fs_brain_factor=20, \
                  c_params=None):
         super(DoubleLinkEnv, self).__init__()
 
         self.control_type = control_type
         self.c_params = c_params
 
+        self.init_mujoco()
         # Neuron Controller
         if self.control_type == Control_Type.NEURON:
             self.controller = NeuronController(c_params)
@@ -34,15 +33,16 @@ class DoubleLinkEnv(gym.Env):
         elif self.control_type == Control_Type.NEURON_OPTIMAL:
             self.controller = SpinalOptimalController(c_params)
 
+        mj.set_mjcb_control(self.controller.callback)
+
         # Other stuff
-        self.dt_brain = 1.0 / c_params.fs * fs_brain_factor
+        self.dt_brain = c_params.brain_dt
         self.instance_id = instance_id
         self.rendering = False
-        self.init_mujoco()
         if self.rendering == True:
             self.init_window()
 
-        self.episode_length = 50
+        self.episode_length = c_params.episode_length_in_ticks
 
         self.num_of_targets = 0
         self.target_qs = []
@@ -149,7 +149,7 @@ class DoubleLinkEnv(gym.Env):
         self.cam.distance = 2
         self.cam.lookat = np.array([0.0, -1, 2])
 
-        mj.set_mjcb_control(self.controller.callback)
+        self.c_params.fs = 1 / self.model.opt.timestep
 
     def init_window(self):
         glfw.init()

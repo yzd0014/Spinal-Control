@@ -9,41 +9,32 @@ import pickle
 import parameters
 from control import *
 
-if parameters.control_type != Control_Type.NEURON_OPTIMAL:
-    modelid = "1695538104"
+modelid = "1695538104"
 
-    # Load Params
-    print("\n\n")
-    print("loading env and control parameters " + "./models/" + modelid + "\n")
+# Load Params
+print("\n\n")
+print("loading env and control parameters " + "./models/" + modelid + "\n")
 
-    control_type, \
-    episode_length, \
-    fs_brain_factor, \
-    controller_params  = pickle.load(open("./models/" + modelid + "/" \
-                                        + "env_contr_params.p", "rb"))
+control_type, \
+    controller_params = pickle.load(open("./models/" + modelid + "/" \
+                                         + "env_contr_params.p", "rb"))
+episode_length = controller_params.episode_length_in_ticks
+dt_brain = controller_params.brain_dt
 
-    dt_brain = 1.0/controller_params.fs * fs_brain_factor
-    # For saving data
-    fdata = open("./datalog/" + modelid,'w')
+# For saving data
+fdata = open("./datalog/" + modelid, 'w')
 
-    # Find most recent model
-    models_dir = "./models/" + modelid + "/"
-    allmodels = sorted(os.listdir(models_dir))
-    allmodels.sort(key=lambda fn: \
-                   os.path.getmtime(os.path.join(models_dir, fn)))
+# Find most recent model
+models_dir = "./models/" + modelid + "/"
+allmodels = sorted(os.listdir(models_dir))
+allmodels.sort(key=lambda fn: \
+    os.path.getmtime(os.path.join(models_dir, fn)))
 
-    runid = allmodels[-1].split(".")
-    runid = runid[0]
+runid = allmodels[-1].split(".")
+runid = runid[0]
 
-    PPO_model_path0 = "./models/" + modelid + "/" + runid
-    PPO_model = PPO.load(PPO_model_path0)
-else:
-    control_type = parameters.control_type
-    episode_length = parameters.episode_length
-    fs_brain_factor = parameters.fs_brain_factor
-    controller_params = parameters.controller_params
-
-    dt_brain = 1.0 / controller_params.fs * fs_brain_factor
+PPO_model_path0 = "./models/" + modelid + "/" + runid
+PPO_model = PPO.load(PPO_model_path0)
 
 xml_path = 'double_links_fast.xml'
 

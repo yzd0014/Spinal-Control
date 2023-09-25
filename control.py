@@ -20,20 +20,19 @@ control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.NEURON_SIMPLE: "neuron-simple",
                     Control_Type.NEURON_OPTIMAL: "neuron-optimal"}
 
-
-# -----------------------------------------------------------------------------
-# Neural Controller
-# -----------------------------------------------------------------------------
-
-class NeuronParams:
-    def __init__(self, alpha, beta, gamma, fc, fs):
+class ControllerParams:
+    def __init__(self, alpha, beta, gamma, fc, brain_dt, episode_length_in_seconds):
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
         self.fc = fc
-        self.fs = fs
+        self.fs = 0
+        self.brain_dt = brain_dt
+        self.episode_length_in_ticks = int(episode_length_in_seconds / brain_dt)
 
-
+# -----------------------------------------------------------------------------
+# Neural Controller
+# -----------------------------------------------------------------------------
 class NeuronController(object):
     def __init__(self, p):
         self.alpha = p.alpha;
