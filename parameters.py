@@ -3,7 +3,7 @@ from control import *
 # Choose controller here
 
 # Neuron Parameters
-control_type = Control_Type.BASELINE
+control_type = Control_Type.PID
 controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     beta=0.9, \
                                     gamma=1, \

@@ -13,12 +13,15 @@ class Control_Type(Enum):
     NEURON = 2
     NEURON_SIMPLE = 3
     NEURON_OPTIMAL = 4
+    PID = 5
 
 
 control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.NEURON: "neuron",
                     Control_Type.NEURON_SIMPLE: "neuron-simple",
-                    Control_Type.NEURON_OPTIMAL: "neuron-optimal"}
+                    Control_Type.NEURON_OPTIMAL: "neuron-optimal",
+                    Control_Type.PID: "pid"}
+
 
 class ControllerParams:
     def __init__(self, alpha, beta, gamma, fc, brain_dt, episode_length_in_seconds):
@@ -180,6 +183,34 @@ class BaselineController(object):
         v1_est = self.fv1.filter(data.qvel[1])
         self.obs = np.array([q0_est, q1_est, v0_est, v1_est])
 
+# -----------------------------------------------------------------------------
+# PID Controller
+# -----------------------------------------------------------------------------
+class PIDController():
+    def __init__(self):
+        self.actions = np.zeros(4)
+        self.q_bar = np.zeros(2)
+        self.q_error = np.zeros(2)
+
+    def set_action(self, inputs):
+        self.q_bar = inputs[0:2]
+
+    def callback(self, model, data):
+        Kp = 20
+        Ki = 0.01
+        Kd = 1
+
+        for i in range(2):
+            data.ctrl[2*i] = 0
+            data.ctrl[2 * i + 1] = 0
+
+            self.q_error[i] += (self.q_bar[i] - data.qpos[i]) * model.opt.timestep
+            tao = Kp * (self.q_bar[i] - data.qpos[i]) + Ki * self.q_error[i] * data.time - Kd * data.qvel[i]
+
+            if tao > 0:
+                data.ctrl[2*i] = tao
+            else:
+                data.ctrl[2 * i + 1] = -tao
 
 # -----------------------------------------------------------------------------
 # Baseline Controller

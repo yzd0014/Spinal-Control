@@ -32,6 +32,8 @@ class DoubleLinkEnv(gym.Env):
         # Optimal neuron Controller
         elif self.control_type == Control_Type.NEURON_OPTIMAL:
             self.controller = SpinalOptimalController(c_params)
+        elif self.control_type == Control_Type.PID:
+            self.controller = PIDController()
 
         mj.set_mjcb_control(self.controller.callback)
 
@@ -59,8 +61,8 @@ class DoubleLinkEnv(gym.Env):
                                                 high=50, \
                                                 shape=(8,), \
                                                 dtype=np.float32)
-        elif self.control_type == Control_Type.NEURON_OPTIMAL:
-            self.action_space = spaces.Box(low=0, high=1.0, shape=(2,), \
+        elif self.control_type == Control_Type.NEURON_OPTIMAL or self.control_type == Control_Type.PID:
+            self.action_space = spaces.Box(low=0, high=0.85, shape=(2,), \
                                            dtype=np.float32)
             self.observation_space = spaces.Box(low=-50, \
                                                 high=50, \
@@ -97,7 +99,7 @@ class DoubleLinkEnv(gym.Env):
 
         position_error = self.data.qpos - self.target_qs[self.target_iter]
         reward = -np.linalg.norm(position_error)
-        if self.control_type == Control_Type.NEURON_OPTIMAL:
+        if self.control_type == Control_Type.NEURON_OPTIMAL or self.control_type == Control_Type.PID:
             observation = np.array(self.target_qs[self.target_iter])
         else:
             observation = np.concatenate((self.target_qs[self.target_iter], \
@@ -114,7 +116,8 @@ class DoubleLinkEnv(gym.Env):
         if self.target_iter >= self.num_of_targets:
             self.target_iter = 0
         m_target = self.target_qs[self.target_iter]
-        if self.control_type == Control_Type.NEURON_OPTIMAL:
+        # print(m_target)
+        if self.control_type == Control_Type.NEURON_OPTIMAL or self.control_type == Control_Type.PID:
             observation = np.array(self.target_qs[self.target_iter])
         else:
             observation = np.array([m_target[0], m_target[1], \

@@ -1,4 +1,5 @@
 import torch as th
+from stable_baselines3 import SAC
 from stable_baselines3 import PPO
 from stable_baselines3 import A2C
 from stable_baselines3 import TD3
@@ -33,18 +34,25 @@ if __name__ == "__main__":
     print(f"total number of targets: {num_episodes}")
 
     policy_kwargs = dict(activation_fn=th.nn.Tanh, \
-                         net_arch=dict(pi=[8, 8], \
+                         net_arch=dict(pi=[64, 64], \
                                        vf=[64, 64]))
     m_steps = controller_params.episode_length_in_ticks * num_episodes
 
     TIMESTEPS = m_steps
-    model = PPO('MlpPolicy', env, \
-                policy_kwargs=policy_kwargs, \
+    # model = PPO('MlpPolicy', env, \
+    #             policy_kwargs=policy_kwargs, \
+    #             device='cpu', \
+    #             n_steps=m_steps, \
+    #             batch_size=controller_params.episode_length_in_ticks, \
+    #             n_epochs=10, \
+    #             verbose=1, \
+    #             tensorboard_log=logdir)
+
+    model = SAC("MlpPolicy", env,  \
                 device='cpu', \
-                n_steps=m_steps, \
-                batch_size=controller_params.episode_length_in_ticks, \
-                n_epochs=10, \
-                verbose=1, \
+                batch_size = controller_params.episode_length_in_ticks, \
+                train_freq = controller_params.episode_length_in_ticks, \
+                verbose=1,\
                 tensorboard_log=logdir)
     print(model.policy)
 
@@ -52,5 +60,5 @@ if __name__ == "__main__":
     while True:
         iters += 1
         model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, \
-                    tb_log_name=f"PPO")
+                    tb_log_name=f"SAC")
         model.save(f"{models_dir}/{TIMESTEPS * iters}")

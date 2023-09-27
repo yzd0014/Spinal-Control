@@ -9,35 +9,47 @@ import pickle
 import parameters
 from control import *
 
-modelid = "1695538104"
+m_target = np.array([-0.2, -0.2])
 
-# Load Params
-print("\n\n")
-print("loading env and control parameters " + "./models/" + modelid + "\n")
+# modelid = "1695602744"
+# # Load Params
+# print("\n\n")
+# print("loading env and control parameters " + "./models/" + modelid + "\n")
+#
+# control_type, \
+#     controller_params = pickle.load(open("./models/" + modelid + "/" \
+#                                          + "env_contr_params.p", "rb"))
+# episode_length = controller_params.episode_length_in_ticks
+# dt_brain = controller_params.brain_dt
+#
+# # For saving data
+# fdata = open("./datalog/" + modelid, 'w')
+#
+# # Find most recent model
+# models_dir = "./models/" + modelid + "/"
+# allmodels = sorted(os.listdir(models_dir))
+# allmodels.sort(key=lambda fn: \
+#     os.path.getmtime(os.path.join(models_dir, fn)))
+#
+# runid = allmodels[-1].split(".")
+# runid = runid[0]
+#
+# PPO_model_path0 = "./models/" + modelid + "/" + runid
+# PPO_model = PPO.load(PPO_model_path0)
 
-control_type, \
-    controller_params = pickle.load(open("./models/" + modelid + "/" \
-                                         + "env_contr_params.p", "rb"))
-episode_length = controller_params.episode_length_in_ticks
-dt_brain = controller_params.brain_dt
-
-# For saving data
-fdata = open("./datalog/" + modelid, 'w')
-
-# Find most recent model
-models_dir = "./models/" + modelid + "/"
-allmodels = sorted(os.listdir(models_dir))
-allmodels.sort(key=lambda fn: \
-    os.path.getmtime(os.path.join(models_dir, fn)))
-
-runid = allmodels[-1].split(".")
-runid = runid[0]
-
-PPO_model_path0 = "./models/" + modelid + "/" + runid
-PPO_model = PPO.load(PPO_model_path0)
+#######################################################################
+dt_brain = 0.05
+PPO_model = None
+fdata = None
+control_type = Control_Type.PID
+controller_params = ControllerParams(alpha=0.4691358024691358, \
+                                    beta=0.9, \
+                                    gamma=1, \
+                                    fc=10, \
+                                    episode_length_in_seconds=2.5,\
+                                    brain_dt=0.05)
 
 xml_path = 'double_links_fast.xml'
-
 simend = 5 #simulation time
 print_camera_config = 0 #set to 1 to print camera config
                         #this is useful for initializing view of the model)
@@ -60,6 +72,8 @@ elif control_type == Control_Type.BASELINE:
 # Optimal neuron Controller
 elif control_type == Control_Type.NEURON_OPTIMAL:
     controller = SpinalOptimalController(controller_params)
+elif control_type == Control_Type.PID:
+    controller = PIDController()
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
@@ -135,26 +149,36 @@ def scroll(window, xoffset, yoffset):
 def init_controller(model,data):
     pass
 
-
+ep_error = 0
 def callback(model, data):
-    global global_timer
+    global global_timer, ep_error
     if data.time - global_timer >= dt_brain:
         if control_type == Control_Type.NEURON_OPTIMAL:
             controller.set_action(np.array([m_target[0], m_target[1], 0.5, 0.5]))
+        elif control_type == Control_Type.PID:
+            controller.set_action(m_target)
         else:
             observation = np.concatenate(([m_target[0], m_target[1]], \
                                           controller.obs, \
                                           np.array([0, 0])))
             action, _states = PPO_model.predict(observation)
             controller.set_action(action)
+
+        if data.time <= 2.5:
+            position_error = -np.linalg.norm(data.qpos - m_target)
+            ep_error += position_error
+            print(ep_error)
+        else:
+            print(ep_error)
         global_timer = data.time
 
     controller.callback(model, data)
     # print(controller.l_desired)
     # print(data.ctrl[2], data.ctrl[3])
-    print(data.qpos[0], data.qpos[1])
+    # print(data.qpos[0], data.qpos[1])
 
-    if control_type != Control_Type.NEURON_OPTIMAL:
+
+    if control_type != Control_Type.NEURON_OPTIMAL and control_type != Control_Type.PID:
         data2write = np.concatenate(([m_target[0], m_target[1]], \
                                      data.qpos, \
                                      controller.obs, \
@@ -202,8 +226,6 @@ cam.azimuth = 90
 cam.elevation = -20
 cam.distance = 2
 cam.lookat = np.array([0.0, -1, 2])
-
-m_target = np.array([0.1, 0.02])
 
 #initialize the controller
 #init_controller(model,data)
