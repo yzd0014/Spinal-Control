@@ -39,26 +39,26 @@ if __name__ == "__main__":
     m_steps = controller_params.episode_length_in_ticks * num_episodes
 
     TIMESTEPS = m_steps
-    # model = PPO('MlpPolicy', env, \
-    #             policy_kwargs=policy_kwargs, \
-    #             device='cpu', \
-    #             n_steps=m_steps, \
-    #             batch_size=controller_params.episode_length_in_ticks, \
-    #             n_epochs=10, \
-    #             verbose=1, \
-    #             tensorboard_log=logdir)
-
-    model = SAC("MlpPolicy", env,  \
+    model = PPO('MlpPolicy', env, \
+                policy_kwargs=policy_kwargs, \
                 device='cpu', \
-                batch_size = controller_params.episode_length_in_ticks, \
-                train_freq = controller_params.episode_length_in_ticks, \
-                verbose=1,\
+                n_steps=m_steps, \
+                batch_size=controller_params.episode_length_in_ticks, \
+                n_epochs=10, \
+                verbose=1, \
                 tensorboard_log=logdir)
+
+    # model = SAC("MlpPolicy", env,  \
+    #             device='cpu', \
+    #             batch_size = controller_params.episode_length_in_ticks, \
+    #             train_freq = controller_params.episode_length_in_ticks, \
+    #             verbose=1,\
+    #             tensorboard_log=logdir)
     print(model.policy)
 
     iters = 0
     while True:
         iters += 1
         model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, \
-                    tb_log_name=f"SAC")
+                    tb_log_name=f"PPO")
         model.save(f"{models_dir}/{TIMESTEPS * iters}")

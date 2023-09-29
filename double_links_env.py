@@ -40,6 +40,8 @@ class DoubleLinkEnv(gym.Env):
         # Other stuff
         self.dt_brain = c_params.brain_dt
         self.instance_id = instance_id
+        self.cartesian = True
+        self.cartesian_target = np.zeros(3)
         self.rendering = False
         if self.rendering == True:
             self.init_window()
@@ -76,8 +78,6 @@ class DoubleLinkEnv(gym.Env):
                                                 shape=(8,), \
                                                 dtype=np.float32)
 
-
-
     def step(self, action):
         self.controller.set_action(action)
         time_prev = self.data.time
@@ -96,8 +96,11 @@ class DoubleLinkEnv(gym.Env):
         self.ticks += 1
         if self.ticks >= self.episode_length:
             self.done = True
+        if self.cartesian == True:
+            position_error = self.data.xpos[2] - self.cartesian_target
+        else:
+            position_error = self.data.qpos - self.target_qs[self.target_iter]
 
-        position_error = self.data.qpos - self.target_qs[self.target_iter]
         reward = -np.linalg.norm(position_error)
         if self.control_type == Control_Type.NEURON_OPTIMAL or self.control_type == Control_Type.PID:
             observation = np.array(self.target_qs[self.target_iter])
@@ -116,6 +119,14 @@ class DoubleLinkEnv(gym.Env):
         if self.target_iter >= self.num_of_targets:
             self.target_iter = 0
         m_target = self.target_qs[self.target_iter]
+        mj.mj_resetData(self.model, self.data)
+        self.data.qpos[0] = m_target[0]
+        self.data.qpos[1] = m_target[1]
+        mj.mj_forward(self.model, self.data)
+        self.cartesian_target = self.data.xpos[2]
+        mj.mj_resetData(self.model, self.data)
+        mj.mj_forward(self.model, self.data)
+
         # print(m_target)
         if self.control_type == Control_Type.NEURON_OPTIMAL or self.control_type == Control_Type.PID:
             observation = np.array(self.target_qs[self.target_iter])
