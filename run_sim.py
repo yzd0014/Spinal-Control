@@ -1,3 +1,4 @@
+import numpy
 from stable_baselines3 import PPO
 from stable_baselines3 import TD3
 import mujoco as mj
@@ -11,43 +12,43 @@ from control import *
 
 m_target = np.array([-0.2, -0.2])
 
-# modelid = "1695602744"
-# # Load Params
-# print("\n\n")
-# print("loading env and control parameters " + "./models/" + modelid + "\n")
-#
-# control_type, \
-#     controller_params = pickle.load(open("./models/" + modelid + "/" \
-#                                          + "env_contr_params.p", "rb"))
-# episode_length = controller_params.episode_length_in_ticks
-# dt_brain = controller_params.brain_dt
-#
-# # For saving data
-# fdata = open("./datalog/" + modelid, 'w')
-#
-# # Find most recent model
-# models_dir = "./models/" + modelid + "/"
-# allmodels = sorted(os.listdir(models_dir))
-# allmodels.sort(key=lambda fn: \
-#     os.path.getmtime(os.path.join(models_dir, fn)))
-#
-# runid = allmodels[-1].split(".")
-# runid = runid[0]
-#
-# PPO_model_path0 = "./models/" + modelid + "/" + runid
-# PPO_model = PPO.load(PPO_model_path0)
+modelid = "1695602744"
+# Load Params
+print("\n\n")
+print("loading env and control parameters " + "./models/" + modelid + "\n")
+
+control_type, \
+    controller_params = pickle.load(open("./models/" + modelid + "/" \
+                                         + "env_contr_params.p", "rb"))
+episode_length = controller_params.episode_length_in_ticks
+dt_brain = controller_params.brain_dt
+
+# For saving data
+fdata = open("./datalog/" + modelid, 'w')
+
+# Find most recent model
+models_dir = "./models/" + modelid + "/"
+allmodels = sorted(os.listdir(models_dir))
+allmodels.sort(key=lambda fn: \
+    os.path.getmtime(os.path.join(models_dir, fn)))
+
+runid = allmodels[-1].split(".")
+runid = runid[0]
+
+PPO_model_path0 = "./models/" + modelid + "/" + runid
+PPO_model = PPO.load(PPO_model_path0)
 
 #######################################################################
-dt_brain = 0.05
-PPO_model = None
-fdata = None
-control_type = Control_Type.PID
-controller_params = ControllerParams(alpha=0.4691358024691358, \
-                                    beta=0.9, \
-                                    gamma=1, \
-                                    fc=10, \
-                                    episode_length_in_seconds=2.5,\
-                                    brain_dt=0.05)
+# dt_brain = 0.05
+# PPO_model = None
+# fdata = None
+# control_type = Control_Type.PID
+# controller_params = ControllerParams(alpha=0.4691358024691358, \
+#                                     beta=0.9, \
+#                                     gamma=1, \
+#                                     fc=10, \
+#                                     episode_length_in_seconds=2.5,\
+#                                     brain_dt=0.05)
 
 xml_path = 'double_links_fast.xml'
 simend = 5 #simulation time
@@ -242,6 +243,8 @@ while not glfw.window_should_close(window):
 
     while (data.time - time_prev < 1.0/60.0):
         mj.mj_step(model, data)
+        B = np.zeros((2 * model.nv + model.na, model.nu))
+        mj.mjd_transitionFD(model, data, 0.0001, 0, None, B, None, None)
     # if (data.time>=simend):
     #     break;
 
