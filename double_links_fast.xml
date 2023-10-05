@@ -1,6 +1,6 @@
 <mujoco>
     <!-- min distance from root to endfactor is 1.766, max is 2 -->
-    <option timestep="0.005">
+    <option timestep="0.01">
 		<flag gravity="disable"/>
 	</option>
     <size nuserdata="3"/>
@@ -56,7 +56,7 @@
         <muscle  name="l-muscle" tendon="l-tendon" range="0.75 1.15" scale="400"/>
         <muscle  name="r-ctrl" tendon="r-middle" range="0.75 1.15" scale="400"/>
         <muscle  name="l-ctrl" tendon="l-middle" range="0.75 1.15" scale="400"/>
-        <motor name="motor0" joint="joint0"/>
-        <motor name="motor1" joint="joint1"/>
+        <!-- <motor name="motor0" joint="joint0"/> -->
+        <!-- <motor name="motor1" joint="joint1"/> -->
    </actuator>
 </mujoco>
