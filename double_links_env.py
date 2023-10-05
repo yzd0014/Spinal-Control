@@ -40,7 +40,7 @@ class DoubleLinkEnv(gym.Env):
         # Other stuff
         self.dt_brain = c_params.brain_dt
         self.instance_id = instance_id
-        self.cartesian = True
+        self.cartesian = False
         self.cartesian_target = np.zeros(3)
         self.rendering = False
         if self.rendering == True:
@@ -50,8 +50,8 @@ class DoubleLinkEnv(gym.Env):
 
         self.num_of_targets = 0
         self.target_qs = []
-        for i in np.arange(-0.2, 0.2, 0.1):
-            for j in np.arange(-0.2, 0.2, 0.1):
+        for i in np.arange(-0.5, 0.5, 0.25):
+            for j in np.arange(-0.5, 0.5, 0.25):
                 self.target_qs.append(np.array([i, j]))
                 self.num_of_targets += 1
 

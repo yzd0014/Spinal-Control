@@ -1,10 +1,12 @@
-import os
-import copy
 import numpy as np
 import mujoco as mj
 import torch
-import torch.nn as nn
-import torch.nn.init as init
+import torch_net
+import os
+import copy
+import time
+import parameters
+import pickle
 
 def compute_physics_gradient(model, data_before_simulation, data_after_simulation, u, eps, num_of_steps, grad):
     for i in range(4):
@@ -15,38 +17,13 @@ def compute_physics_gradient(model, data_before_simulation, data_after_simulatio
         for j in range(2):
             grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
 
-class FeedForwardNN(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(FeedForwardNN, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        init.xavier_uniform_(self.fc1.weight)
-        init.zeros_(self.fc1.bias)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        init.xavier_uniform_(self.fc2.weight)
-        init.zeros_(self.fc2.bias)
-        self.fc3 = nn.Linear(hidden_size, output_size)
-        init.xavier_uniform_(self.fc3.weight)
-        init.zeros_(self.fc3.bias)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.relu(x)
-        x = self.fc2(x)
-        x = self.relu(x)
-        x = self.fc3(x)
-        x = self.sigmoid(x)
-        return x
-
 # create a feedforward neural network
-input_size = 6
-hidden_size = 8
-output_size = 4
-net = FeedForwardNN(input_size, hidden_size, output_size)
+input_size = parameters.controller_params.input_size
+hidden_size = parameters.controller_params.hidden_size
+output_size = parameters.controller_params.output_size
+net = torch_net.FeedForwardNN(input_size, hidden_size, output_size)
 
 # create training data
-episdoe_length = 200
 num_of_targets = 0
 max_training_angle = 0.5
 angle_interval = 0.25
@@ -58,7 +35,7 @@ for i in np.arange(-max_training_angle, max_training_angle, angle_interval):
 print(f"total number of training samples: {num_of_targets}")
 
 # traning configuration
-num_epochs = 100
+num_epochs = 5000
 learning_rate = 0.0003
 
 # initialize mujoco
@@ -70,14 +47,16 @@ model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
 data = mj.MjData(model)  # MuJoCo data
 
 # intialize simutlation parameters
-dt_brain = 0.1
+dt_brain = parameters.controller_params.brain_dt
+episode_length = parameters.controller_params.episode_length_in_ticks
+parameters.training_type = "feedforward"
 
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
 for epoch in range(num_epochs):
     mean_ep_loss = 0
     for batch_id in range(num_of_targets):
         # reset at the beginning of each episode
-        batch_size = episdoe_length
+        batch_size = episode_length
         mj.mj_resetData(model, data)
         mj.mj_forward(model, data)
         target_pos = np.array(traning_samples[batch_id])
@@ -130,6 +109,17 @@ for epoch in range(num_epochs):
 
     mean_ep_loss /= num_of_targets
     print(f"epoch: {epoch}, mean_ep_loss: {mean_ep_loss}")
+    if mean_ep_loss < 0.5:
+        break
+
+models_dir = f"models/{int(time.time())}/"
+if not os.path.exists(models_dir):
+    os.makedirs(models_dir)
+
+pickle.dump([parameters.training_type, parameters.control_type, parameters.controller_params], open(models_dir + "env_contr_params.p", "wb"))
+torch.save(net.state_dict(), f'{models_dir}/{int(time.time())}.pth')
+
+
 
 
 

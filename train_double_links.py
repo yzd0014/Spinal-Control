@@ -26,8 +26,10 @@ if __name__ == "__main__":
 
     env = double_links_env.DoubleLinkEnv(control_type=control_type, c_params=controller_params)#this will also update controller_params
 
-    pickle.dump([control_type, \
-                 controller_params], \
+    training_type = "PPO"
+    pickle.dump([training_type, \
+                control_type, \
+                controller_params], \
                 open(models_dir + "env_contr_params.p", "wb"))
 
     num_episodes = env.get_num_of_targets()

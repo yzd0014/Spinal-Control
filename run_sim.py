@@ -1,30 +1,28 @@
-import numpy
 from stable_baselines3 import PPO
-from stable_baselines3 import TD3
-import mujoco as mj
+import torch
+import torch_net
 from mujoco.glfw import glfw
-import numpy as np
-import os
-import matplotlib.pyplot as plt
 import pickle
-import parameters
 from control import *
 
 m_target = np.array([-0.2, -0.2])
-
-modelid = "1695602744"
+modelid = "1696544685"
+#######################################################################
 # Load Params
 print("\n\n")
 print("loading env and control parameters " + "./models/" + modelid + "\n")
 
-control_type, \
-    controller_params = pickle.load(open("./models/" + modelid + "/" \
+training_type, control_type, controller_params = pickle.load(open("./models/" + modelid + "/" \
                                          + "env_contr_params.p", "rb"))
 episode_length = controller_params.episode_length_in_ticks
 dt_brain = controller_params.brain_dt
 
 # For saving data
-fdata = open("./datalog/" + modelid, 'w')
+data_dir = "datalog"
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
+fdata = open(f"{data_dir}/{modelid}", 'w')
+# fdata = open("./datalog/" + modelid, 'w')
 
 # Find most recent model
 models_dir = "./models/" + modelid + "/"
@@ -32,12 +30,16 @@ allmodels = sorted(os.listdir(models_dir))
 allmodels.sort(key=lambda fn: \
     os.path.getmtime(os.path.join(models_dir, fn)))
 
-runid = allmodels[-1].split(".")
-runid = runid[0]
-
-PPO_model_path0 = "./models/" + modelid + "/" + runid
-PPO_model = PPO.load(PPO_model_path0)
-
+if training_type == "PPO":
+    runid = allmodels[-1].split(".")
+    runid = runid[0]
+    PPO_model_path0 = "./models/" + modelid + "/" + runid
+    PPO_model = PPO.load(PPO_model_path0)
+elif training_type == "feedforward":
+    feedforward_model_path0 = f"./models/{modelid}/{allmodels[-1]}"
+    ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size, controller_params.output_size)
+    ff_net.load_state_dict(torch.load(feedforward_model_path0))
+    ff_net.eval()
 #######################################################################
 # dt_brain = 0.05
 # PPO_model = None
@@ -159,18 +161,25 @@ def callback(model, data):
         elif control_type == Control_Type.PID:
             controller.set_action(m_target)
         else:
-            observation = np.concatenate(([m_target[0], m_target[1]], \
-                                          controller.obs, \
-                                          np.array([0, 0])))
-            action, _states = PPO_model.predict(observation)
-            controller.set_action(action)
+            if training_type == "PPO":
+                observation = np.concatenate(([m_target[0], m_target[1]], \
+                                              controller.obs, \
+                                              np.array([0, 0])))
+                action, _states = PPO_model.predict(observation)
+                controller.set_action(action)
+            elif training_type == "feedforward":
+                observation = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+                observation_tensor = torch.tensor(observation, requires_grad=False, dtype=torch.float32)
+                u_tensor = ff_net(observation_tensor.view(1, 6))
+                for i in range(4):
+                    data.ctrl[i] = u_tensor[0][i].item()
 
-        if data.time <= 2.5:
-            position_error = -np.linalg.norm(data.qpos - m_target)
-            ep_error += position_error
-            print(ep_error)
-        else:
-            print(ep_error)
+        # if data.time <= 2.5:
+        #     position_error = -np.linalg.norm(data.qpos - m_target)
+        #     ep_error += position_error
+        #     print(ep_error)
+        # else:
+        #     print(ep_error)
         global_timer = data.time
 
     controller.callback(model, data)

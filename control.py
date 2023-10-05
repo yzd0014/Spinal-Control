@@ -24,12 +24,15 @@ control_type_dic = {Control_Type.BASELINE: "baseline",
 
 
 class ControllerParams:
-    def __init__(self, alpha, beta, gamma, fc, brain_dt, episode_length_in_seconds):
+    def __init__(self, alpha, beta, gamma, fc, input_size, hidden_size, output_size, brain_dt, episode_length_in_seconds):
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
         self.fc = fc
         self.fs = 0
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.output_size = output_size
         self.brain_dt = brain_dt
         self.episode_length_in_ticks = int(episode_length_in_seconds / brain_dt)
 
