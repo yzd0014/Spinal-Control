@@ -5,8 +5,9 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([-0.2, -0.2])
-modelid = "1696544685"
+m_target = np.array([0.4, 0.4])
+# modelid = "1696546724"
+modelid = "1696546010"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -71,7 +72,8 @@ elif control_type == Control_Type.NEURON_SIMPLE:
     controller = NeuronSimpleController(controller_params)
 # Baseline Controller
 elif control_type == Control_Type.BASELINE:
-    controller = BaselineController(controller_params)
+    if training_type == "PPO":
+        controller = BaselineController(controller_params)
 # Optimal neuron Controller
 elif control_type == Control_Type.NEURON_OPTIMAL:
     controller = SpinalOptimalController(controller_params)
@@ -182,21 +184,22 @@ def callback(model, data):
         #     print(ep_error)
         global_timer = data.time
 
-    controller.callback(model, data)
+    if training_type == "PPO":
+        controller.callback(model, data)
     # print(controller.l_desired)
-    # print(data.ctrl[2], data.ctrl[3])
+    # print(data.ctrl[0], data.ctrl[1])
     # print(data.qpos[0], data.qpos[1])
 
 
-    if control_type != Control_Type.NEURON_OPTIMAL and control_type != Control_Type.PID:
-        data2write = np.concatenate(([m_target[0], m_target[1]], \
-                                     data.qpos, \
-                                     controller.obs, \
-                                     data.actuator_length, \
-                                     data.ctrl, \
-                                     controller.action))
-        datastr = ','.join(str(x) for x in data2write)
-        fdata.write(datastr + '\n')
+    # if control_type != Control_Type.NEURON_OPTIMAL and control_type != Control_Type.PID:
+    #     data2write = np.concatenate(([m_target[0], m_target[1]], \
+    #                                  data.qpos, \
+    #                                  controller.obs, \
+    #                                  data.actuator_length, \
+    #                                  data.ctrl, \
+    #                                  controller.action))
+    #     datastr = ','.join(str(x) for x in data2write)
+    #     fdata.write(datastr + '\n')
 
 
 #get the full path
@@ -252,8 +255,6 @@ while not glfw.window_should_close(window):
 
     while (data.time - time_prev < 1.0/60.0):
         mj.mj_step(model, data)
-        B = np.zeros((2 * model.nv + model.na, model.nu))
-        mj.mjd_transitionFD(model, data, 0.0001, 0, None, B, None, None)
     # if (data.time>=simend):
     #     break;
 

@@ -173,7 +173,7 @@ class BaselineController(object):
         self.action = np.zeros(4)
 
     def callback(self, model, data):
-        self.get_obs(data)
+        # self.get_obs(data)
         data.ctrl[0:4] = self.action
 
     def set_action(self, newaction):
@@ -186,6 +186,11 @@ class BaselineController(object):
         v1_est = self.fv1.filter(data.qvel[1])
         self.obs = np.array([q0_est, q1_est, v0_est, v1_est])
 
+    def reset_filter(self):
+        self.fq0.reset()
+        self.fq1.reset()
+        self.fv0.reset()
+        self.fv1.reset()
 # -----------------------------------------------------------------------------
 # PID Controller
 # -----------------------------------------------------------------------------

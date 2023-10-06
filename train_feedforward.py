@@ -7,6 +7,7 @@ import copy
 import time
 import parameters
 import pickle
+from control import *
 
 def compute_physics_gradient(model, data_before_simulation, data_after_simulation, u, eps, num_of_steps, grad):
     for i in range(4):
@@ -45,6 +46,12 @@ abspath = os.path.join(dirname + "/" + xml_path)
 xml_path = abspath
 model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
 data = mj.MjData(model)  # MuJoCo data
+
+#initialize controller
+parameters.controller_params.fs = 1.0 / model.opt.timestep
+if parameters.control_type == Control_Type.PID:
+    controller = PIDController()
+    mj.set_mjcb_control(controller.callback)
 
 # intialize simutlation parameters
 dt_brain = parameters.controller_params.brain_dt
@@ -109,7 +116,7 @@ for epoch in range(num_epochs):
 
     mean_ep_loss /= num_of_targets
     print(f"epoch: {epoch}, mean_ep_loss: {mean_ep_loss}")
-    if mean_ep_loss < 0.5:
+    if mean_ep_loss < 0.45:
         break
 
 models_dir = f"models/{int(time.time())}/"
