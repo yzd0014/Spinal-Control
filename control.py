@@ -204,21 +204,26 @@ class PIDController():
         self.q_bar = inputs[0:2]
 
     def callback(self, model, data):
-        Kp = 20
-        Ki = 0.01
-        Kd = 1
-
-        for i in range(2):
-            data.ctrl[2*i] = 0
-            data.ctrl[2 * i + 1] = 0
-
-            self.q_error[i] += (self.q_bar[i] - data.qpos[i]) * model.opt.timestep
-            tao = Kp * (self.q_bar[i] - data.qpos[i]) + Ki * self.q_error[i] * data.time - Kd * data.qvel[i]
-
-            if tao > 0:
-                data.ctrl[2*i] = tao
-            else:
-                data.ctrl[2 * i + 1] = -tao
+        # Kp = 20
+        # Ki = 0.01
+        # Kd = 1
+        #
+        # for i in range(2):
+        #     data.ctrl[2*i] = 0
+        #     data.ctrl[2 * i + 1] = 0
+        #
+        #     self.q_error[i] += (self.q_bar[i] - data.qpos[i]) * model.opt.timestep
+        #     tao = Kp * (self.q_bar[i] - data.qpos[i]) + Ki * self.q_error[i] * data.time - Kd * data.qvel[i]
+        #
+        #     if tao > 0:
+        #         data.ctrl[2*i] = tao
+        #     else:
+        #         data.ctrl[2 * i + 1] = -tao
+        ####################################################################################
+        data.qpos[0] = self.q_bar[0]
+        data.qpos[1] = self.q_bar[1]
+        data.qvel[0] = 0
+        data.qvel[1] = 0
 
 # -----------------------------------------------------------------------------
 # Baseline Controller

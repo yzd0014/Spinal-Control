@@ -74,41 +74,50 @@ for epoch in range(num_epochs):
         #track loss
         ep_loss = 0
         for i in range(batch_size):
-            #feedforward to generate action
-            observation = np.array([target_pos[0], target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-            observation_tensor = torch.tensor(observation, requires_grad=True, dtype=torch.float32)
-            u_tensor = net(observation_tensor.view(1, 6)) #1x4
-            u = np.zeros(4)
-            for i in range(4):
-                u[i] = u_tensor[0][i].item()
-            data.ctrl[0:4] = u[0:4]
+            if parameters.control_type == Control_Type.BASELINE:
+                #feedforward to generate action
+                observation = np.array([target_pos[0], target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+                observation_tensor = torch.tensor(observation, requires_grad=True, dtype=torch.float32)
+                u_tensor = net(observation_tensor.view(1, 6)) #1x4
+                u = np.zeros(4)
+                for i in range(4):
+                    u[i] = u_tensor[0][i].item()
+                data.ctrl[0:4] = u[0:4]
 
-            #simulation with action to genearsate new state
-            data_before_simluation = copy.deepcopy(data)
-            time_pre = data.time
-            steps_simulated = 0
-            while data.time - time_pre < dt_brain:
-                mj.mj_step(model, data)
-                steps_simulated += 1
-            new_state_tensor = torch.tensor(np.array([data.qpos[0], data.qpos[1]]), requires_grad=True, dtype=torch.float32)
-            target_state_tensor = torch.tensor(target_pos, requires_grad=False)
+                #simulation with action to genearsate new state
+                data_before_simluation = copy.deepcopy(data)
+                time_pre = data.time
+                steps_simulated = 0
+                while data.time - time_pre < dt_brain:
+                    mj.mj_step(model, data)
+                    steps_simulated += 1
+                new_state_tensor = torch.tensor(np.array([data.qpos[0], data.qpos[1]]), requires_grad=True, dtype=torch.float32)
+                target_state_tensor = torch.tensor(target_pos, requires_grad=False)
 
-            #calculate loss
-            loss = torch.norm(target_state_tensor - new_state_tensor, p=2)
-            ep_loss += loss
-            loss.backward()
+                #calculate loss
+                loss = torch.norm(target_state_tensor - new_state_tensor, p=2)
+                ep_loss += loss
+                loss.backward()
 
-            #compute gradient of loss wrt u
-            grad_physics = np.zeros((2, 4))
-            compute_physics_gradient(model, data_before_simluation, data, u, 0.0001, steps_simulated, grad_physics)
-            grad_physics_tensor = torch.tensor(grad_physics, requires_grad=False, dtype=torch.float32) #2x4
-            grad_loss_wrt_u_tensor = torch.matmul(new_state_tensor.grad.view(1, 2), grad_physics_tensor) #1x4
+                #compute gradient of loss wrt u
+                grad_physics = np.zeros((2, 4))
+                compute_physics_gradient(model, data_before_simluation, data, u, 0.0001, steps_simulated, grad_physics)
+                grad_physics_tensor = torch.tensor(grad_physics, requires_grad=False, dtype=torch.float32) #2x4
+                grad_loss_wrt_u_tensor = torch.matmul(new_state_tensor.grad.view(1, 2), grad_physics_tensor) #1x4
 
-            #compute overall graident
-            u_tensor.backward(grad_loss_wrt_u_tensor)
-            # for param in net.parameters():
-            #     if param.requires_grad:
-            #         print(param.grad)
+                #compute overall graident
+                u_tensor.backward(grad_loss_wrt_u_tensor)
+                # for param in net.parameters():
+                #     if param.requires_grad:
+                #         print(param.grad)
+            elif parameters.control_type == Control_Type.PID:
+                observation = np.array([target_pos[0], target_pos[1]])
+                observation_tensor = torch.tensor(observation, requires_grad=False, dtype=torch.float32)
+                output = net(observation_tensor)
+
+                loss = torch.norm(observation_tensor - output, p=2)
+                ep_loss += loss
+                loss.backward()
 
         mean_ep_loss += ep_loss
         #update network
