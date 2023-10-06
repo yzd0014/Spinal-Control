@@ -10,43 +10,43 @@ m_target = np.array([0.43, 0.45])
 modelid = "1696546010"
 #######################################################################
 # Load Params
-# print("\n\n")
-# print("loading env and control parameters " + "./models/" + modelid + "\n")
-#
-# training_type, control_type, controller_params = pickle.load(open("./models/" + modelid + "/" \
-#                                          + "env_contr_params.p", "rb"))
-# episode_length = controller_params.episode_length_in_ticks
-# dt_brain = controller_params.brain_dt
-#
-# # For saving data
-# data_dir = "datalog"
-# if not os.path.exists(data_dir):
-#     os.makedirs(data_dir)
-# fdata = open(f"{data_dir}/{modelid}", 'w')
-# # fdata = open("./datalog/" + modelid, 'w')
-#
-# # Find most recent model
-# models_dir = "./models/" + modelid + "/"
-# allmodels = sorted(os.listdir(models_dir))
-# allmodels.sort(key=lambda fn: \
-#     os.path.getmtime(os.path.join(models_dir, fn)))
-#
-# if training_type == "PPO":
-#     runid = allmodels[-1].split(".")
-#     runid = runid[0]
-#     PPO_model_path0 = "./models/" + modelid + "/" + runid
-#     PPO_model = PPO.load(PPO_model_path0)
-# elif training_type == "feedforward":
-#     feedforward_model_path0 = f"./models/{modelid}/{allmodels[-1]}"
-#     ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size, controller_params.output_size)
-#     ff_net.load_state_dict(torch.load(feedforward_model_path0))
-#     ff_net.eval()
+print("\n\n")
+print("loading env and control parameters " + "./models/" + modelid + "\n")
+
+training_type, control_type, controller_params = pickle.load(open("./models/" + modelid + "/" \
+                                         + "env_contr_params.p", "rb"))
+episode_length = controller_params.episode_length_in_ticks
+dt_brain = controller_params.brain_dt
+
+# For saving data
+data_dir = "datalog"
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
+fdata = open(f"{data_dir}/{modelid}", 'w')
+# fdata = open("./datalog/" + modelid, 'w')
+
+# Find most recent model
+models_dir = "./models/" + modelid + "/"
+allmodels = sorted(os.listdir(models_dir))
+allmodels.sort(key=lambda fn: \
+    os.path.getmtime(os.path.join(models_dir, fn)))
+
+if training_type == "PPO":
+    runid = allmodels[-1].split(".")
+    runid = runid[0]
+    PPO_model_path0 = "./models/" + modelid + "/" + runid
+    PPO_model = PPO.load(PPO_model_path0)
+elif training_type == "feedforward":
+    feedforward_model_path0 = f"./models/{modelid}/{allmodels[-1]}"
+    ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size, controller_params.output_size)
+    ff_net.load_state_dict(torch.load(feedforward_model_path0))
+    ff_net.eval()
 #######################################################################
-dt_brain = 0.1
-PPO_model = None
-fdata = None
-control_type = Control_Type.PID
-training_type = "PPO"
+# dt_brain = 0.1
+# PPO_model = None
+# fdata = None
+# control_type = Control_Type.PID
+# training_type = "PPO"
 #######################################################################
 
 xml_path = 'double_links_fast.xml'

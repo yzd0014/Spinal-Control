@@ -1,6 +1,6 @@
 <mujoco>
     <!-- min distance from root to endfactor is 1.766, max is 2 -->
-    <option timestep="0.01">
+    <option timestep="0.005">
 		<flag gravity="disable"/>
 	</option>
     <size nuserdata="3"/>

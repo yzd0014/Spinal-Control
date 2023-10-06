@@ -24,11 +24,12 @@ if __name__ == "__main__":
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
-    env = double_links_env.DoubleLinkEnv(control_type=control_type, c_params=controller_params)#this will also update controller_params
+    env = double_links_env.DoubleLinkEnv(control_type=control_type, env_id=env_id, c_params=controller_params)#this will also update controller_params
 
     training_type = "PPO"
     pickle.dump([training_type, \
                 control_type, \
+                 env_id, \
                 controller_params], \
                 open(models_dir + "env_contr_params.p", "wb"))
 
