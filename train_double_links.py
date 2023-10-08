@@ -39,15 +39,22 @@ if __name__ == "__main__":
     policy_kwargs = dict(activation_fn=th.nn.Tanh, \
                          net_arch=dict(pi=[64, 64], \
                                        vf=[64, 64]))
-    m_steps = controller_params.episode_length_in_ticks * num_episodes
+    if env_id == DOUBLE_PENDULUM:
+        n_steps = controller_params.episode_length_in_ticks * num_episodes
+        batch_size = controller_params.episode_length_in_ticks
+        n_epochs = 10
+    elif env_id == INVERTED_PENDULUM:
+        n_steps = int(1/controller_params.brain_dt) * 100
+        batch_size = n_steps
+        n_epochs = 20
 
-    TIMESTEPS = m_steps
+    TIMESTEPS = n_steps
     model = PPO('MlpPolicy', env, \
                 policy_kwargs=policy_kwargs, \
                 device='cpu', \
-                n_steps=m_steps, \
-                batch_size=controller_params.episode_length_in_ticks, \
-                n_epochs=10, \
+                n_steps=n_steps, \
+                batch_size=batch_size, \
+                n_epochs=n_epochs, \
                 verbose=1, \
                 tensorboard_log=logdir)
 

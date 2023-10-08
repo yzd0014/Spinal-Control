@@ -63,7 +63,7 @@ class DoubleLinkEnv(gym.Env):
             self.action_space = spaces.Box(low=0, high=1.0, shape=(8,), dtype=np.float32)
 
         elif self.control_type == Control_Type.NEURON_OPTIMAL or self.control_type == Control_Type.PID:
-            self.action_space = spaces.Box(low=0, high=0.85, shape=(2,), dtype=np.float32)
+            self.action_space = spaces.Box(low=-0.8, high=0.8, shape=(2,), dtype=np.float32)
         else:
             self.action_space = spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
 
@@ -100,7 +100,7 @@ class DoubleLinkEnv(gym.Env):
             else:
                 observation = np.concatenate((self.target_qs[self.target_iter], self.controller.obs))
         elif self.env_id == 1:
-            reward = 1
+            reward = self.dt_brain
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
             position_penalty = abs(current_q - np.pi)
             if position_penalty > 0.25 * np.pi:
@@ -113,6 +113,8 @@ class DoubleLinkEnv(gym.Env):
     def reset(self):
         self.done = False
         self.ticks = 0
+        if self.control_type == Control_Type.PID:
+            self.controller.q_error = np.zeros(2)
 
         if self.env_id == 0:
             self.target_iter += 1

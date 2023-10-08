@@ -29,5 +29,5 @@ controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     input_size=controller_input_size, \
                                     hidden_size=8, \
                                     output_size=controller_output_size, \
-                                    episode_length_in_seconds=2,\
+                                    episode_length_in_seconds=100,\
                                     brain_dt=0.1)

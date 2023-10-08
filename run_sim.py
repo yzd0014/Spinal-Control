@@ -5,15 +5,15 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([0.43, 0.45])
+m_target = np.array([-0.6, 0.45])
 # modelid = "1696546724"
-modelid = "1696546010"
+modelid = "1696747289"
 #######################################################################
 # Load Params
 print("\n\n")
 print("loading env and control parameters " + "./models/" + modelid + "\n")
 
-training_type, control_type, controller_params = pickle.load(open("./models/" + modelid + "/" \
+training_type, control_type, env_id, controller_params = pickle.load(open("./models/" + modelid + "/" \
                                          + "env_contr_params.p", "rb"))
 episode_length = controller_params.episode_length_in_ticks
 dt_brain = controller_params.brain_dt
@@ -41,15 +41,16 @@ elif training_type == "feedforward":
     ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size, controller_params.output_size)
     ff_net.load_state_dict(torch.load(feedforward_model_path0))
     ff_net.eval()
+xml_path = controller_params.model_dir
 #######################################################################
 # dt_brain = 0.1
 # PPO_model = None
 # fdata = None
+# env_id = 0
 # control_type = Control_Type.PID
 # training_type = "PPO"
+# xml_path = 'double_links_fast.xml'
 #######################################################################
-
-xml_path = 'double_links_fast.xml'
 simend = 5 #simulation time
 print_camera_config = 0 #set to 1 to print camera config
                         #this is useful for initializing view of the model)
@@ -148,21 +149,35 @@ def scroll(window, xoffset, yoffset):
                       yoffset, scene, cam)
 
 def init_controller(model,data):
-    pass
+    if env_id == 1:
+        mj.mj_resetData(model, data)
+        data.qpos[0] = 0.4
+        data.qpos[1] = -0.87
+        data.qpos[2] = -2.32
+        mj.mj_forward(model, data)
 
 ep_error = 0
 def callback(model, data):
     global global_timer, ep_error
-    if data.time - global_timer >= dt_brain:
+    if data.time - global_timer >= dt_brain or data.time < 0.000101:
         if control_type == Control_Type.NEURON_OPTIMAL:
             controller.set_action(np.array([m_target[0], m_target[1], 0.5, 0.5]))
         elif control_type == Control_Type.PID:
-            controller.set_action(m_target)
+            if env_id == 0:
+                controller.set_action(m_target)
+            elif env_id == 1:
+                observation = np.array(
+                    [data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+                action, _states = PPO_model.predict(observation)
+                controller.set_action(action)
         else:
             if training_type == "PPO":
-                observation = np.concatenate(([m_target[0], m_target[1]], \
-                                              controller.obs, \
-                                              np.array([0, 0])))
+                if env_id == 0:
+                    observation = np.concatenate(([m_target[0], m_target[1]], \
+                                                  controller.obs, \
+                                                  np.array([0, 0])))
+                elif env_id == 1:
+                    observation = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
                 action, _states = PPO_model.predict(observation)
                 controller.set_action(action)
             elif training_type == "feedforward":
@@ -184,7 +199,7 @@ def callback(model, data):
         controller.callback(model, data)
     # print(controller.l_desired)
     # print(data.ctrl[0], data.ctrl[1])
-    print(data.qpos[0], data.qpos[1])
+    # print(data.qpos[0], data.qpos[1])
 
 
     # if control_type != Control_Type.NEURON_OPTIMAL and control_type != Control_Type.PID:
@@ -237,7 +252,7 @@ cam.distance = 2
 cam.lookat = np.array([0.0, -1, 2])
 
 #initialize the controller
-#init_controller(model,data)
+init_controller(model,data)
 #set the controller
 mj.set_mjcb_control(callback)
 #if control_type == spinal_controllers.Control_Type.BASELINE:
