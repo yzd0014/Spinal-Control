@@ -5,9 +5,9 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([-0.6, 0.45])
-# modelid = "1696546724"
-modelid = "1696747289"
+m_target = np.array([0.7, 0.7])
+modelid = "1696749529"
+# modelid = "1696749061"
 #######################################################################
 # Load Params
 print("\n\n")

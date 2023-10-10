@@ -57,6 +57,7 @@ if parameters.control_type == Control_Type.PID:
 dt_brain = parameters.controller_params.brain_dt
 episode_length = parameters.controller_params.episode_length_in_ticks
 parameters.training_type = "feedforward"
+parameters.env_id = 1
 
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
 for epoch in range(num_epochs):
@@ -132,7 +133,7 @@ models_dir = f"models/{int(time.time())}/"
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-pickle.dump([parameters.training_type, parameters.control_type, parameters.controller_params], open(models_dir + "env_contr_params.p", "wb"))
+pickle.dump([parameters.training_type, parameters.control_type, parameters.controller_params, parameters.env_id], open(models_dir + "env_contr_params.p", "wb"))
 torch.save(net.state_dict(), f'{models_dir}/{int(time.time())}.pth')
 
 

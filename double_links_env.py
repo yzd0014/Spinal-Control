@@ -95,10 +95,10 @@ class DoubleLinkEnv(gym.Env):
                 position_error = self.data.qpos - self.target_qs[self.target_iter]
 
             reward = -np.linalg.norm(position_error)
-            if self.control_type == Control_Type.NEURON_OPTIMAL or self.control_type == Control_Type.PID:
-                observation = np.array(self.target_qs[self.target_iter])
-            else:
-                observation = np.concatenate((self.target_qs[self.target_iter], self.controller.obs))
+            m_target = self.target_qs[self.target_iter]
+            observation = np.array([m_target[0], m_target[1], \
+                                    self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], \
+                                    self.data.qvel[1]])
         elif self.env_id == 1:
             reward = self.dt_brain
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
@@ -131,10 +131,7 @@ class DoubleLinkEnv(gym.Env):
             mj.mj_forward(self.model, self.data)
 
             # print(m_target)
-            if self.control_type == Control_Type.NEURON_OPTIMAL or self.control_type == Control_Type.PID:
-                observation = np.array(self.target_qs[self.target_iter])
-            else:
-                observation = np.array([m_target[0], m_target[1], \
+            observation = np.array([m_target[0], m_target[1], \
                                     self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], \
                                     self.data.qvel[1]])
 
