@@ -6,8 +6,8 @@ INVERTED_PENDULUM = 1
 
 # Neuron Parameters
 training_type = "N/A"
-control_type = Control_Type.BASELINE
-env_id = INVERTED_PENDULUM
+control_type = Control_Type.PID
+env_id = DOUBLE_PENDULUM
 
 if control_type == Control_Type.BASELINE:
     controller_input_size = 6
@@ -29,5 +29,5 @@ controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     input_size=controller_input_size, \
                                     hidden_size=8, \
                                     output_size=controller_output_size, \
-                                    episode_length_in_seconds=100,\
+                                    episode_length_in_seconds=2,\
                                     brain_dt=0.1)

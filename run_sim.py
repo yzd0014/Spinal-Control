@@ -10,47 +10,49 @@ modelid = "1696749529"
 # modelid = "1696749061"
 #######################################################################
 # Load Params
-print("\n\n")
-print("loading env and control parameters " + "./models/" + modelid + "\n")
-
-training_type, control_type, env_id, controller_params = pickle.load(open("./models/" + modelid + "/" \
-                                         + "env_contr_params.p", "rb"))
-episode_length = controller_params.episode_length_in_ticks
-dt_brain = controller_params.brain_dt
-
-# For saving data
-data_dir = "datalog"
-if not os.path.exists(data_dir):
-    os.makedirs(data_dir)
-fdata = open(f"{data_dir}/{modelid}", 'w')
-# fdata = open("./datalog/" + modelid, 'w')
-
-# Find most recent model
-models_dir = "./models/" + modelid + "/"
-allmodels = sorted(os.listdir(models_dir))
-allmodels.sort(key=lambda fn: \
-    os.path.getmtime(os.path.join(models_dir, fn)))
-
-if training_type == "PPO":
-    runid = allmodels[-1].split(".")
-    runid = runid[0]
-    PPO_model_path0 = "./models/" + modelid + "/" + runid
-    PPO_model = PPO.load(PPO_model_path0)
-elif training_type == "feedforward":
-    feedforward_model_path0 = f"./models/{modelid}/{allmodels[-1]}"
-    ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size, controller_params.output_size)
-    ff_net.load_state_dict(torch.load(feedforward_model_path0))
-    ff_net.eval()
-xml_path = controller_params.model_dir
+# print("\n\n")
+# print("loading env and control parameters " + "./models/" + modelid + "\n")
+#
+# training_type, control_type, env_id, controller_params = pickle.load(open("./models/" + modelid + "/" \
+#                                          + "env_contr_params.p", "rb"))
+# episode_length = controller_params.episode_length_in_ticks
+# dt_brain = controller_params.brain_dt
+#
+# # For saving data
+# data_dir = "datalog"
+# if not os.path.exists(data_dir):
+#     os.makedirs(data_dir)
+# fdata = open(f"{data_dir}/{modelid}", 'w')
+# # fdata = open("./datalog/" + modelid, 'w')
+#
+# # Find most recent model
+# models_dir = "./models/" + modelid + "/"
+# allmodels = sorted(os.listdir(models_dir))
+# allmodels.sort(key=lambda fn: \
+#     os.path.getmtime(os.path.join(models_dir, fn)))
+#
+# if training_type == "PPO":
+#     runid = allmodels[-1].split(".")
+#     runid = runid[0]
+#     PPO_model_path0 = "./models/" + modelid + "/" + runid
+#     PPO_model = PPO.load(PPO_model_path0)
+# elif training_type == "feedforward":
+#     feedforward_model_path0 = f"./models/{modelid}/{allmodels[-1]}"
+#     ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size, controller_params.output_size)
+#     ff_net.load_state_dict(torch.load(feedforward_model_path0))
+#     ff_net.eval()
+# xml_path = controller_params.model_dir
 #######################################################################
-# dt_brain = 0.1
-# PPO_model = None
-# fdata = None
-# env_id = 0
-# control_type = Control_Type.PID
-# training_type = "PPO"
-# xml_path = 'double_links_fast.xml'
+dt_brain = 0.1
+PPO_model = None
+fdata = None
+env_id = 0
+control_type = Control_Type.PID
+training_type = "pid"
+xml_path = 'double_links_fast.xml'
 #######################################################################
+sim_pause = True
+next_frame = False
 simend = 5 #simulation time
 print_camera_config = 0 #set to 1 to print camera config
                         #this is useful for initializing view of the model)
@@ -82,6 +84,14 @@ def keyboard(window, key, scancode, act, mods):
         mj.mj_resetData(model, data)
         mj.mj_forward(model, data)
         # init_controller(model, data)
+
+    if act == glfw.PRESS and key == glfw.KEY_SPACE:
+        global sim_pause
+        sim_pause = not sim_pause
+
+    if act == glfw.PRESS and key == glfw.KEY_RIGHT:
+        global next_frame
+        next_frame = True
 
 def mouse_button(window, button, act, mods):
     # update button state
@@ -149,43 +159,31 @@ def scroll(window, xoffset, yoffset):
                       yoffset, scene, cam)
 
 def init_controller(model,data):
-    if env_id == 1:
-        mj.mj_resetData(model, data)
+    mj.mj_resetData(model, data)
+    if env_id == 0:
+        controller.target_pos = np.array([m_target[0], m_target[1]])
+    elif env_id == 1:
         data.qpos[0] = 0.4
         data.qpos[1] = -0.87
         data.qpos[2] = -2.32
-        mj.mj_forward(model, data)
+    mj.mj_forward(model, data)
 
 ep_error = 0
 def callback(model, data):
     global global_timer, ep_error
     if data.time - global_timer >= dt_brain or data.time < 0.000101:
-        if control_type == Control_Type.NEURON_OPTIMAL:
-            controller.set_action(np.array([m_target[0], m_target[1], 0.5, 0.5]))
-        elif control_type == Control_Type.PID:
-            if env_id == 0:
-                controller.set_action(m_target)
-            elif env_id == 1:
-                observation = np.array(
-                    [data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-                action, _states = PPO_model.predict(observation)
-                controller.set_action(action)
-        else:
-            if training_type == "PPO":
-                if env_id == 0:
-                    observation = np.concatenate(([m_target[0], m_target[1]], \
-                                                  controller.obs, \
-                                                  np.array([0, 0])))
-                elif env_id == 1:
-                    observation = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-                action, _states = PPO_model.predict(observation)
-                controller.set_action(action)
-            elif training_type == "feedforward":
-                observation = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-                observation_tensor = torch.tensor(observation, requires_grad=False, dtype=torch.float32)
-                u_tensor = ff_net(observation_tensor.view(1, 6))
-                for i in range(4):
-                    data.ctrl[i] = u_tensor[0][i].item()
+        if training_type == "PPO":
+            observation = controller.get_obs(data, env_id)
+            action, _states = PPO_model.predict(observation)
+            controller.set_action(action)
+        elif training_type == "feedforward":
+            observation = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+            observation_tensor = torch.tensor(observation, requires_grad=False, dtype=torch.float32)
+            u_tensor = ff_net(observation_tensor.view(1, 6))
+            for i in range(4):
+                data.ctrl[i] = u_tensor[0][i].item()
+        elif training_type == "pid":
+            controller.set_action(m_target)
 
         # if data.time <= 2.5:
         #     position_error = -np.linalg.norm(data.qpos - m_target)
@@ -262,10 +260,11 @@ mj.set_mjcb_control(callback)
 
 global_timer = data.time
 while not glfw.window_should_close(window):
-    time_prev = data.time
-
-    while (data.time - time_prev < 1.0/60.0):
-        mj.mj_step(model, data)
+    if sim_pause == False or next_frame == True:
+        time_prev = data.time
+        while (data.time - time_prev < 1.0/60.0):
+            mj.mj_step(model, data)
+        next_frame = False
     # if (data.time>=simend):
     #     break;
 

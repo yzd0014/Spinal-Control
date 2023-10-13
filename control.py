@@ -181,13 +181,18 @@ class BaselineController(object):
     def set_action(self, newaction):
         self.action = newaction
 
-    def get_obs(self, data):
-        q0_est = self.fq0.filter(data.qpos[0])
-        q1_est = self.fq1.filter(data.qpos[1])
-        v0_est = self.fv0.filter(data.qvel[0])
-        v1_est = self.fv1.filter(data.qvel[1])
-        self.obs = np.array([q0_est, q1_est, v0_est, v1_est])
+    def get_obs(self, data, env_id):
+        if env_id == 0:
+            # q0_est = self.fq0.filter(data.qpos[0])
+            # q1_est = self.fq1.filter(data.qpos[1])
+            # v0_est = self.fv0.filter(data.qvel[0])
+            # v1_est = self.fv1.filter(data.qvel[1])
+            # obs = np.array([self.target_pos[0], self.target_pos[1], q0_est, q1_est, v0_est, v1_est])
+            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        elif env_id == 1:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
 
+        return obs
 
     def reset_filter(self):
         self.fq0.reset()
@@ -200,6 +205,7 @@ class BaselineController(object):
 class PIDController():
     def __init__(self):
         self.actions = np.zeros(4)
+        self.target_pos = np.zeros(2)
         self.q_bar = np.zeros(2)
         self.q_error = np.zeros(2)
 
@@ -227,6 +233,15 @@ class PIDController():
         # data.qpos[1] = self.q_bar[1]
         # data.qvel[0] = 0
         # data.qvel[1] = 0
+
+    def get_obs(self, data, env_id):
+        if env_id == 0:
+            # obs = np.array([self.target_pos[0], self.target_pos[1]])
+            obs = np.array(
+                [self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        elif env_id == 1:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        return obs
 
 # -----------------------------------------------------------------------------
 # Baseline Controller

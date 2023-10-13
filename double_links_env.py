@@ -61,13 +61,16 @@ class DoubleLinkEnv(gym.Env):
 
         if self.control_type == Control_Type.NEURON:
             self.action_space = spaces.Box(low=0, high=1.0, shape=(8,), dtype=np.float32)
-
+            self.observation_space = spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
         elif self.control_type == Control_Type.NEURON_OPTIMAL or self.control_type == Control_Type.PID:
             self.action_space = spaces.Box(low=-0.8, high=0.8, shape=(2,), dtype=np.float32)
+            if self.env_id == 0:
+                self.observation_space = spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+            elif self.env_id == 1:
+                self.observation_space = spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
         else:
             self.action_space = spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
-
-        self.observation_space = spaces.Box(low=-50, high=50, shape=(6,), dtype=np.float32)
+            self.observation_space = spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 
     def step(self, action):
         self.controller.set_action(action)
@@ -93,20 +96,15 @@ class DoubleLinkEnv(gym.Env):
                 position_error = self.data.xpos[2] - self.cartesian_target
             else:
                 position_error = self.data.qpos - self.target_qs[self.target_iter]
-
             reward = -np.linalg.norm(position_error)
-            m_target = self.target_qs[self.target_iter]
-            observation = np.array([m_target[0], m_target[1], \
-                                    self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], \
-                                    self.data.qvel[1]])
         elif self.env_id == 1:
             reward = self.dt_brain
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
             position_penalty = abs(current_q - np.pi)
             if position_penalty > 0.25 * np.pi:
                 self.done = True
-            observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
 
+        observation = self.controller.get_obs(self.data, self.env_id)
         info = {}
         return observation, reward, self.done, info
 
@@ -130,19 +128,15 @@ class DoubleLinkEnv(gym.Env):
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
 
-            # print(m_target)
-            observation = np.array([m_target[0], m_target[1], \
-                                    self.data.qpos[0], self.data.qvel[0], self.data.qpos[1], \
-                                    self.data.qvel[1]])
-
+            self.controller.target_pos = np.array([m_target[0], m_target[1]])
         elif self.env_id == 1:
             mj.mj_resetData(self.model, self.data)
             self.data.qpos[0] = 0.4
             self.data.qpos[1] = -0.87
             self.data.qpos[2] = -2.32
             mj.mj_forward(self.model, self.data)
-            observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
 
+        observation = self.controller.get_obs(self.data, self.env_id)
         return observation
 
     def close(self):
