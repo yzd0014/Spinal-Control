@@ -22,7 +22,7 @@ def compute_physics_gradient(model, data_before_simulation, data_after_simulatio
 input_size = parameters.controller_params.input_size
 hidden_size = parameters.controller_params.hidden_size
 output_size = parameters.controller_params.output_size
-net = torch_net.FeedForwardNN(input_size, hidden_size, output_size)
+net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, parameters.control_type)
 
 # create training data
 num_of_targets = 0
@@ -47,17 +47,21 @@ xml_path = abspath
 model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
 data = mj.MjData(model)  # MuJoCo data
 
-#initialize controller
-parameters.controller_params.fs = 1.0 / model.opt.timestep
-if parameters.control_type == Control_Type.PID:
+# initialize controller
+if parameters.control_type == Control_Type.BASELINE:
+    controller = BaselineController(parameters.controller_params)
+    mj.set_mjcb_control(controller.callback)
+    u_dim = 4
+elif parameters.control_type == Control_Type.PID:
     controller = PIDController()
     mj.set_mjcb_control(controller.callback)
+    u_dim = 2
 
 # intialize simutlation parameters
 dt_brain = parameters.controller_params.brain_dt
 episode_length = parameters.controller_params.episode_length_in_ticks
 parameters.training_type = "feedforward"
-parameters.env_id = 1
+parameters.env_id = 0
 
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
 for epoch in range(num_epochs):
@@ -67,7 +71,7 @@ for epoch in range(num_epochs):
         batch_size = episode_length
         mj.mj_resetData(model, data)
         mj.mj_forward(model, data)
-        target_pos = np.array(traning_samples[batch_id])
+        controller.target_pos = np.array(traning_samples[batch_id])
 
         # set optimizer
         optimizer.zero_grad()
@@ -77,13 +81,13 @@ for epoch in range(num_epochs):
         for i in range(batch_size):
             if parameters.control_type == Control_Type.BASELINE:
                 #feedforward to generate action
-                observation = np.array([target_pos[0], target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+                observation = controller.get_obs(data, parameters.env_id)
                 observation_tensor = torch.tensor(observation, requires_grad=True, dtype=torch.float32)
                 u_tensor = net(observation_tensor.view(1, 6)) #1x4
-                u = np.zeros(4)
-                for i in range(4):
+                u = np.zeros(u_dim)
+                for i in range(u_dim):
                     u[i] = u_tensor[0][i].item()
-                data.ctrl[0:4] = u[0:4]
+                controller.set_action(u)
 
                 #simulation with action to genearsate new state
                 data_before_simluation = copy.deepcopy(data)
@@ -93,7 +97,7 @@ for epoch in range(num_epochs):
                     mj.mj_step(model, data)
                     steps_simulated += 1
                 new_state_tensor = torch.tensor(np.array([data.qpos[0], data.qpos[1]]), requires_grad=True, dtype=torch.float32)
-                target_state_tensor = torch.tensor(target_pos, requires_grad=False)
+                target_state_tensor = torch.tensor(controller.target_pos, requires_grad=False)
 
                 #calculate loss
                 loss = torch.norm(target_state_tensor - new_state_tensor, p=2)
@@ -101,8 +105,8 @@ for epoch in range(num_epochs):
                 loss.backward()
 
                 #compute gradient of loss wrt u
-                grad_physics = np.zeros((2, 4))
-                compute_physics_gradient(model, data_before_simluation, data, u, 0.0001, steps_simulated, grad_physics)
+                grad_physics = np.zeros((2, u_dim))
+                controller.compute_physics_gradient(model, data_before_simluation, data,0.0001, steps_simulated, grad_physics)
                 grad_physics_tensor = torch.tensor(grad_physics, requires_grad=False, dtype=torch.float32) #2x4
                 grad_loss_wrt_u_tensor = torch.matmul(new_state_tensor.grad.view(1, 2), grad_physics_tensor) #1x4
 
@@ -133,7 +137,7 @@ models_dir = f"models/{int(time.time())}/"
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-pickle.dump([parameters.training_type, parameters.control_type, parameters.controller_params, parameters.env_id], open(models_dir + "env_contr_params.p", "wb"))
+pickle.dump([parameters.training_type, parameters.control_type, parameters.env_id, parameters.controller_params], open(models_dir + "env_contr_params.p", "wb"))
 torch.save(net.state_dict(), f'{models_dir}/{int(time.time())}.pth')
 
 

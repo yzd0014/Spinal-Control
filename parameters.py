@@ -6,7 +6,7 @@ INVERTED_PENDULUM = 1
 
 # Neuron Parameters
 training_type = "N/A"
-control_type = Control_Type.PID
+control_type = Control_Type.BASELINE
 env_id = DOUBLE_PENDULUM
 
 if control_type == Control_Type.BASELINE:
@@ -27,7 +27,7 @@ controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     fc=10, \
                                     model_dir = xml, \
                                     input_size=controller_input_size, \
-                                    hidden_size=8, \
+                                    hidden_size=16, \
                                     output_size=controller_output_size, \
                                     episode_length_in_seconds=2,\
                                     brain_dt=0.1)

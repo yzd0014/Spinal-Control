@@ -3,6 +3,7 @@ from enum import Enum
 from scipy import signal
 import mujoco as mj
 import os
+import copy
 
 import iir
 import fir
@@ -163,14 +164,11 @@ class BaselineParams:
 
 class BaselineController(object):
     def __init__(self, p):
-        self.obs = np.zeros(4)
-
-        b, a = signal.butter(1, p.fc, 'low', fs=p.fs)
-        self.fq0 = iir.IirFilt(b, a)
-        self.fq1 = iir.IirFilt(b, a)
-        self.fv0 = iir.IirFilt(b, a)
-        self.fv1 = iir.IirFilt(b, a)
-
+        # b, a = signal.butter(1, p.fc, 'low', fs=p.fs)
+        # self.fq0 = iir.IirFilt(b, a)
+        # self.fq1 = iir.IirFilt(b, a)
+        # self.fv0 = iir.IirFilt(b, a)
+        # self.fv1 = iir.IirFilt(b, a)
         self.action = np.zeros(4)
         self.target_pos = np.zeros(2)
 
@@ -179,7 +177,8 @@ class BaselineController(object):
         data.ctrl[0:4] = self.action
 
     def set_action(self, newaction):
-        self.action = newaction
+        for i in range(4):
+            self.action[i] = newaction[i]
 
     def get_obs(self, data, env_id):
         if env_id == 0:
@@ -194,6 +193,19 @@ class BaselineController(object):
 
         return obs
 
+    def compute_physics_gradient(self, model, data_before_simulation, data_after_simulation, eps, num_of_steps, grad):
+        original_callback = mj.get_mjcb_control()
+        for i in range(4):
+            data_copy = copy.deepcopy(data_before_simulation)
+            controller_copy = copy.deepcopy(self)
+            controller_copy.action[i] += eps
+            mj.set_mjcb_control(controller_copy.callback)
+            for k in range(num_of_steps):
+                mj.mj_step(model, data_copy)
+            for j in range(2):
+                grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
+        mj.set_mjcb_control(original_callback)
+
     def reset_filter(self):
         self.fq0.reset()
         self.fq1.reset()
@@ -204,7 +216,6 @@ class BaselineController(object):
 # -----------------------------------------------------------------------------
 class PIDController():
     def __init__(self):
-        self.actions = np.zeros(4)
         self.target_pos = np.zeros(2)
         self.q_bar = np.zeros(2)
         self.q_error = np.zeros(2)
@@ -214,7 +225,7 @@ class PIDController():
 
     def callback(self, model, data):
         Kp = 20
-        Ki = 0.01
+        Ki = 0
         Kd = 1
 
         for i in range(2):
@@ -228,20 +239,26 @@ class PIDController():
                 data.ctrl[2*i] = tao
             else:
                 data.ctrl[2 * i + 1] = -tao
-        ####################################################################################
-        # data.qpos[0] = self.q_bar[0]
-        # data.qpos[1] = self.q_bar[1]
-        # data.qvel[0] = 0
-        # data.qvel[1] = 0
 
     def get_obs(self, data, env_id):
         if env_id == 0:
-            # obs = np.array([self.target_pos[0], self.target_pos[1]])
-            obs = np.array(
-                [self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+            obs = np.array([self.target_pos[0], self.target_pos[1]])
         elif env_id == 1:
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         return obs
+
+    def compute_physics_gradient(self, model, data_before_simulation, data_after_simulation, eps, num_of_steps, grad):
+        original_callback = mj.get_mjcb_control()
+        for i in range(2):
+            data_copy = copy.deepcopy(data_before_simulation)
+            controller_copy = copy.deepcopy(self)
+            controller_copy.q_bar[i] += eps
+            mj.set_mjcb_control(controller_copy.callback)
+            for k in range(num_of_steps):
+                mj.mj_step(model, data_copy)
+            for j in range(2):
+                grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
+        mj.set_mjcb_control(original_callback)
 
 # -----------------------------------------------------------------------------
 # Baseline Controller

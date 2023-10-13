@@ -44,7 +44,7 @@ if __name__ == "__main__":
         batch_size = controller_params.episode_length_in_ticks
         n_epochs = 10
     elif env_id == INVERTED_PENDULUM:
-        n_steps = int(1/controller_params.brain_dt) * 100
+        n_steps = 1000
         batch_size = n_steps
         n_epochs = 20
 
