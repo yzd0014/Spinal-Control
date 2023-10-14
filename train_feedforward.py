@@ -8,6 +8,7 @@ import time
 import parameters
 import pickle
 from control import *
+from torch.utils.tensorboard import SummaryWriter
 
 def compute_physics_gradient(model, data_before_simulation, data_after_simulation, u, eps, num_of_steps, grad):
     for i in range(4):
@@ -17,6 +18,12 @@ def compute_physics_gradient(model, data_before_simulation, data_after_simulatio
             mj.mj_step(model, data_copy)
         for j in range(2):
             grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
+
+#tensorboard
+logdir = f"logs/{int(time.time())}-{control_type_dic[parameters.control_type]}/"
+if not os.path.exists(logdir):
+    os.makedirs(logdir)
+writer = SummaryWriter(logdir)
 
 # create a feedforward neural network
 input_size = parameters.controller_params.input_size
@@ -51,11 +58,9 @@ data = mj.MjData(model)  # MuJoCo data
 if parameters.control_type == Control_Type.BASELINE:
     controller = BaselineController(parameters.controller_params)
     mj.set_mjcb_control(controller.callback)
-    u_dim = 4
 elif parameters.control_type == Control_Type.PID:
     controller = PIDController()
     mj.set_mjcb_control(controller.callback)
-    u_dim = 2
 
 # intialize simutlation parameters
 dt_brain = parameters.controller_params.brain_dt
@@ -79,50 +84,43 @@ for epoch in range(num_epochs):
         #track loss
         ep_loss = 0
         for i in range(batch_size):
-            if parameters.control_type == Control_Type.BASELINE:
-                #feedforward to generate action
-                observation = controller.get_obs(data, parameters.env_id)
-                observation_tensor = torch.tensor(observation, requires_grad=True, dtype=torch.float32)
-                u_tensor = net(observation_tensor.view(1, 6)) #1x4
-                u = np.zeros(u_dim)
-                for i in range(u_dim):
-                    u[i] = u_tensor[0][i].item()
-                controller.set_action(u)
+            # feedforward to generate action
+            observation = controller.get_obs(data, parameters.env_id)
+            observation_tensor = torch.tensor(observation, requires_grad=True, dtype=torch.float32)
+            u_tensor = net(observation_tensor.view(1, input_size))  # 1x4
+            u = np.zeros(output_size)
+            for i in range(output_size):
+                u[i] = u_tensor[0][i].item()
+            controller.set_action(u)
+            # data.ctrl[0:4] = u[0:4]
 
-                #simulation with action to genearsate new state
-                data_before_simluation = copy.deepcopy(data)
-                time_pre = data.time
-                steps_simulated = 0
-                while data.time - time_pre < dt_brain:
-                    mj.mj_step(model, data)
-                    steps_simulated += 1
-                new_state_tensor = torch.tensor(np.array([data.qpos[0], data.qpos[1]]), requires_grad=True, dtype=torch.float32)
-                target_state_tensor = torch.tensor(controller.target_pos, requires_grad=False)
+            # simulation with action to genearsate new state
+            data_before_simluation = copy.deepcopy(data)
+            time_pre = data.time
+            steps_simulated = 0
+            while data.time - time_pre < dt_brain:
+                mj.mj_step(model, data)
+                steps_simulated += 1
+            new_state_tensor = torch.tensor(np.array([data.qpos[0], data.qpos[1]]), requires_grad=True,
+                                            dtype=torch.float32)
+            target_state_tensor = torch.tensor(controller.target_pos, requires_grad=False)
 
-                #calculate loss
-                loss = torch.norm(target_state_tensor - new_state_tensor, p=2)
-                ep_loss += loss
-                loss.backward()
+            # calculate loss
+            loss = torch.norm(target_state_tensor - new_state_tensor, p=2)
+            ep_loss += loss
+            loss.backward()
 
-                #compute gradient of loss wrt u
-                grad_physics = np.zeros((2, u_dim))
-                controller.compute_physics_gradient(model, data_before_simluation, data,0.0001, steps_simulated, grad_physics)
-                grad_physics_tensor = torch.tensor(grad_physics, requires_grad=False, dtype=torch.float32) #2x4
-                grad_loss_wrt_u_tensor = torch.matmul(new_state_tensor.grad.view(1, 2), grad_physics_tensor) #1x4
-
-                #compute overall graident
-                u_tensor.backward(grad_loss_wrt_u_tensor)
-                # for param in net.parameters():
-                #     if param.requires_grad:
-                #         print(param.grad)
-            elif parameters.control_type == Control_Type.PID:
-                observation = np.array([target_pos[0], target_pos[1]])
-                observation_tensor = torch.tensor(observation, requires_grad=False, dtype=torch.float32)
-                output = net(observation_tensor)
-
-                loss = torch.norm(observation_tensor - output, p=2)
-                ep_loss += loss
-                loss.backward()
+            # compute gradient of loss wrt u
+            grad_physics = np.zeros((2, output_size))
+            controller.compute_physics_gradient(model, data_before_simluation, data, 0.0001, steps_simulated, grad_physics)
+            # compute_physics_gradient(model, data_before_simluation, data, u,0.0001, steps_simulated, grad_physics)
+            grad_physics_tensor = torch.tensor(grad_physics, requires_grad=False, dtype=torch.float32)  # 2x4
+            grad_loss_wrt_u_tensor = torch.matmul(new_state_tensor.grad.view(1, 2), grad_physics_tensor)  # 1x4
+            # compute overall graident
+            u_tensor.backward(grad_loss_wrt_u_tensor)
+            # for param in net.parameters():
+            #     if param.requires_grad:
+            #         print(param.grad)
 
         mean_ep_loss += ep_loss
         #update network
@@ -130,8 +128,11 @@ for epoch in range(num_epochs):
 
     mean_ep_loss /= num_of_targets
     print(f"epoch: {epoch}, mean_ep_loss: {mean_ep_loss}")
+    writer.add_scalar("Loss/train", mean_ep_loss, epoch)
     if mean_ep_loss < 0.45:
         break
+
+writer.flush()
 
 models_dir = f"models/{int(time.time())}/"
 if not os.path.exists(models_dir):

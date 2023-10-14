@@ -1,3 +1,4 @@
+import numpy as np
 from stable_baselines3 import PPO
 import torch
 import torch_net
@@ -5,8 +6,8 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([0.7, 0.7])
-modelid = "1697226155"
+m_target = np.array([-0.34, 0.24])
+modelid = "1697230642"
 # modelid = "1696749061"
 #######################################################################
 # Load Params
@@ -38,7 +39,7 @@ if training_type == "PPO":
     PPO_model = PPO.load(PPO_model_path0)
 elif training_type == "feedforward":
     feedforward_model_path0 = f"./models/{modelid}/{allmodels[-1]}"
-    ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size, controller_params.output_size)
+    ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size, controller_params.output_size, control_type)
     ff_net.load_state_dict(torch.load(feedforward_model_path0))
     ff_net.eval()
 xml_path = controller_params.model_dir
@@ -177,28 +178,22 @@ def callback(model, data):
             action, _states = PPO_model.predict(observation)
             controller.set_action(action)
         elif training_type == "feedforward":
-            observation = np.array([m_target[0], m_target[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+            observation = controller.get_obs(data, env_id)
             observation_tensor = torch.tensor(observation, requires_grad=False, dtype=torch.float32)
-            u_tensor = ff_net(observation_tensor.view(1, 6))
-            for i in range(4):
-                data.ctrl[i] = u_tensor[0][i].item()
+            u_tensor = ff_net(observation_tensor.view(1, controller_params.input_size))
+            u = np.zeros(controller_params.output_size)
+            for i in range(controller_params.output_size):
+                u[i] = u_tensor[0][i].item()
+            controller.set_action(u)
         elif training_type == "pid":
             controller.set_action(m_target)
 
-        # if data.time <= 2.5:
-        #     position_error = -np.linalg.norm(data.qpos - m_target)
-        #     ep_error += position_error
-        #     print(ep_error)
-        # else:
-        #     print(ep_error)
         global_timer = data.time
 
-    if training_type == "PPO" or control_type != Control_Type.BASELINE:
-        controller.callback(model, data)
+    controller.callback(model, data)
     # print(controller.l_desired)
     # print(data.ctrl[0], data.ctrl[1])
-    # print(data.qpos[0], data.qpos[1])
-
+    print(data.qpos[0], data.qpos[1])
 
     # if control_type != Control_Type.NEURON_OPTIMAL and control_type != Control_Type.PID:
     #     data2write = np.concatenate(([m_target[0], m_target[1]], \
