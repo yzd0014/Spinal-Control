@@ -7,8 +7,7 @@ import pickle
 from control import *
 
 m_target = np.array([-0.34, 0.24])
-modelid = "1697230642"
-# modelid = "1696749061"
+modelid = "1697265168"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -72,8 +71,7 @@ elif control_type == Control_Type.NEURON_SIMPLE:
     controller = NeuronSimpleController(controller_params)
 # Baseline Controller
 elif control_type == Control_Type.BASELINE:
-    if training_type == "PPO":
-        controller = BaselineController(controller_params)
+    controller = BaselineController(controller_params)
 # Optimal neuron Controller
 elif control_type == Control_Type.NEURON_OPTIMAL:
     controller = SpinalOptimalController(controller_params)
@@ -193,7 +191,7 @@ def callback(model, data):
     controller.callback(model, data)
     # print(controller.l_desired)
     # print(data.ctrl[0], data.ctrl[1])
-    print(data.qpos[0], data.qpos[1])
+    print(data.qpos[2])
 
     # if control_type != Control_Type.NEURON_OPTIMAL and control_type != Control_Type.PID:
     #     data2write = np.concatenate(([m_target[0], m_target[1]], \

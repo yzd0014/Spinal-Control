@@ -10,15 +10,6 @@ import pickle
 from control import *
 from torch.utils.tensorboard import SummaryWriter
 
-def compute_physics_gradient(model, data_before_simulation, data_after_simulation, u, eps, num_of_steps, grad):
-    for i in range(4):
-        data_copy = copy.deepcopy(data_before_simulation)
-        data_copy.ctrl[i] = u[i] + eps
-        for k in range(num_of_steps):
-            mj.mj_step(model, data_copy)
-        for j in range(2):
-            grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
-
 #tensorboard
 logdir = f"logs/{int(time.time())}-{control_type_dic[parameters.control_type]}/"
 if not os.path.exists(logdir):
@@ -112,7 +103,7 @@ for epoch in range(num_epochs):
 
             # compute gradient of loss wrt u
             grad_physics = np.zeros((2, output_size))
-            controller.compute_physics_gradient(model, data_before_simluation, data, 0.0001, steps_simulated, grad_physics)
+            controller.compute_physics_gradient(model, data_before_simluation, data, 0.0001, steps_simulated, 0, grad_physics)
             # compute_physics_gradient(model, data_before_simluation, data, u,0.0001, steps_simulated, grad_physics)
             grad_physics_tensor = torch.tensor(grad_physics, requires_grad=False, dtype=torch.float32)  # 2x4
             grad_loss_wrt_u_tensor = torch.matmul(new_state_tensor.grad.view(1, 2), grad_physics_tensor)  # 1x4
@@ -128,7 +119,7 @@ for epoch in range(num_epochs):
 
     mean_ep_loss /= num_of_targets
     print(f"epoch: {epoch}, mean_ep_loss: {mean_ep_loss}")
-    writer.add_scalar("Loss/train", mean_ep_loss, epoch)
+    writer.add_scalar("Loss/mean_ep_loss", mean_ep_loss, epoch)
     if mean_ep_loss < 0.45:
         break
 

@@ -6,14 +6,17 @@ INVERTED_PENDULUM = 1
 
 # Neuron Parameters
 training_type = "N/A"
-control_type = Control_Type.BASELINE
-env_id = DOUBLE_PENDULUM
+control_type = Control_Type.PID
+env_id = INVERTED_PENDULUM
 
 if control_type == Control_Type.BASELINE:
     controller_input_size = 6
     controller_output_size = 4
 elif control_type == Control_Type.PID:
-    controller_input_size = 2
+    if env_id == DOUBLE_PENDULUM:
+        controller_input_size = 2
+    elif env_id == INVERTED_PENDULUM:
+        controller_input_size = 6
     controller_output_size = 2
 
 if env_id == DOUBLE_PENDULUM:

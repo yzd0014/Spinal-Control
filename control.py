@@ -193,7 +193,12 @@ class BaselineController(object):
 
         return obs
 
-    def compute_physics_gradient(self, model, data_before_simulation, data_after_simulation, eps, num_of_steps, grad):
+    def compute_physics_gradient(self, model, data_before_simulation, data_after_simulation, eps, num_of_steps, env_id, grad):
+        if env_id == 0:
+            num_joints = 2
+        elif env_id == 1:
+            num_joints = 3
+
         original_callback = mj.get_mjcb_control()
         for i in range(4):
             data_copy = copy.deepcopy(data_before_simulation)
@@ -202,7 +207,7 @@ class BaselineController(object):
             mj.set_mjcb_control(controller_copy.callback)
             for k in range(num_of_steps):
                 mj.mj_step(model, data_copy)
-            for j in range(2):
+            for j in range(num_joints):
                 grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
         mj.set_mjcb_control(original_callback)
 
@@ -247,7 +252,12 @@ class PIDController():
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         return obs
 
-    def compute_physics_gradient(self, model, data_before_simulation, data_after_simulation, eps, num_of_steps, grad):
+    def compute_physics_gradient(self, model, data_before_simulation, data_after_simulation, eps, num_of_steps, env_id, grad):
+        if env_id == 0:
+            num_joints = 2
+        elif env_id == 1:
+            num_joints = 3
+
         original_callback = mj.get_mjcb_control()
         for i in range(2):
             data_copy = copy.deepcopy(data_before_simulation)
@@ -256,7 +266,7 @@ class PIDController():
             mj.set_mjcb_control(controller_copy.callback)
             for k in range(num_of_steps):
                 mj.mj_step(model, data_copy)
-            for j in range(2):
+            for j in range(num_joints):
                 grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
         mj.set_mjcb_control(original_callback)
 
