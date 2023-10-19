@@ -6,7 +6,7 @@ INVERTED_PENDULUM = 1
 
 # Neuron Parameters
 training_type = "N/A"
-control_type = Control_Type.PID
+control_type = Control_Type.BASELINE
 env_id = INVERTED_PENDULUM
 
 if control_type == Control_Type.BASELINE:

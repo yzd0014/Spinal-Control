@@ -31,8 +31,8 @@ net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, parameters.c
 
 # traning configuration
 num_epochs = 5000
-learning_rate = 0.0003
-batch_size = 32
+learning_rate = 0.0001
+batch_size = 8
 ep_id = 0
 
 # initialize mujoco
@@ -85,11 +85,12 @@ while True:
             mj.mj_step(model, data)
             steps_simulated += 1
         new_state_tensor = torch.tensor(np.array([data.qpos[0], data.qpos[1], data.qpos[2]]), requires_grad=True, dtype=torch.float32)
-        vec_one = torch.tensor(np.array([1.0, 1.0, 1.0]), requires_grad=False, dtype=torch.float32)
-        sum = torch.dot(new_state_tensor, vec_one)
+        sum = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 1.0, 1.0]), requires_grad=False, dtype=torch.float32))
+        link0_pos = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 0.0, 0.0]), requires_grad=False, dtype=torch.float32))
+        link1_pos = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 1.0, 0.0]), requires_grad=False, dtype=torch.float32))
 
         # calculate loss
-        loss = torch.norm(-np.pi - sum, p=2)
+        loss = torch.norm(-np.pi - sum, p=2) + torch.norm(link0_pos, p=2) + torch.norm(link1_pos, p=2)
         batch_loss += loss
         loss.backward()
 
@@ -113,7 +114,7 @@ while True:
     if epoch % 100 == 0:
         print(f"mean_ep_loss: {batch_loss}")
     epoch += 1
-    if data.time > 50 or epoch > 10000:
+    if data.time > 50:
         break
 
 writer.flush()

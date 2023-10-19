@@ -199,17 +199,32 @@ class BaselineController(object):
         elif env_id == 1:
             num_joints = 3
 
-        original_callback = mj.get_mjcb_control()
+        old_action = self.action.copy()
         for i in range(4):
             data_copy = copy.deepcopy(data_before_simulation)
-            controller_copy = copy.deepcopy(self)
-            controller_copy.action[i] += eps
-            mj.set_mjcb_control(controller_copy.callback)
+            action_temp = old_action.copy()
+            action_temp[i] += eps
+            self.set_action(action_temp)
             for k in range(num_of_steps):
                 mj.mj_step(model, data_copy)
             for j in range(num_joints):
                 grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
-        mj.set_mjcb_control(original_callback)
+        self.set_action(old_action)
+
+    def compute_loss_grad(self, model, data_before_simulation, episode_length, eps, num_of_steps, grad):
+        old_action = self.action.copy()
+        for i in range(4):
+            data_copy = copy.deepcopy(data_before_simulation)
+            action_temp = old_action.copy()
+            action_temp[i] += eps
+            self.set_action(action_temp)
+            while True:
+                mj.mj_step(model, data_copy)
+                link2_pos = data_copy.qpos[0] + data_copy.qpos[1] + data_copy.qpos[2]
+                if abs(-np.pi - link2_pos) > 0.25 * np.pi:
+                    break
+            grad[i] = (data_copy.time - episode_length) / eps
+        self.set_action(old_action)
 
     def reset_filter(self):
         self.fq0.reset()
@@ -258,17 +273,17 @@ class PIDController():
         elif env_id == 1:
             num_joints = 3
 
-        original_callback = mj.get_mjcb_control()
+        old_action = self.q_bar.copy()
         for i in range(2):
             data_copy = copy.deepcopy(data_before_simulation)
-            controller_copy = copy.deepcopy(self)
-            controller_copy.q_bar[i] += eps
-            mj.set_mjcb_control(controller_copy.callback)
+            action_temp = old_action.copy()
+            action_temp[i] += eps
+            self.set_action(action_temp)
             for k in range(num_of_steps):
                 mj.mj_step(model, data_copy)
             for j in range(num_joints):
                 grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
-        mj.set_mjcb_control(original_callback)
+        self.set_action(old_action)
 
 # -----------------------------------------------------------------------------
 # Baseline Controller
