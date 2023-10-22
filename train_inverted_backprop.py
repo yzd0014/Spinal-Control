@@ -30,9 +30,10 @@ output_size = parameters.controller_params.output_size
 net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, parameters.control_type)
 
 # traning configuration
-num_epochs = 5000
-learning_rate = 0.0001
-batch_size = 8
+num_epochs = 2000
+learning_rate =0.0005
+batch_size = parameters.controller_params.episode_length_in_ticks
+batch_size = 5
 ep_id = 0
 
 # initialize mujoco
@@ -61,11 +62,12 @@ optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
 
 reset_env(model, data)
 epoch = 0
-while True:
-# for epoch in range(num_epochs):
+# while True:
+for epoch in range(num_epochs):
     # set optimizer
     optimizer.zero_grad()
     batch_loss = 0
+    reset_env(model, data)
     for i in range(batch_size):
         # feedforward to generate action
         observation = controller.get_obs(data, parameters.env_id)
@@ -86,11 +88,12 @@ while True:
             steps_simulated += 1
         new_state_tensor = torch.tensor(np.array([data.qpos[0], data.qpos[1], data.qpos[2]]), requires_grad=True, dtype=torch.float32)
         sum = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 1.0, 1.0]), requires_grad=False, dtype=torch.float32))
-        link0_pos = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 0.0, 0.0]), requires_grad=False, dtype=torch.float32))
-        link1_pos = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 1.0, 0.0]), requires_grad=False, dtype=torch.float32))
+        # link0_pos = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 0.0, 0.0]), requires_grad=False, dtype=torch.float32))
+        # link1_pos = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 1.0, 0.0]), requires_grad=False, dtype=torch.float32))
 
         # calculate loss
-        loss = torch.norm(-np.pi - sum, p=2) + torch.norm(link0_pos, p=2) + torch.norm(link1_pos, p=2)
+        # loss = torch.norm(-np.pi - sum, p=2) + 0.1 * torch.norm(link0_pos, p=2) + 0.1 * torch.norm(link1_pos, p=2)
+        loss = torch.norm(-np.pi - sum, p=2)
         batch_loss += loss
         loss.backward()
 
@@ -104,18 +107,17 @@ while True:
         u_tensor.backward(grad_loss_wrt_u_tensor)
 
         #check if end of episode is reached
-        if abs(-np.pi - sum) > 0.25 * np.pi:
-            writer.add_scalar("Loss/ep_length", data.time, ep_id)
-            reset_env(model, data)
-            ep_id += 1
-            break
+        # if abs(-np.pi - sum) > 0.25 * np.pi:
+        #     writer.add_scalar("Loss/ep_length", data.time, ep_id)
+        #     reset_env(model, data)
+        #     ep_id += 1
+        #     break
 
     optimizer.step()
-    if epoch % 100 == 0:
-        print(f"mean_ep_loss: {batch_loss}")
-    epoch += 1
-    if data.time > 50:
-        break
+    writer.add_scalar("Loss/3rd_link_pos", batch_loss, epoch)
+    interval = 1
+    if epoch % interval == 0:
+        print(f"epoch-{epoch}, loss: {batch_loss}")
 
 writer.flush()
 

@@ -21,8 +21,10 @@ elif control_type == Control_Type.PID:
 
 if env_id == DOUBLE_PENDULUM:
     xml = 'double_links_fast.xml'
+    episode_length_in_seconds = 2
 elif env_id == INVERTED_PENDULUM:
     xml = 'inverted_pendulum_fast.xml'
+    episode_length_in_seconds = 10
 
 controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     beta=0.9, \
@@ -30,7 +32,7 @@ controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     fc=10, \
                                     model_dir = xml, \
                                     input_size=controller_input_size, \
-                                    hidden_size=16, \
+                                    hidden_size=256, \
                                     output_size=controller_output_size, \
-                                    episode_length_in_seconds=2,\
+                                    episode_length_in_seconds=episode_length_in_seconds,\
                                     brain_dt=0.1)

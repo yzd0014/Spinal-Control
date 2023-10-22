@@ -7,7 +7,7 @@ import pickle
 from control import *
 
 m_target = np.array([-0.34, 0.24])
-modelid = "1697265168"
+modelid = "1697840755"
 #######################################################################
 # Load Params
 print("\n\n")
