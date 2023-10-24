@@ -9,6 +9,7 @@ import parameters
 import pickle
 from control import *
 from torch.utils.tensorboard import SummaryWriter
+import physics_grad
 
 def reset_env(model, data):
     mj.mj_resetData(model, data)
@@ -31,26 +32,20 @@ net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, parameters.c
 
 # traning configuration
 num_epochs = 2000
-learning_rate =0.0005
+learning_rate =0.00001
 batch_size = parameters.controller_params.episode_length_in_ticks
-batch_size = 5
+# batch_size = 5
 ep_id = 0
 
 # initialize mujoco
-xml_path = parameters.controller_params.model_dir
-dirname = os.path.dirname(__file__)
-abspath = os.path.join(dirname + "/" + xml_path)
-xml_path = abspath
-model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
-data = mj.MjData(model)  # MuJoCo data
+model = parameters.model
+data = parameters.data
 
 # initialize controller
 if parameters.control_type == Control_Type.BASELINE:
-    controller = BaselineController(parameters.controller_params)
-    mj.set_mjcb_control(controller.callback)
+    mj.set_mjcb_control(parameters.controller.callback)
 elif parameters.control_type == Control_Type.PID:
-    controller = PIDController()
-    mj.set_mjcb_control(controller.callback)
+    mj.set_mjcb_control(parameters.controller.callback)
 
 # intialize simutlation parameters
 dt_brain = parameters.controller_params.brain_dt
@@ -60,51 +55,28 @@ parameters.env_id = 1
 
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
 
-reset_env(model, data)
 epoch = 0
 # while True:
 for epoch in range(num_epochs):
-    # set optimizer
     optimizer.zero_grad()
-    batch_loss = 0
     reset_env(model, data)
-    for i in range(batch_size):
+
+    init_obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+    obs = torch.tensor(init_obs, requires_grad=False, dtype=torch.float32).view(1, input_size)
+    total_loss = torch.tensor(0.0, dtype=torch.float32)
+    for i in range(episode_length):
         # feedforward to generate action
-        observation = controller.get_obs(data, parameters.env_id)
-        observation_tensor = torch.tensor(observation, requires_grad=True, dtype=torch.float32)
-        u_tensor = net(observation_tensor.view(1, input_size))  # 1x4
-        u = np.zeros(output_size)
-        for i in range(output_size):
-            u[i] = u_tensor[0][i].item()
-        controller.set_action(u)
-        # data.ctrl[0:4] = u[0:4]
+        u_tensor = net(obs)  # 1x4
 
         # simulation with action to genearsate new state
-        data_before_simluation = copy.deepcopy(data)
-        time_pre = data.time
-        steps_simulated = 0
-        while data.time - time_pre < dt_brain:
-            mj.mj_step(model, data)
-            steps_simulated += 1
-        new_state_tensor = torch.tensor(np.array([data.qpos[0], data.qpos[1], data.qpos[2]]), requires_grad=True, dtype=torch.float32)
-        sum = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 1.0, 1.0]), requires_grad=False, dtype=torch.float32))
-        # link0_pos = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 0.0, 0.0]), requires_grad=False, dtype=torch.float32))
-        # link1_pos = torch.dot(new_state_tensor, torch.tensor(np.array([1.0, 1.0, 0.0]), requires_grad=False, dtype=torch.float32))
+        physics_op = physics_grad.inverted_pendulum_physics.apply
+        new_state_tensor = physics_op(u_tensor)
+        obs = new_state_tensor
 
-        # calculate loss
-        # loss = torch.norm(-np.pi - sum, p=2) + 0.1 * torch.norm(link0_pos, p=2) + 0.1 * torch.norm(link1_pos, p=2)
+        # loss
+        sum = torch.dot(new_state_tensor.view(6), torch.tensor(np.array([1.0, 1.0, 1.0, 0.0, 0.0, 0.0]), requires_grad=False, dtype=torch.float32))
         loss = torch.norm(-np.pi - sum, p=2)
-        batch_loss += loss
-        loss.backward()
-
-        # compute gradient of loss wrt u
-        grad_physics = np.zeros((3, output_size))
-        controller.compute_physics_gradient(model, data_before_simluation, data, 0.0001, steps_simulated, 1, grad_physics)
-        grad_physics_tensor = torch.tensor(grad_physics, requires_grad=False, dtype=torch.float32)  # 3x4
-        grad_loss_wrt_u_tensor = torch.matmul(new_state_tensor.grad.view(1, 3), grad_physics_tensor)  # 1x4
-
-        # compute overall graident
-        u_tensor.backward(grad_loss_wrt_u_tensor)
+        total_loss = torch.add(total_loss, loss)
 
         #check if end of episode is reached
         # if abs(-np.pi - sum) > 0.25 * np.pi:
@@ -113,11 +85,13 @@ for epoch in range(num_epochs):
         #     ep_id += 1
         #     break
 
+    total_loss.backward()
     optimizer.step()
-    writer.add_scalar("Loss/3rd_link_pos", batch_loss, epoch)
+
+    writer.add_scalar("Loss/3rd_link_pos", total_loss, epoch)
     interval = 1
     if epoch % interval == 0:
-        print(f"epoch-{epoch}, loss: {batch_loss}")
+        print(f"epoch-{epoch}, loss: {total_loss}")
 
 writer.flush()
 
