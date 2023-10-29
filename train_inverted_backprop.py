@@ -31,8 +31,8 @@ output_size = parameters.controller_params.output_size
 net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, parameters.control_type)
 
 # traning configuration
-num_epochs = 2000
-learning_rate =0.00001
+num_epochs = 2000000000
+learning_rate =0.0001
 batch_size = parameters.controller_params.episode_length_in_ticks
 # batch_size = 5
 ep_id = 0
@@ -58,13 +58,13 @@ optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
 epoch = 0
 # while True:
 for epoch in range(num_epochs):
-    optimizer.zero_grad()
     reset_env(model, data)
+    optimizer.zero_grad()
 
     init_obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
     obs = torch.tensor(init_obs, requires_grad=False, dtype=torch.float32).view(1, input_size)
     total_loss = torch.tensor(0.0, dtype=torch.float32)
-    for i in range(episode_length):
+    for i in range(5):
         # feedforward to generate action
         u_tensor = net(obs)  # 1x4
 
@@ -88,10 +88,13 @@ for epoch in range(num_epochs):
     total_loss.backward()
     optimizer.step()
 
-    writer.add_scalar("Loss/3rd_link_pos", total_loss, epoch)
-    interval = 1
+    writer.add_scalar("Loss/3rd_link_pos", total_loss.item(), epoch)
+    interval = 10
     if epoch % interval == 0:
-        print(f"epoch-{epoch}, loss: {total_loss}")
+        print(f"epoch-{epoch}, loss: {total_loss.item()}")
+
+    if total_loss.item() < 0.5:
+        break
 
 writer.flush()
 

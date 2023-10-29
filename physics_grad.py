@@ -40,17 +40,17 @@ class inverted_pendulum_physics(torch.autograd.Function):
         data_after_simulation = ctx.data_after_simulation
         steps_simulated = ctx.steps_simulated
 
-        eps = 0.0001
+        eps = 0.0000001
         grad = np.zeros((6, u_dim))
 
         u = np.zeros(u_dim)
         for i in range(u_dim):
             u[i] = input[0][i].item()
 
-        old_action = u.copy()
+        old_action = pa.controller.action.copy()
         for i in range(u_dim):
             data_copy = copy.deepcopy(data_before_simulation)
-            action_temp = old_action.copy()
+            action_temp = u.copy()
             action_temp[i] += eps
             pa.controller.set_action(action_temp)
             for k in range(steps_simulated):
@@ -59,7 +59,7 @@ class inverted_pendulum_physics(torch.autograd.Function):
                 grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
         pa.controller.set_action(old_action)
 
-        grad_physics_tensor = torch.tensor(grad, requires_grad=False, dtype=torch.float32)  # 3x4
+        grad_physics_tensor = torch.tensor(grad, requires_grad=False, dtype=torch.float32)  # 6x4
         grad_loss_wrt_u_tensor = torch.matmul(grad_output.view(1, 6), grad_physics_tensor)  # 1x4
 
         return grad_loss_wrt_u_tensor

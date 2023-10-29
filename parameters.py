@@ -31,7 +31,7 @@ controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     fc=10, \
                                     model_dir = xml, \
                                     input_size=controller_input_size, \
-                                    hidden_size=256, \
+                                    hidden_size=64, \
                                     output_size=controller_output_size, \
                                     episode_length_in_seconds=episode_length_in_seconds,\
                                     brain_dt=0.1)
