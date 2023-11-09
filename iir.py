@@ -10,10 +10,6 @@ class IirFilt(object):
 
   def filter(self,sample):
     self.x = np.concatenate((np.array([sample]),self.x[0:-1]))
-    out = (np.dot(self.x,self.b) - np.dot(self.y[1:],self.a[1:]))/self.a[0]
+    out = (np.dot(self.x,self.b) - np.dot(self.y[0:-1],self.a[1:]))/self.a[0]
     self.y = np.concatenate((np.array([out]),self.y[0:-1]))
     return out
-
-  def reset(self):
-    self.x = np.zeros(self.n)
-    self.y = np.zeros(self.n)

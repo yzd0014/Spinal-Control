@@ -2,9 +2,9 @@ import sys
 import numpy as np
 from matplotlib import pyplot as plt
 
-def plot_neuron_simple_trial(filename):
+def plot_neuron_fullcon_trial(filename):
 
-  win = 1000
+  win = 5000
   d = np.loadtxt(filename,delimiter=',')
 
 
@@ -49,11 +49,20 @@ def plot_neuron_simple_trial(filename):
   print(error)
   print('\n')
 
+#  print(np.linalg.norm([qd1[0:win] - q1[0:win]]))
+#  print(np.linalg.norm([qd2[0:win] - q2[0:win]]))
+#  print(np.linalg.norm([[qd1[0:win] - q1[0:win]], [qd2[0:win] - q2[0:win]]]))
+#
+#  plt.figure(figsize=(15,8))
+#  plt.plot(qd1[0:win] - q1[0:win])
+#  plt.plot(qd2[0:win] - q2[0:win])
+#  plt.show()
+#
+#  exit()
 
   plt.figure(figsize=(15,8))
-
   plt.subplot(311)
-  plt.title('neuron-simple:   ||u|| = ' + str(round(control_effort,2)) \
+  plt.title('neuron-fullconn:   ||u|| = ' + str(round(control_effort,2)) \
              + ',  ||e|| = ' + str(round(error,2)))
   plt.plot(qd1,label='qd1')
   plt.plot(qd2,label='qd2')
@@ -84,8 +93,8 @@ def plot_neuron_simple_trial(filename):
   plt.xlabel('timestep')
   plt.xlim(0, win)
 
-  plt.savefig('neuron-simple.eps', format='eps', dpi=1200)
+  plt.savefig('neuron-fullconn.eps', format='eps', dpi=1200)
   plt.show()
 
 if __name__ == '__main__':
-  plot_neuron_simple_trial(*sys.argv[1:])
+  plot_neuron_fullcon_trial(*sys.argv[1:])

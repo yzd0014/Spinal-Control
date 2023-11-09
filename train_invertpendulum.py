@@ -5,7 +5,7 @@ from stable_baselines3 import TD3
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.monitor import Monitor
 import os
-import double_links_env
+import invertpendulum_env
 import time
 import pickle
 
@@ -30,10 +30,10 @@ if __name__=="__main__":
                controller_params],
                open(models_dir + "env_contr_params.p", "wb"))
 
-  env = double_links_env.DoubleLinkEnv(control_type=control_type,
-                                episode_sec=episode_sec,
-                                fs_brain_factor=fs_brain_factor,
-                                c_params=controller_params)
+  env = invertpendulum_env.InvertPendulumEnv(control_type=control_type,
+                                             episode_sec=episode_sec,
+                                             fs_brain_factor=fs_brain_factor,
+                                             c_params=controller_params)
 
 
   policy_kwargs = dict(activation_fn=th.nn.Tanh,

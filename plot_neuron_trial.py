@@ -43,15 +43,20 @@ def plot_neuron_trial(filename):
                                   u12[0:win], \
                                   u21[0:win], \
                                   u22[0:win]])
+
+  error = np.linalg.norm([qd1[0:win] - q1[0:win], qd2[0:win] - q2[0:win]])
   print('\ncontrol effort = ')
   print(control_effort)
   print('\n')
 
+  print('\nerror = ')
+  print(error)
+  print('\n')
 
   plt.figure(figsize=(15,8))
-
   plt.subplot(311)
-  plt.title('neuron, ||u|| = ' + str(round(control_effort,4)))
+  plt.title('neuron:   ||u|| = ' + str(round(control_effort,2)) \
+             + ',  ||e|| = ' + str(round(error,2)))
   plt.plot(qd1,label='qd1')
   plt.plot(qd2,label='qd2')
   plt.plot(q1,label='q1')

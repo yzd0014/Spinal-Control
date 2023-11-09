@@ -5,7 +5,11 @@ import mujoco as mj
 from mujoco.glfw import glfw
 import os
 
+from matplotlib import pyplot as plt
+
+
 from control import *
+from gen_trajectory import *
 
 targetMax = 0.85
 targetMin = -0.85
@@ -16,19 +20,23 @@ class DoubleLinkEnv(gym.Env):
     def __init__(self,  \
                   control_type = Control_Type.NEURON, \
                   instance_id = 0, \
-                  episode_sec = 1, \
+                  episode_length = 50, \
                   fs_brain_factor = 20, \
                   c_params = None):
       super(DoubleLinkEnv, self).__init__()
 
       # Env parameters
       self.control_type = control_type
-      self.episode_sec = episode_sec
+      self.episode_length = episode_length
       self.dt_brain = (1.0/c_params.fs) * fs_brain_factor
       self.c_params = c_params
 
-
       self.controller = InitController(self.control_type,c_params)
+      self.Tp, self.trajectory = generate_trajectory(5,2,5)
+      self.target = self.trajectory(0)
+
+      self.action_space = self.controller.get_action_space()
+      self.observation_space = self.controller.get_obs_space()
 
       # Other stuff
       self.instance_id = instance_id
@@ -37,26 +45,16 @@ class DoubleLinkEnv(gym.Env):
       if self.rendering == True:
        self.init_window()
 
-      #self.target = self.gen_random_target();
-      self.target = np.array([0.45, -0.45])
-      self.action_space = self.controller.get_action_space()
-      self.observation_space = self.controller.get_obs_space()
-
     def step(self, action):
       self.controller.set_action(action)
       time_prev = self.data.time
+      self.target = self.trajectory(self.data.time)
 
       loop_reward = 0
       while self.data.time - time_prev < self.dt_brain:
         mj.mj_step(self.model, self.data)
-        position_error = np.linalg.norm(self.data.qpos - self.target)
-        #loop_reward += -position_error + (position_error<0.001)/position_error
-        loop_reward += -position_error
-
-      reward = loop_reward
-      observation = np.concatenate((self.target, \
-                                    self.controller.obs, \
-                                    np.array([0,0])))
+        position_error = self.data.qpos - self.target
+        loop_reward += -np.linalg.norm(position_error)
 
       if self.rendering == True:
         mj.mjv_updateScene(self.model, self.data, self.opt, None, \
@@ -66,17 +64,20 @@ class DoubleLinkEnv(gym.Env):
         glfw.swap_buffers(self.window)
         glfw.poll_events()
 
-      if self.data.time >= self.episode_sec:
+      if self.data.time >= self.Tp:
         self.done = True
+
+      reward = loop_reward
+      observation = np.concatenate((self.target, \
+                                    self.controller.obs, \
+                                    np.array([0,0])))
 
       info = {}
       return observation, reward, self.done, info
 
     def reset(self):
       self.done = False
-      self.ticks = 0
-      #self.target = self.gen_random_target()
-      self.target = np.array([0.45, -0.45])
+      self.Tp, self.trajectory = generate_trajectory(5,2,5)
       mj.mj_resetData(self.model, self.data)
       mj.mj_forward(self.model, self.data)
       observation = np.concatenate([self.target, \
@@ -122,11 +123,3 @@ class DoubleLinkEnv(gym.Env):
 
       viewport_width, viewport_height = glfw.get_framebuffer_size(self.window)
       self.viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
-
-    def get_num_of_targets(self):
-      return self.num_of_targets;
-
-    def gen_random_target(self):
-      return np.array([np.random.uniform(targetMin,targetMax), \
-                        np.random.uniform(targetMin,targetMax)])
-

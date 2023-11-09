@@ -8,8 +8,6 @@
       <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1"/>
       <geom type="plane" size="1 1 0.1" rgba=".9 0 0 1"/>
       <!-- pos="0.76 0 0.65"  -->
-      <site name="target1" pos="-0.37071697 0 0.67119577" size="0.02" rgba="0 1 0 .3"/>
-      
       <site name="s0" pos="0.1 0 2.5" size="0.02"/>
       <site name="s2" pos="-0.1 0 2.5" size="0.02"/>
       <body pos="0 0 1.5" euler="0 0 0">
@@ -56,7 +54,7 @@
         <muscle  name="l-muscle" tendon="l-tendon" range="0.75 1.15" scale="400"/>
         <muscle  name="r-ctrl" tendon="r-middle" range="0.75 1.15" scale="400"/>
         <muscle  name="l-ctrl" tendon="l-middle" range="0.75 1.15" scale="400"/>
-        <!-- <motor name="motor0" joint="joint0"/> -->
-        <!-- <motor name="motor1" joint="joint1"/> -->
+        <motor name="motor0" joint="joint0"/>
+        <motor name="motor1" joint="joint1"/>
    </actuator>
 </mujoco>
