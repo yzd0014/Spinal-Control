@@ -6,8 +6,8 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([-0.34, 0.24])
-modelid = "1698607566"
+m_target = np.array([-0.58, 0.14])
+modelid = "1699255384"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -74,7 +74,7 @@ elif control_type == Control_Type.BASELINE:
     controller = BaselineController(controller_params)
 # Optimal neuron Controller
 elif control_type == Control_Type.NEURON_OPTIMAL:
-    controller = SpinalOptimalController(controller_params)
+    controller = SpinalOptimalController()
 elif control_type == Control_Type.PID:
     controller = PIDController()
 
@@ -162,9 +162,12 @@ def init_controller(model,data):
     if env_id == 0:
         controller.target_pos = np.array([m_target[0], m_target[1]])
     elif env_id == 1:
-        data.qpos[0] = 0.4
-        data.qpos[1] = -0.87
-        data.qpos[2] = -2.32
+        # data.qpos[0] = 0.4
+        # data.qpos[1] = -0.87
+        # data.qpos[2] = -2.32
+        data.qpos[0] = 0
+        data.qpos[1] = 0
+        data.qpos[2] = -2.95
     mj.mj_forward(model, data)
 
 ep_error = 0
@@ -191,7 +194,7 @@ def callback(model, data):
     controller.callback(model, data)
     # print(controller.l_desired)
     # print(data.ctrl[0], data.ctrl[1])
-    print(data.qpos[2])
+    print(data.qpos[0], data.qpos[1])
 
     # if control_type != Control_Type.NEURON_OPTIMAL and control_type != Control_Type.PID:
     #     data2write = np.concatenate(([m_target[0], m_target[1]], \

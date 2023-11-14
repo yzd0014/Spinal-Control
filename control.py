@@ -7,7 +7,7 @@ import copy
 
 import iir
 import fir
-
+from gym import spaces
 
 class Control_Type(Enum):
     BASELINE = 1
@@ -15,13 +15,15 @@ class Control_Type(Enum):
     NEURON_SIMPLE = 3
     NEURON_OPTIMAL = 4
     PID = 5
+    EP = 6
 
 
 control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.NEURON: "neuron",
                     Control_Type.NEURON_SIMPLE: "neuron-simple",
                     Control_Type.NEURON_OPTIMAL: "neuron-optimal",
-                    Control_Type.PID: "pid"}
+                    Control_Type.PID: "pid",
+                    Control_Type.EP: "ep"}
 
 
 class ControllerParams:
@@ -37,6 +39,35 @@ class ControllerParams:
         self.output_size = output_size
         self.brain_dt = brain_dt
         self.episode_length_in_ticks = int(episode_length_in_seconds / brain_dt)
+# -----------------------------------------------------------------------------
+# EP Controller
+# -----------------------------------------------------------------------------
+class EPController(object):
+    def __init__(self):
+        self.C = 1
+        self.action = np.zeros(8)
+        self.target_pos = np.zeros(2)
+
+    def set_action(self, newaction):
+        for i in range(2):
+            self.action[i] = newaction[i]
+
+    def callback(self, model, data):
+        for i in range(2):
+            data.ctrl[i * 2] = self.C - self.action[i]
+            data.ctrl[i * 2 + 1] = self.C + self.action[i]
+
+    def get_obs(self, data, env_id):
+        if env_id == 0:
+            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        elif env_id == 1:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        return obs
+
+    def get_action_space(self):
+        return spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
+    def get_obs_space(self, env_id):
+        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # Neural Controller
@@ -231,6 +262,13 @@ class BaselineController(object):
         self.fq1.reset()
         self.fv0.reset()
         self.fv1.reset()
+
+    def get_action_space(self):
+        return spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
+
+    def get_obs_space(self, env_id):
+        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+
 # -----------------------------------------------------------------------------
 # PID Controller
 # -----------------------------------------------------------------------------
@@ -262,7 +300,7 @@ class PIDController():
 
     def get_obs(self, data, env_id):
         if env_id == 0:
-            obs = np.array([self.target_pos[0], self.target_pos[1]])
+            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
         elif env_id == 1:
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         return obs
@@ -285,11 +323,17 @@ class PIDController():
                 grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
         self.set_action(old_action)
 
+    def get_action_space(self):
+        return spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
+
+    def get_obs_space(self, env_id):
+        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+
 # -----------------------------------------------------------------------------
 # Baseline Controller
 # -----------------------------------------------------------------------------
 class SpinalOptimalController():
-    def __init__(self, p):
+    def __init__(self):
         xml_path = 'double_links_nopassive.xml'
         dirname = os.path.dirname(__file__)
         abspath = os.path.join(dirname + "/" + xml_path)
@@ -300,14 +344,14 @@ class SpinalOptimalController():
         self.actions = np.zeros(4)
         self.lmax = 0.677
 
-        b, a = signal.butter(1, p.fc, 'low', fs=p.fs)
-        self.fq0 = iir.IirFilt(b, a)
-        self.fq1 = iir.IirFilt(b, a)
-        self.fv0 = iir.IirFilt(b, a)
-        self.fv1 = iir.IirFilt(b, a)
+        # b, a = signal.butter(1, p.fc, 'low', fs=p.fs)
+        # self.fq0 = iir.IirFilt(b, a)
+        # self.fq1 = iir.IirFilt(b, a)
+        # self.fv0 = iir.IirFilt(b, a)
+        # self.fv1 = iir.IirFilt(b, a)
 
         self.obs = np.zeros(4)
-
+        self.target_pos = np.zeros(2)
     def set_action(self, inputs):
         #cache original callback
         old_callback = mj.get_mjcb_control()
@@ -338,8 +382,10 @@ class SpinalOptimalController():
                 u0_temp = base_act
                 u1_temp = base_act
 
-            self.actions[i * 2] = l_desired[0] - self.lmax * u0_temp
-            self.actions[i * 2 + 1] = l_desired[1] - self.lmax * u1_temp
+            # self.actions[i * 2] = l_desired[0] - self.lmax * u0_temp
+            # self.actions[i * 2 + 1] = l_desired[1] - self.lmax * u1_temp
+            self.actions[i * 2] = u0_temp
+            self.actions[i * 2 + 1] = u1_temp
 
         #restore original callback
         mj.set_mjcb_control(old_callback)
@@ -347,11 +393,17 @@ class SpinalOptimalController():
     def callback(self, model, data):
         # self.get_obs(data)
         for i in range(4):
-            data.ctrl[i] = (data.actuator_length[i] + 0.1 * data.actuator_velocity[i] - self.actions[i]) / self.lmax
+            # data.ctrl[i] = (data.actuator_length[i] + 0.1 * data.actuator_velocity[i] - self.actions[i]) / self.lmax
+            data.ctrl[i] = self.actions[i]
 
-    def get_obs(self, data):
-        q0_est = self.fq0.filter(data.qpos[0])
-        q1_est = self.fq1.filter(data.qpos[1])
-        v0_est = self.fv0.filter(data.qvel[0])
-        v1_est = self.fv1.filter(data.qvel[1])
-        self.obs = np.array([q0_est, q1_est, v0_est, v1_est])
+    def get_obs(self, data, env_id):
+        # q0_est = self.fq0.filter(data.qpos[0])
+        # q1_est = self.fq1.filter(data.qpos[1])
+        # v0_est = self.fv0.filter(data.qvel[0])
+        # v1_est = self.fv1.filter(data.qvel[1])
+        # self.obs = np.array([q0_est, q1_est, v0_est, v1_est])
+        if env_id == 0:
+            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        elif env_id == 1:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        return obs

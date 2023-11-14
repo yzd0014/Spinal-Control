@@ -33,9 +33,11 @@ class DoubleLinkEnv(gym.Env):
             self.controller = BaselineController(c_params)
         # Optimal neuron Controller
         elif self.control_type == Control_Type.NEURON_OPTIMAL:
-            self.controller = SpinalOptimalController(c_params)
+            self.controller = SpinalOptimalController()
         elif self.control_type == Control_Type.PID:
             self.controller = PIDController()
+        elif self.control_type == Control_Type.EP:
+            self.controller = EPController()
 
         mj.set_mjcb_control(self.controller.callback)
 
@@ -59,18 +61,8 @@ class DoubleLinkEnv(gym.Env):
 
         self.target_iter = 0
 
-        if self.control_type == Control_Type.NEURON:
-            self.action_space = spaces.Box(low=0, high=1.0, shape=(8,), dtype=np.float32)
-            self.observation_space = spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.control_type == Control_Type.NEURON_OPTIMAL or self.control_type == Control_Type.PID:
-            self.action_space = spaces.Box(low=-0.8, high=0.8, shape=(2,), dtype=np.float32)
-            if self.env_id == 0:
-                self.observation_space = spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-            elif self.env_id == 1:
-                self.observation_space = spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        else:
-            self.action_space = spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
-            self.observation_space = spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        self.action_space = self.controller.get_action_space()
+        self.observation_space = self.controller.get_obs_space(env_id)
 
     def step(self, action):
         self.controller.set_action(action)
