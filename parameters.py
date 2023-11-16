@@ -8,17 +8,18 @@ control_type = Control_Type.EP
 env_id = DOUBLE_PENDULUM
 training_type = "na"
 
-if control_type == Control_Type.BASELINE:
+if env_id == DOUBLE_PENDULUM:
     controller_input_size = 2
-    controller_output_size = 4
-elif control_type == Control_Type.PID or control_type == Control_Type.EP:
-    if env_id == DOUBLE_PENDULUM:
-        controller_input_size = 6
-    elif env_id == INVERTED_PENDULUM:
-        controller_input_size = 6
-    controller_output_size = 2
+elif env_id == INVERTED_PENDULUM:
+    controller_input_size = 6
 else:
     controller_input_size = -1
+
+if control_type == Control_Type.BASELINE:
+    controller_output_size = 4
+elif control_type == Control_Type.PID or control_type == Control_Type.EP:
+    controller_output_size = 2
+else:
     controller_output_size = -1
 
 if env_id == DOUBLE_PENDULUM:
@@ -45,6 +46,8 @@ if training_type == "feedforward":
         controller = BaselineController(controller_params)
     elif control_type == Control_Type.PID:
         controller = PIDController()
+    elif control_type == Control_Type.EP:
+        controller = EPController()
 
     # initialize mujoco
     xml_path = controller_params.model_dir
