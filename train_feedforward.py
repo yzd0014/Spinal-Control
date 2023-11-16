@@ -52,6 +52,9 @@ if parameters.control_type == Control_Type.BASELINE:
 elif parameters.control_type == Control_Type.PID:
     controller = PIDController()
     mj.set_mjcb_control(controller.callback)
+elif parameters.control_type == Control_Type.EP:
+    controller = EPController()
+    mj.set_mjcb_control(controller.callback)
 
 # intialize simutlation parameters
 dt_brain = parameters.controller_params.brain_dt
@@ -78,7 +81,7 @@ for epoch in range(num_epochs):
             # feedforward to generate action
             observation = controller.get_obs(data, parameters.env_id)
             observation_tensor = torch.tensor(observation, requires_grad=True, dtype=torch.float32)
-            u_tensor = net(observation_tensor.view(1, input_size))  # 1x4
+            u_tensor = net(observation_tensor.view(1, input_size))  # 1xinput_size
             u = np.zeros(output_size)
             for i in range(output_size):
                 u[i] = u_tensor[0][i].item()
@@ -105,8 +108,8 @@ for epoch in range(num_epochs):
             grad_physics = np.zeros((2, output_size))
             controller.compute_physics_gradient(model, data_before_simluation, data, 0.0001, steps_simulated, 0, grad_physics)
             # compute_physics_gradient(model, data_before_simluation, data, u,0.0001, steps_simulated, grad_physics)
-            grad_physics_tensor = torch.tensor(grad_physics, requires_grad=False, dtype=torch.float32)  # 2x4
-            grad_loss_wrt_u_tensor = torch.matmul(new_state_tensor.grad.view(1, 2), grad_physics_tensor)  # 1x4
+            grad_physics_tensor = torch.tensor(grad_physics, requires_grad=False, dtype=torch.float32)  # 2xoutput_size
+            grad_loss_wrt_u_tensor = torch.matmul(new_state_tensor.grad.view(1, 2), grad_physics_tensor)  # 1xoutput_size * 2xoutput_size = 1xoutput_size
             # compute overall graident
             u_tensor.backward(grad_loss_wrt_u_tensor)
             # for param in net.parameters():

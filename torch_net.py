@@ -17,7 +17,7 @@ class FeedForwardNN(nn.Module):
         init.zeros_(self.fc3.bias)
         if control_type == control.Control_Type.BASELINE:
             self.output_activation = nn.Sigmoid()
-        elif control_type == control.Control_Type.PID:
+        elif control_type == control.Control_Type.PID or control_type == control.Control_Type.EP:
             self.output_activation = nn.Tanh()
 
     def forward(self, x):

@@ -7,6 +7,7 @@ import pickle
 from control import *
 
 m_target = np.array([-0.58, 0.14])
+modelid = "1699954400"
 modelid = "1699255384"
 #######################################################################
 # Load Params
@@ -77,6 +78,8 @@ elif control_type == Control_Type.NEURON_OPTIMAL:
     controller = SpinalOptimalController()
 elif control_type == Control_Type.PID:
     controller = PIDController()
+elif control_type == Control_Type.EP:
+    controller = EPController()
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:

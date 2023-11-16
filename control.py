@@ -69,6 +69,24 @@ class EPController(object):
     def get_obs_space(self, env_id):
         return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 
+    def compute_physics_gradient(self, model, data_before_simulation, data_after_simulation, eps, num_of_steps, env_id, grad):
+        if env_id == 0:
+            num_joints = 2
+        elif env_id == 1:
+            num_joints = 3
+
+        old_action = self.action.copy()
+        for i in range(2):
+            data_copy = copy.deepcopy(data_before_simulation)
+            action_temp = old_action.copy()
+            action_temp[i] += eps
+            self.set_action(action_temp)
+            for k in range(num_of_steps):
+                mj.mj_step(model, data_copy)
+            for j in range(num_joints):
+                grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
+        self.set_action(old_action)
+
 # -----------------------------------------------------------------------------
 # Neural Controller
 # -----------------------------------------------------------------------------

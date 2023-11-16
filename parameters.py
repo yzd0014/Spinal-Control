@@ -6,14 +6,14 @@ INVERTED_PENDULUM = 1
 # parameters that can be changed by users
 control_type = Control_Type.EP
 env_id = DOUBLE_PENDULUM
-training_type = "ppo"
+training_type = "na"
 
 if control_type == Control_Type.BASELINE:
-    controller_input_size = 6
+    controller_input_size = 2
     controller_output_size = 4
-elif control_type == Control_Type.PID:
+elif control_type == Control_Type.PID or control_type == Control_Type.EP:
     if env_id == DOUBLE_PENDULUM:
-        controller_input_size = 2
+        controller_input_size = 6
     elif env_id == INVERTED_PENDULUM:
         controller_input_size = 6
     controller_output_size = 2
@@ -34,7 +34,7 @@ controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     fc=10, \
                                     model_dir = xml, \
                                     input_size=controller_input_size, \
-                                    hidden_size=64, \
+                                    hidden_size=16, \
                                     output_size=controller_output_size, \
                                     episode_length_in_seconds=episode_length_in_seconds,\
                                     brain_dt=0.1)
