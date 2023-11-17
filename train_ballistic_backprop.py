@@ -37,15 +37,7 @@ print(f"total number of training samples: {num_of_targets}")
 
 # traning configuration
 num_epochs = 5000
-learning_rate = 0.0003
-
-# initialize mujoco
-xml_path = 'double_links_fast.xml'
-dirname = os.path.dirname(__file__)
-abspath = os.path.join(dirname + "/" + xml_path)
-xml_path = abspath
-model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
-data = mj.MjData(model)  # MuJoCo data
+learning_rate = 0.0001
 
 # intialize simutlation parameters
 dt_brain = pa.controller_params.brain_dt
@@ -59,8 +51,8 @@ for epoch in range(num_epochs):
     for batch_id in range(num_of_targets):
         # reset at the beginning of each episode
         batch_size = episode_length
-        mj.mj_resetData(model, data)
-        mj.mj_forward(model, data)
+        mj.mj_resetData(pa.model, pa.data)
+        mj.mj_forward(pa.model, pa.data)
         pa.controller.target_pos = np.array(traning_samples[batch_id])
 
         # set optimizer
@@ -74,7 +66,7 @@ for epoch in range(num_epochs):
             u_tensor = net(observation_tensor.view(1, input_size))  # 1xinput_size
 
             # simulation with action to genearsate new state
-            physics_op = physics_grad.double_pendulum_physics.apply()
+            physics_op = physics_grad.double_pendulum_physics.apply
             new_state_tensor = physics_op(u_tensor)
 
             #loss

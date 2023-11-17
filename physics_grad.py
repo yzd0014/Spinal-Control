@@ -62,7 +62,7 @@ class double_pendulum_physics(torch.autograd.Function):
         pa.controller.set_action(old_action)
 
         grad_physics_tensor = torch.tensor(grad, requires_grad=False, dtype=torch.float32)  # joint_numberxu_dim
-        grad_loss_wrt_u_tensor = torch.matmul(grad_output.view(1, 4), grad_physics_tensor)  # 1xjoint_number * joint_numberxu_dim = 1xu_dim
+        grad_loss_wrt_u_tensor = torch.matmul(grad_output.view(1, joint_number), grad_physics_tensor)  # 1xjoint_number * joint_numberxu_dim = 1xu_dim
 
         return grad_loss_wrt_u_tensor
 

@@ -86,12 +86,6 @@ ep_id = 0
 model = parameters.model
 data = parameters.data
 
-# initialize controller
-if parameters.control_type == Control_Type.BASELINE:
-    mj.set_mjcb_control(parameters.controller.callback)
-elif parameters.control_type == Control_Type.PID:
-    mj.set_mjcb_control(parameters.controller.callback)
-
 # intialize simutlation parameters
 dt_brain = parameters.controller_params.brain_dt
 episode_length = parameters.controller_params.episode_length_in_ticks
