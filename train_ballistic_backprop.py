@@ -1,26 +1,28 @@
 import numpy as np
 import mujoco as mj
 import torch
+
+import physics_grad
 import torch_net
 import os
 import copy
 import time
-import parameters
+import parameters as pa
 import pickle
 from control import *
 from torch.utils.tensorboard import SummaryWriter
 
 #tensorboard
-logdir = f"logs/{int(time.time())}-{control_type_dic[parameters.control_type]}/"
+logdir = f"logs/{int(time.time())}-{control_type_dic[pa.control_type]}/"
 if not os.path.exists(logdir):
     os.makedirs(logdir)
 writer = SummaryWriter(logdir)
 
 # create a feedforward neural network
-input_size = parameters.controller_params.input_size
-hidden_size = parameters.controller_params.hidden_size
-output_size = parameters.controller_params.output_size
-net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, parameters.control_type)
+input_size = pa.controller_params.input_size
+hidden_size = pa.controller_params.hidden_size
+output_size = pa.controller_params.output_size
+net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, pa.control_type)
 
 # create training data
 num_of_targets = 0
@@ -45,22 +47,11 @@ xml_path = abspath
 model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
 data = mj.MjData(model)  # MuJoCo data
 
-# initialize controller
-if parameters.control_type == Control_Type.BASELINE:
-    controller = BaselineController(parameters.controller_params)
-    mj.set_mjcb_control(controller.callback)
-elif parameters.control_type == Control_Type.PID:
-    controller = PIDController()
-    mj.set_mjcb_control(controller.callback)
-elif parameters.control_type == Control_Type.EP:
-    controller = EPController()
-    mj.set_mjcb_control(controller.callback)
-
 # intialize simutlation parameters
-dt_brain = parameters.controller_params.brain_dt
-episode_length = parameters.controller_params.episode_length_in_ticks
-parameters.training_type = "feedforward"
-parameters.env_id = 0
+dt_brain = pa.controller_params.brain_dt
+episode_length = pa.controller_params.episode_length_in_ticks
+pa.training_type = "feedforward"
+pa.env_id = 0
 
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
 for epoch in range(num_epochs):
@@ -70,53 +61,29 @@ for epoch in range(num_epochs):
         batch_size = episode_length
         mj.mj_resetData(model, data)
         mj.mj_forward(model, data)
-        controller.target_pos = np.array(traning_samples[batch_id])
+        pa.controller.target_pos = np.array(traning_samples[batch_id])
 
         # set optimizer
         optimizer.zero_grad()
 
         #track loss
-        ep_loss = 0
+        batch_loss = torch.tensor(0.0, dtype=torch.float32)
         for i in range(batch_size):
             # feedforward to generate action
-            observation = controller.get_obs(data, parameters.env_id)
-            observation_tensor = torch.tensor(observation, requires_grad=True, dtype=torch.float32)
+            observation_tensor = torch.tensor(pa.controller.target_pos, requires_grad=False, dtype=torch.float32)
             u_tensor = net(observation_tensor.view(1, input_size))  # 1xinput_size
-            u = np.zeros(output_size)
-            for i in range(output_size):
-                u[i] = u_tensor[0][i].item()
-            controller.set_action(u)
-            # data.ctrl[0:4] = u[0:4]
 
             # simulation with action to genearsate new state
-            data_before_simluation = copy.deepcopy(data)
-            time_pre = data.time
-            steps_simulated = 0
-            while data.time - time_pre < dt_brain:
-                mj.mj_step(model, data)
-                steps_simulated += 1
-            new_state_tensor = torch.tensor(np.array([data.qpos[0], data.qpos[1]]), requires_grad=True,
-                                            dtype=torch.float32)
-            target_state_tensor = torch.tensor(controller.target_pos, requires_grad=False)
+            physics_op = physics_grad.double_pendulum_physics.apply()
+            new_state_tensor = physics_op(u_tensor)
 
-            # calculate loss
+            #loss
+            target_state_tensor = torch.tensor(pa.controller.target_pos, requires_grad=False)
             loss = torch.norm(target_state_tensor - new_state_tensor, p=2)
-            ep_loss += loss
-            loss.backward()
+            batch_loss = torch.add(batch_loss, loss)
 
-            # compute gradient of loss wrt u
-            grad_physics = np.zeros((2, output_size))
-            controller.compute_physics_gradient(model, data_before_simluation, data, 0.0001, steps_simulated, 0, grad_physics)
-            # compute_physics_gradient(model, data_before_simluation, data, u,0.0001, steps_simulated, grad_physics)
-            grad_physics_tensor = torch.tensor(grad_physics, requires_grad=False, dtype=torch.float32)  # 2xoutput_size
-            grad_loss_wrt_u_tensor = torch.matmul(new_state_tensor.grad.view(1, 2), grad_physics_tensor)  # 1xoutput_size * 2xoutput_size = 1xoutput_size
-            # compute overall graident
-            u_tensor.backward(grad_loss_wrt_u_tensor)
-            # for param in net.parameters():
-            #     if param.requires_grad:
-            #         print(param.grad)
-
-        mean_ep_loss += ep_loss
+        mean_ep_loss += batch_loss.item()
+        batch_loss.backward()
         #update network
         optimizer.step()
 
@@ -132,7 +99,7 @@ models_dir = f"models/{int(time.time())}/"
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-pickle.dump([parameters.training_type, parameters.control_type, parameters.env_id, parameters.controller_params], open(models_dir + "env_contr_params.p", "wb"))
+pickle.dump([pa.training_type, pa.control_type, pa.env_id, pa.controller_params], open(models_dir + "env_contr_params.p", "wb"))
 torch.save(net.state_dict(), f'{models_dir}/{int(time.time())}.pth')
 
 
