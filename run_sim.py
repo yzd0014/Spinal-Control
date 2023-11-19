@@ -6,9 +6,8 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([-0.58, 0.14])
-modelid = "1699954400"
-modelid = "1699255384"
+m_target = np.array([-0.58, 0.34])
+modelid = "1700225434"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -182,7 +181,8 @@ def callback(model, data):
             action, _states = PPO_model.predict(observation)
             controller.set_action(action)
         elif training_type == "feedforward":
-            observation = controller.get_obs(data, env_id)
+            # observation = controller.get_obs(data, env_id)
+            observation = controller.target_pos
             observation_tensor = torch.tensor(observation, requires_grad=False, dtype=torch.float32)
             u_tensor = ff_net(observation_tensor.view(1, controller_params.input_size))
             u = np.zeros(controller_params.output_size)

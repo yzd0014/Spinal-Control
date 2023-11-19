@@ -4,7 +4,7 @@ DOUBLE_PENDULUM = 0
 INVERTED_PENDULUM = 1
 
 # parameters that can be changed by users
-control_type = Control_Type.BASELINE
+control_type = Control_Type.EP
 env_id = DOUBLE_PENDULUM
 training_type = "feedforward"
 
