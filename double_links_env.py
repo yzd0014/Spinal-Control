@@ -38,6 +38,10 @@ class DoubleLinkEnv(gym.Env):
             self.controller = PIDController()
         elif self.control_type == Control_Type.EP:
             self.controller = EPController()
+        elif self.control_type == Control_Type.FF:
+            self.controller = FeedForwardController()
+        elif self.control_type == Control_Type.EP_GENERAL:
+            self.controller = GeneralEPController()
 
         mj.set_mjcb_control(self.controller.callback)
 

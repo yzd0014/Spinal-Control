@@ -19,6 +19,7 @@ class FeedForwardNN(nn.Module):
             self.output_activation = nn.Sigmoid()
         elif control_type == control.Control_Type.PID or control_type == control.Control_Type.EP:
             self.output_activation = nn.Tanh()
+        # self.fc4 = nn.Linear(output_size, 2)
 
     def forward(self, x):
         x = self.fc1(x)

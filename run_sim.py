@@ -7,7 +7,7 @@ import pickle
 from control import *
 
 m_target = np.array([-0.58, 0.34])
-modelid = "1700225434"
+modelid = "1700434416"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -79,6 +79,8 @@ elif control_type == Control_Type.PID:
     controller = PIDController()
 elif control_type == Control_Type.EP:
     controller = EPController()
+elif control_type == Control_Type.FF:
+    controller = FeedForwardController()
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:

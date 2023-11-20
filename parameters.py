@@ -5,8 +5,8 @@ INVERTED_PENDULUM = 1
 
 # parameters that can be changed by users
 control_type = Control_Type.EP
-env_id = DOUBLE_PENDULUM
-training_type = "feedforward"
+env_id = INVERTED_PENDULUM
+training_type = "PPO"
 
 if env_id == DOUBLE_PENDULUM:
     controller_input_size = 2
@@ -27,7 +27,7 @@ if env_id == DOUBLE_PENDULUM:
     episode_length_in_seconds = 5
 elif env_id == INVERTED_PENDULUM:
     xml = 'inverted_pendulum_fast.xml'
-    episode_length_in_seconds = 80
+    episode_length_in_seconds = 120
 
 controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     beta=0.9, \

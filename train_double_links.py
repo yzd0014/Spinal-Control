@@ -9,9 +9,31 @@ import os
 import double_links_env
 import time
 import pickle
+from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnRewardThreshold
+from stable_baselines3.common.callbacks import BaseCallback
 
 from control import *
 from parameters import *
+
+training = True
+class StopTraining(BaseCallback):
+    parent: EvalCallback
+
+    def __init__(self, reward_threshold: float, verbose: int = 0):
+        super().__init__(verbose=verbose)
+        self.reward_threshold = reward_threshold
+
+    def _on_step(self) -> bool:
+        global training
+        assert self.parent is not None, "``StopTrainingOnMinimumReward`` callback must be used with an ``EvalCallback``"
+        continue_training = bool(self.parent.best_mean_reward < self.reward_threshold)
+        if self.verbose >= 1 and not continue_training:
+            print(
+                f"Stopping training because the mean reward {self.parent.best_mean_reward:.2f} "
+                f" is above the threshold {self.reward_threshold}"
+            )
+            training = False
+        return continue_training
 
 if __name__ == "__main__":
 
@@ -25,6 +47,10 @@ if __name__ == "__main__":
         os.makedirs(logdir)
 
     env = double_links_env.DoubleLinkEnv(control_type=control_type, env_id=env_id, c_params=controller_params)#this will also update controller_params
+
+    eval_env = env
+    callback_on_best = StopTraining(reward_threshold=1, verbose=1)
+    eval_callback = EvalCallback(eval_env, callback_on_new_best=callback_on_best, verbose=0)
 
     training_type = "PPO"
     pickle.dump([training_type, \
@@ -44,7 +70,7 @@ if __name__ == "__main__":
         batch_size = controller_params.episode_length_in_ticks
         n_epochs = 10
     elif env_id == INVERTED_PENDULUM:
-        n_steps = 1000
+        n_steps = int(100/controller_params.brain_dt)
         batch_size = n_steps
         n_epochs = 20
 
@@ -67,8 +93,8 @@ if __name__ == "__main__":
     print(model.policy)
 
     iters = 0
-    while True:
+    while training:
         iters += 1
         model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, \
-                    tb_log_name=f"PPO")
+                    tb_log_name=f"PPO", callback=eval_callback)
         model.save(f"{models_dir}/{TIMESTEPS * iters}")

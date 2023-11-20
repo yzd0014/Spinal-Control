@@ -8,6 +8,8 @@ import copy
 import iir
 import fir
 from gym import spaces
+import torch
+import torch_net
 
 class Control_Type(Enum):
     BASELINE = 1
@@ -16,6 +18,8 @@ class Control_Type(Enum):
     NEURON_OPTIMAL = 4
     PID = 5
     EP = 6
+    FF = 7
+    EP_GENERAL = 8
 
 
 control_type_dic = {Control_Type.BASELINE: "baseline",
@@ -23,7 +27,10 @@ control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.NEURON_SIMPLE: "neuron-simple",
                     Control_Type.NEURON_OPTIMAL: "neuron-optimal",
                     Control_Type.PID: "pid",
-                    Control_Type.EP: "ep"}
+                    Control_Type.EP: "ep",
+                    Control_Type.FF: "feedforward",
+                    Control_Type.EP_GENERAL: "ep-general"
+                    }
 
 
 class ControllerParams:
@@ -45,7 +52,7 @@ class ControllerParams:
 class EPController(object):
     def __init__(self):
         self.C = 1
-        self.action = np.zeros(8)
+        self.action = np.zeros(2)
         self.target_pos = np.zeros(2)
 
     def set_action(self, newaction):
@@ -54,8 +61,8 @@ class EPController(object):
 
     def callback(self, model, data):
         for i in range(2):
-            data.ctrl[i * 2] = self.C - self.action[i]
-            data.ctrl[i * 2 + 1] = self.C + self.action[i]
+            data.ctrl[i * 2] = self.C + self.action[i]
+            data.ctrl[i * 2 + 1] = self.C - self.action[i]
 
     def get_obs(self, data, env_id):
         if env_id == 0:
@@ -86,6 +93,71 @@ class EPController(object):
             for j in range(num_joints):
                 grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
         self.set_action(old_action)
+
+# -----------------------------------------------------------------------------
+# General EP Controller
+# -----------------------------------------------------------------------------
+class GeneralEPController(object):
+    def __init__(self):
+        self.action = np.zeros(4)
+        self.target_pos = np.zeros(2)
+
+    def set_action(self, newaction):
+        for i in range(4):
+            self.action[i] = newaction[i]
+
+    def callback(self, model, data):
+        for i in range(2):
+            data.ctrl[i * 2] = self.action[i*2] - self.action[i*2+1]
+            data.ctrl[i * 2 + 1] = self.action[i*2] + self.action[i*2+1]
+
+    def get_obs(self, data, env_id):
+        if env_id == 0:
+            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        elif env_id == 1:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        return obs
+
+    def get_action_space(self):
+        return spaces.Box(low=np.array([0, -1, 0, -1]), high=np.array([1, 1, 1, 1]), dtype=np.float32)
+    def get_obs_space(self, env_id):
+        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+
+# -----------------------------------------------------------------------------
+# Feedforward Controller
+# -----------------------------------------------------------------------------
+class FeedForwardController(object):
+    def __init__(self):
+        self.action = np.zeros(2)
+        self.target_pos = np.zeros(2)
+        weights_path = "./ff_weights.pth"
+        self.ff_net = torch_net.FeedForwardNN(2, 64, 4, Control_Type.BASELINE)
+        self.ff_net.load_state_dict(torch.load(weights_path))
+        self.ff_net.eval()
+
+    def set_action(self, newaction):
+        for i in range(2):
+            self.action[i] = newaction[i]
+
+    def callback(self, model, data):
+        action_tensor = torch.tensor(self.action, dtype=torch.float32)
+        u_tensor = self.ff_net(action_tensor.view(1, 2))
+        for i in range(4):
+            data.ctrl[i] = u_tensor[0][i].item()
+
+    def get_action_space(self):
+        return spaces.Box(low=-100, high=100, shape=(2,), dtype=np.float32)
+
+    def get_obs_space(self, env_id):
+        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+
+    def get_obs(self, data, env_id):
+        if env_id == 0:
+            obs = np.array(
+                [self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        elif env_id == 1:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        return obs
 
 # -----------------------------------------------------------------------------
 # Neural Controller
@@ -293,28 +365,32 @@ class BaselineController(object):
 class PIDController():
     def __init__(self):
         self.target_pos = np.zeros(2)
-        self.q_bar = np.zeros(2)
+        self.action = np.zeros(2)
         self.q_error = np.zeros(2)
 
     def set_action(self, inputs):
-        self.q_bar = inputs[0:2]
+        for i in range(2):
+            self.action[i] = inputs[i]
 
     def callback(self, model, data):
         Kp = 20
         Ki = 0
-        Kd = 1
+        Kd = 0
 
         for i in range(2):
-            data.ctrl[2*i] = 0
-            data.ctrl[2 * i + 1] = 0
+            self.q_error[i] += (self.action[i] - data.qpos[i]) * model.opt.timestep
+            tao = Kp * (self.action[i] - data.qpos[i]) + Ki * self.q_error[i] * data.time - Kd * data.qvel[i]
 
-            self.q_error[i] += (self.q_bar[i] - data.qpos[i]) * model.opt.timestep
-            tao = Kp * (self.q_bar[i] - data.qpos[i]) + Ki * self.q_error[i] * data.time - Kd * data.qvel[i]
-
-            if tao > 0:
-                data.ctrl[2*i] = tao
+            # if tao > 0:
+            #     data.ctrl[2*i] = tao
+            # else:
+            #     data.ctrl[2 * i + 1] = -tao
+            if self.action[i] > 0:
+                data.ctrl[2 * i] = self.action[i]
+                data.ctrl[2 * i + 1] = 0
             else:
-                data.ctrl[2 * i + 1] = -tao
+                data.ctrl[2 * i] = 0
+                data.ctrl[2 * i + 1] = -self.action[i]
 
     def get_obs(self, data, env_id):
         if env_id == 0:
