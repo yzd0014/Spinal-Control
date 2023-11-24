@@ -132,6 +132,12 @@ class FeedForwardController(object):
         self.target_pos = np.zeros(2)
         weights_path = "./ff_weights.pth"
         self.ff_net = torch_net.FeedForwardNN(2, 64, 4, Control_Type.BASELINE)
+
+        # self.action = np.zeros(4)
+        # self.target_pos = np.zeros(2)
+        # weights_path = "./ff4.pth"
+        # self.ff_net = torch_net.FeedForwardNN(4, 32, 4, Control_Type.BASELINE)
+
         self.ff_net.load_state_dict(torch.load(weights_path))
         self.ff_net.eval()
 
@@ -142,11 +148,11 @@ class FeedForwardController(object):
     def callback(self, model, data):
         action_tensor = torch.tensor(self.action, dtype=torch.float32)
         u_tensor = self.ff_net(action_tensor.view(1, 2))
-        for i in range(4):
+        for i in range(2):
             data.ctrl[i] = u_tensor[0][i].item()
 
     def get_action_space(self):
-        return spaces.Box(low=-100, high=100, shape=(2,), dtype=np.float32)
+        return spaces.Box(low=-5, high=5, shape=(2,), dtype=np.float32)
 
     def get_obs_space(self, env_id):
         return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
