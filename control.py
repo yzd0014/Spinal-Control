@@ -290,7 +290,7 @@ class BaselineParams:
 
 
 class BaselineController(object):
-    def __init__(self, p):
+    def __init__(self, p, env_id):
         # b, a = signal.butter(1, p.fc, 'low', fs=p.fs)
         # self.fq0 = iir.IirFilt(b, a)
         # self.fq1 = iir.IirFilt(b, a)
@@ -298,60 +298,34 @@ class BaselineController(object):
         # self.fv1 = iir.IirFilt(b, a)
         self.action = np.zeros(4)
         self.target_pos = np.zeros(2)
+        self.env_id = env_id
 
     def callback(self, model, data):
         # self.get_obs(data)
         data.ctrl[0:4] = self.action
 
+        if self.env_id == 2:
+            if data.time > 0.45:
+                data.ctrl[4] = 0
+
     def set_action(self, newaction):
         for i in range(4):
             self.action[i] = newaction[i]
 
-    def get_obs(self, data, env_id):
-        if env_id == 0:
+    def get_obs(self, data):
+        if self.env_id == 0:
             # q0_est = self.fq0.filter(data.qpos[0])
             # q1_est = self.fq1.filter(data.qpos[1])
             # v0_est = self.fv0.filter(data.qvel[0])
             # v1_est = self.fv1.filter(data.qvel[1])
             # obs = np.array([self.target_pos[0], self.target_pos[1], q0_est, q1_est, v0_est, v1_est])
             obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif env_id == 1:
+        elif self.env_id == 1:
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        elif self.env_id == 2:
+            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
 
         return obs
-
-    def compute_physics_gradient(self, model, data_before_simulation, data_after_simulation, eps, num_of_steps, env_id, grad):
-        if env_id == 0:
-            num_joints = 2
-        elif env_id == 1:
-            num_joints = 3
-
-        old_action = self.action.copy()
-        for i in range(4):
-            data_copy = copy.deepcopy(data_before_simulation)
-            action_temp = old_action.copy()
-            action_temp[i] += eps
-            self.set_action(action_temp)
-            for k in range(num_of_steps):
-                mj.mj_step(model, data_copy)
-            for j in range(num_joints):
-                grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
-        self.set_action(old_action)
-
-    def compute_loss_grad(self, model, data_before_simulation, episode_length, eps, num_of_steps, grad):
-        old_action = self.action.copy()
-        for i in range(4):
-            data_copy = copy.deepcopy(data_before_simulation)
-            action_temp = old_action.copy()
-            action_temp[i] += eps
-            self.set_action(action_temp)
-            while True:
-                mj.mj_step(model, data_copy)
-                link2_pos = data_copy.qpos[0] + data_copy.qpos[1] + data_copy.qpos[2]
-                if abs(-np.pi - link2_pos) > 0.25 * np.pi:
-                    break
-            grad[i] = (data_copy.time - episode_length) / eps
-        self.set_action(old_action)
 
     def reset_filter(self):
         self.fq0.reset()
@@ -362,7 +336,7 @@ class BaselineController(object):
     def get_action_space(self):
         return spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
 
-    def get_obs_space(self, env_id):
+    def get_obs_space(self):
         return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------

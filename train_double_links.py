@@ -49,6 +49,10 @@ if __name__ == "__main__":
         n_steps = int(100/controller_params.brain_dt)
         batch_size = n_steps
         n_epochs = 20
+    elif env_id == TOSS:
+        n_steps = int(500/controller_params.brain_dt)
+        batch_size = n_steps
+        n_epochs = 10
 
     TIMESTEPS = n_steps
     model = PPO('MlpPolicy', env, \
@@ -73,7 +77,7 @@ if __name__ == "__main__":
         iters += 1
         model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, \
                     tb_log_name=f"PPO")
-        mean_reward = safe_mean([ep_info["r"] for ep_info in model.ep_info_buffer])
-        if mean_reward > 120:
-            break
+        # mean_reward = safe_mean([ep_info["r"] for ep_info in model.ep_info_buffer])
+        # if mean_reward > 120:
+        #     break
         model.save(f"{models_dir}/{TIMESTEPS * iters}")

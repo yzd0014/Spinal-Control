@@ -6,8 +6,9 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([-0.58, 0.34])
-modelid = "1700557469"
+# m_target = np.array([-0.58, 0.34])
+m_target = np.array([-9, 0])
+modelid = "1701253288"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -71,7 +72,7 @@ elif control_type == Control_Type.NEURON_SIMPLE:
     controller = NeuronSimpleController(controller_params)
 # Baseline Controller
 elif control_type == Control_Type.BASELINE:
-    controller = BaselineController(controller_params)
+    controller = BaselineController(controller_params, env_id)
 # Optimal neuron Controller
 elif control_type == Control_Type.NEURON_OPTIMAL:
     controller = SpinalOptimalController()
@@ -172,6 +173,8 @@ def init_controller(model,data):
         data.qpos[0] = 0
         data.qpos[1] = 0
         data.qpos[2] = -2.95
+    elif env_id == 2:
+        data.ctrl[4] = 1
     mj.mj_forward(model, data)
 
 ep_error = 0
@@ -179,7 +182,7 @@ def callback(model, data):
     global global_timer, ep_error
     if data.time - global_timer >= dt_brain or data.time < 0.000101:
         if training_type == "PPO":
-            observation = controller.get_obs(data, env_id)
+            observation = controller.get_obs(data)
             action, _states = PPO_model.predict(observation)
             controller.set_action(action)
         elif training_type == "feedforward":

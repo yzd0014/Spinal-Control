@@ -30,7 +30,7 @@ class DoubleLinkEnv(gym.Env):
             self.controller = NeuronSimpleController(c_params)
         # Baseline Controller
         elif self.control_type == Control_Type.BASELINE:
-            self.controller = BaselineController(c_params)
+            self.controller = BaselineController(c_params, env_id)
         # Optimal neuron Controller
         elif self.control_type == Control_Type.NEURON_OPTIMAL:
             self.controller = SpinalOptimalController()
@@ -66,7 +66,7 @@ class DoubleLinkEnv(gym.Env):
         self.target_iter = 0
 
         self.action_space = self.controller.get_action_space()
-        self.observation_space = self.controller.get_obs_space(env_id)
+        self.observation_space = self.controller.get_obs_space()
 
     def step(self, action):
         self.controller.set_action(action)
@@ -99,8 +99,21 @@ class DoubleLinkEnv(gym.Env):
             position_penalty = abs(current_q - np.pi)
             if position_penalty > 0.25 * np.pi:
                 self.done = True
+        elif self.env_id == 2:
+            if self.data.ncon > 0:
+                if self.data.contact[0].geom1 == 0 and self.data.contact[0].geom2 == 4:
+                    self.done = True
+                elif self.data.contact[0].geom1 == 4 and self.data.contact[0].geom2 == 0:
+                    self.done = True
 
-        observation = self.controller.get_obs(self.data, self.env_id)
+            if self.done == False:
+                reward = 0
+            else:
+                dist = np.linalg.norm(np.array([self.data.xpos[4][0], self.data.xpos[4][1]]) - self.controller.target_pos)
+                reward = 10 * np.exp(-dist)
+                # print(self.data.xpos[4][0])
+
+        observation = self.controller.get_obs(self.data)
         info = {}
         return observation, reward, self.done, info
 
@@ -132,7 +145,13 @@ class DoubleLinkEnv(gym.Env):
             self.data.qpos[2] = -2.32
             mj.mj_forward(self.model, self.data)
 
-        observation = self.controller.get_obs(self.data, self.env_id)
+        elif self.env_id == 2:
+            mj.mj_resetData(self.model, self.data)
+            self.data.ctrl[4] = 1
+            mj.mj_forward(self.model, self.data)
+            self.controller.target_pos = np.array([-9, 0])
+
+        observation = self.controller.get_obs(self.data)
         return observation
 
     def close(self):
@@ -154,10 +173,16 @@ class DoubleLinkEnv(gym.Env):
         mj.mjv_defaultCamera(self.cam)
         mj.mjv_defaultOption(self.opt)
 
-        self.cam.azimuth = 90
-        self.cam.elevation = -20
-        self.cam.distance = 2
-        self.cam.lookat = np.array([0.0, -1, 2])
+        if self.env_id == 2:
+            self.cam.azimuth = 160
+            self.cam.elevation = -10
+            self.cam.distance = 5
+            self.cam.lookat = np.array([0.0, 0.0, 1])
+        else:
+            self.cam.azimuth = 90
+            self.cam.elevation = -20
+            self.cam.distance = 2
+            self.cam.lookat = np.array([0.0, -1, 2])
 
         self.c_params.fs = 1 / self.model.opt.timestep
 
