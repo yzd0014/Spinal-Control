@@ -8,7 +8,7 @@ from control import *
 
 # m_target = np.array([-0.58, 0.34])
 m_target = np.array([-10, 0])
-modelid = "1701382040"
+modelid = "1701392135"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -79,9 +79,9 @@ elif control_type == Control_Type.NEURON_OPTIMAL:
 elif control_type == Control_Type.PID:
     controller = PIDController()
 elif control_type == Control_Type.EP:
-    controller = EPController()
+    controller = EPController(env_id)
 elif control_type == Control_Type.FF:
-    controller = FeedForwardController()
+    controller = FeedForwardController(env_id)
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
@@ -174,7 +174,8 @@ def init_controller(model,data):
         data.qpos[1] = 0
         data.qpos[2] = -2.95
     elif env_id == 2:
-        data.ctrl[4] = 1
+        controller.target_pos = np.array([m_target[0], m_target[1]])
+        model.eq_active[0] = 1
     mj.mj_forward(model, data)
 
 ep_error = 0

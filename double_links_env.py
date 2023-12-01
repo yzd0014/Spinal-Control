@@ -37,9 +37,9 @@ class DoubleLinkEnv(gym.Env):
         elif self.control_type == Control_Type.PID:
             self.controller = PIDController()
         elif self.control_type == Control_Type.EP:
-            self.controller = EPController()
+            self.controller = EPController(env_id)
         elif self.control_type == Control_Type.FF:
-            self.controller = FeedForwardController()
+            self.controller = FeedForwardController(env_id)
         elif self.control_type == Control_Type.EP_GENERAL:
             self.controller = GeneralEPController()
 

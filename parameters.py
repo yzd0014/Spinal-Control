@@ -5,7 +5,7 @@ INVERTED_PENDULUM = 1
 TOSS = 2
 
 # parameters that can be changed by users
-control_type = Control_Type.BASELINE
+control_type = Control_Type.EP
 env_id = TOSS
 training_type = "PPO"
 

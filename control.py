@@ -50,10 +50,11 @@ class ControllerParams:
 # EP Controller
 # -----------------------------------------------------------------------------
 class EPController(object):
-    def __init__(self):
+    def __init__(self, env_id):
         self.C = 1
         self.action = np.zeros(2)
         self.target_pos = np.zeros(2)
+        self.env_id = env_id
 
     def set_action(self, newaction):
         for i in range(2):
@@ -64,35 +65,29 @@ class EPController(object):
             data.ctrl[i * 2] = self.C + self.action[i]
             data.ctrl[i * 2 + 1] = self.C - self.action[i]
 
-    def get_obs(self, data, env_id):
-        if env_id == 0:
+        if self.env_id == 2:
+            if data.time > 3:
+                model.eq_active[0] = 0
+
+    def get_obs(self, data):
+        if self.env_id == 0:
             obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif env_id == 1:
+        elif self.env_id == 1:
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        elif self.env_id == 2:
+            obs = np.array([self.target_pos[0], self.target_pos[1],  data.time])
         return obs
 
     def get_action_space(self):
         return spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
-    def get_obs_space(self, env_id):
-        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 
-    def compute_physics_gradient(self, model, data_before_simulation, data_after_simulation, eps, num_of_steps, env_id, grad):
-        if env_id == 0:
-            num_joints = 2
-        elif env_id == 1:
-            num_joints = 3
-
-        old_action = self.action.copy()
-        for i in range(2):
-            data_copy = copy.deepcopy(data_before_simulation)
-            action_temp = old_action.copy()
-            action_temp[i] += eps
-            self.set_action(action_temp)
-            for k in range(num_of_steps):
-                mj.mj_step(model, data_copy)
-            for j in range(num_joints):
-                grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
-        self.set_action(old_action)
+    def get_obs_space(self):
+        if self.env_id == 0:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 1:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 2:
+            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # General EP Controller
@@ -127,7 +122,7 @@ class GeneralEPController(object):
 # Feedforward Controller
 # -----------------------------------------------------------------------------
 class FeedForwardController(object):
-    def __init__(self):
+    def __init__(self, env_id):
         self.action = np.zeros(2)
         self.target_pos = np.zeros(2)
         weights_path = "./ff_weights.pth"
@@ -140,6 +135,7 @@ class FeedForwardController(object):
 
         self.ff_net.load_state_dict(torch.load(weights_path))
         self.ff_net.eval()
+        self.env_id = env_id
 
     def set_action(self, newaction):
         for i in range(2):
@@ -151,18 +147,29 @@ class FeedForwardController(object):
         for i in range(2):
             data.ctrl[i] = u_tensor[0][i].item()
 
+        if self.env_id == 2:
+            if data.time > 3:
+                model.eq_active[0] = 0
+
     def get_action_space(self):
         return spaces.Box(low=-5, high=5, shape=(2,), dtype=np.float32)
 
-    def get_obs_space(self, env_id):
-        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+    def get_obs_space(self):
+        if self.env_id == 0:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 1:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 2:
+            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
 
-    def get_obs(self, data, env_id):
-        if env_id == 0:
+    def get_obs(self, data):
+        if self.env_id == 0:
             obs = np.array(
                 [self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif env_id == 1:
+        elif self.env_id == 1:
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        elif self.env_id == 2:
+            obs = np.array([self.target_pos[0], self.target_pos[1], data.time])
         return obs
 
 # -----------------------------------------------------------------------------
@@ -337,7 +344,12 @@ class BaselineController(object):
         return spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
 
     def get_obs_space(self):
-        return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
+        if self.env_id == 0:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 1:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 2:
+            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # PID Controller
