@@ -101,15 +101,15 @@ class DoubleLinkEnv(gym.Env):
                 self.done = True
         elif self.env_id == 2:
             if self.data.ncon > 0:
-                if self.data.contact[0].geom1 == 0 and self.data.contact[0].geom2 == 4:
+                if self.data.contact[0].geom1 == 0 and self.data.contact[0].geom2 == 3:
                     self.done = True
-                elif self.data.contact[0].geom1 == 4 and self.data.contact[0].geom2 == 0:
+                elif self.data.contact[0].geom1 == 3 and self.data.contact[0].geom2 == 0:
                     self.done = True
 
             if self.done == False:
                 reward = 0
             else:
-                dist = np.linalg.norm(np.array([self.data.xpos[4][0], self.data.xpos[4][1]]) - self.controller.target_pos)
+                dist = np.linalg.norm(np.array([self.data.xpos[3][0], self.data.xpos[3][1]]) - self.controller.target_pos)
                 reward = 10 * np.exp(-dist)
                 # print(self.data.xpos[4][0])
 
@@ -147,9 +147,9 @@ class DoubleLinkEnv(gym.Env):
 
         elif self.env_id == 2:
             mj.mj_resetData(self.model, self.data)
-            self.data.ctrl[4] = 1
+            self.model.eq_active[0] = 1
             mj.mj_forward(self.model, self.data)
-            self.controller.target_pos = np.array([-9, 0])
+            self.controller.target_pos = np.array([-10, 0])
 
         observation = self.controller.get_obs(self.data)
         return observation

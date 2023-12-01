@@ -32,7 +32,7 @@ elif env_id == INVERTED_PENDULUM:
     episode_length_in_seconds = 120
 elif env_id == TOSS:
     xml = 'toss.xml'
-    episode_length_in_seconds = 10
+    episode_length_in_seconds = 1000
 
 controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     beta=0.9, \

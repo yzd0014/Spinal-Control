@@ -18,26 +18,32 @@ lastx = 0
 lasty = 0
 
 def init_controller(model,data):
-    data.ctrl[4] = 1
+    # data.ctrl[4] = 1
     mj.mj_forward(model, data)
 
 def controller(model, data):
     #put the controller here. This function is called inside the simulation.
     global sim_pause
 
-    if data.time > 0.1:
+    if data.time < 0.5:
+        data.ctrl[0] = 1
+        data.ctrl[2] = 1
+    elif data.time > 1:
+        data.ctrl[0] = 0
+        data.ctrl[2] = 0
         data.ctrl[1] = 1
         data.ctrl[3] = 1
-    if data.time > 0.45:
-        data.ctrl[4] = 0
+    # print(data.time)
+    if data.time > 1.5:
+        model.eq_active[0] = 0
     hit = False
     if data.ncon > 0:
-        if data.contact[0].geom1 == 0 and data.contact[0].geom2 == 4:
+        if data.contact[0].geom1 == 0 and data.contact[0].geom2 == 3:
             hit = True
-        elif data.contact[0].geom1 == 4 and data.contact[0].geom2 == 0:
+        elif data.contact[0].geom1 == 3 and data.contact[0].geom2 == 0:
             hit = True
     if hit:
-        print(data.xpos[4])
+        print(data.xpos[3])
         sim_pause = True
 
 def keyboard(window, key, scancode, act, mods):

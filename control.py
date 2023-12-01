@@ -305,8 +305,8 @@ class BaselineController(object):
         data.ctrl[0:4] = self.action
 
         if self.env_id == 2:
-            if data.time > 0.45:
-                data.ctrl[4] = 0
+            if data.time > 3:
+                model.eq_active[0] = 0
 
     def set_action(self, newaction):
         for i in range(4):
@@ -323,7 +323,7 @@ class BaselineController(object):
         elif self.env_id == 1:
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         elif self.env_id == 2:
-            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+            obs = np.array([self.target_pos[0], self.target_pos[1],  data.time])
 
         return obs
 
@@ -337,7 +337,7 @@ class BaselineController(object):
         return spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
 
     def get_obs_space(self):
-        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # PID Controller
