@@ -3,6 +3,7 @@ from control import *
 DOUBLE_PENDULUM = 0
 INVERTED_PENDULUM = 1
 TOSS = 2
+ROTATION = 3
 
 # parameters that can be changed by users
 control_type = Control_Type.EP
@@ -33,6 +34,9 @@ elif env_id == INVERTED_PENDULUM:
 elif env_id == TOSS:
     xml = 'toss.xml'
     episode_length_in_seconds = 1000
+elif env_id == ROTATION:
+    xml = 'rotation.xml'
+    episode_length_in_seconds = 10
 
 controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     beta=0.9, \

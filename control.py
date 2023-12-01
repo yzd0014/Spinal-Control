@@ -76,6 +76,8 @@ class EPController(object):
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         elif self.env_id == 2:
             obs = np.array([self.target_pos[0], self.target_pos[1],  data.time])
+        elif self.env_id == 3:
+            obs = np.array([self.target_pos[0], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
         return obs
 
     def get_action_space(self):
@@ -88,6 +90,8 @@ class EPController(object):
             return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
         elif self.env_id == 2:
             return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
+        elif self.env_id == 3:
+            return spaces.Box(low=-100, high=100, shape=(5,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # General EP Controller
@@ -161,6 +165,8 @@ class FeedForwardController(object):
             return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
         elif self.env_id == 2:
             return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
+        elif self.env_id == 3:
+            return spaces.Box(low=-100, high=100, shape=(5,), dtype=np.float32)
 
     def get_obs(self, data):
         if self.env_id == 0:
@@ -170,6 +176,8 @@ class FeedForwardController(object):
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         elif self.env_id == 2:
             obs = np.array([self.target_pos[0], self.target_pos[1], data.time])
+        elif self.env_id == 3:
+            obs = np.array([self.target_pos[0], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
         return obs
 
 # -----------------------------------------------------------------------------
@@ -331,6 +339,8 @@ class BaselineController(object):
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         elif self.env_id == 2:
             obs = np.array([self.target_pos[0], self.target_pos[1],  data.time])
+        elif self.env_id == 3:
+            obs = np.array([self.target_pos[0], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
 
         return obs
 
@@ -350,6 +360,8 @@ class BaselineController(object):
             return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
         elif self.env_id == 2:
             return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
+        elif self.env_id == 3:
+            return spaces.Box(low=-100, high=100, shape=(5,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # PID Controller

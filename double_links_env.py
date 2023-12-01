@@ -112,6 +112,12 @@ class DoubleLinkEnv(gym.Env):
                 dist = np.linalg.norm(np.array([self.data.xpos[3][0], self.data.xpos[3][1]]) - self.controller.target_pos)
                 reward = 10 * np.exp(-dist)
                 # print(self.data.xpos[4][0])
+        elif self.env_id == 3:
+            if self.done == False:
+                reward = 0
+            else:
+                err = np.linalg.norm(self.controller.target_pos[0] - self.data.qpos[2])
+                reward = -err
 
         observation = self.controller.get_obs(self.data)
         info = {}
@@ -150,6 +156,11 @@ class DoubleLinkEnv(gym.Env):
             self.model.eq_active[0] = 1
             mj.mj_forward(self.model, self.data)
             self.controller.target_pos = np.array([-10, 0])
+
+        elif self.env_id == 3:
+            mj.mj_resetData(self.model, self.data)
+            mj.mj_forward(self.model, self.data)
+            self.controller.target_pos[0] = -0.5 * np.pi
 
         observation = self.controller.get_obs(self.data)
         return observation

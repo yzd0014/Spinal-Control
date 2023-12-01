@@ -41,6 +41,7 @@ if __name__ == "__main__":
     policy_kwargs = dict(activation_fn=th.nn.Tanh, \
                          net_arch=dict(pi=[64, 64], \
                                        vf=[64, 64]))
+    reward_target = 0
     if env_id == DOUBLE_PENDULUM:
         n_steps = controller_params.episode_length_in_ticks * num_episodes
         batch_size = controller_params.episode_length_in_ticks
@@ -49,11 +50,18 @@ if __name__ == "__main__":
         n_steps = int(100/controller_params.brain_dt)
         batch_size = n_steps
         n_epochs = 20
+        reward_target = 100
     elif env_id == TOSS:
         n_steps = int(200/controller_params.brain_dt)
         batch_size = n_steps
         # batch_size = int(n_steps/5)
         n_epochs = 10
+        reward_target = 8.2
+    elif env_id == ROTATION:
+        n_steps = int(100/controller_params.brain_dt)
+        batch_size = n_steps
+        n_epochs = 10
+        reward_target = -0.02
 
     TIMESTEPS = n_steps
     model = PPO('MlpPolicy', env, \
@@ -79,6 +87,6 @@ if __name__ == "__main__":
         model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, \
                     tb_log_name=f"PPO")
         mean_reward = safe_mean([ep_info["r"] for ep_info in model.ep_info_buffer])
-        if mean_reward > 8.2:
+        if mean_reward > reward_target:
             break
         model.save(f"{models_dir}/{TIMESTEPS * iters}")
