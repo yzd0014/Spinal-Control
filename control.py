@@ -138,8 +138,9 @@ class FeedForwardController(object):
     def __init__(self, env_id):
         self.action = np.zeros(2)
         self.target_pos = np.zeros(2)
-        weights_path = "./ff_weights.pth"
-        self.ff_net = torch_net.FeedForwardNN(2, 64, 4, Control_Type.BASELINE)
+        #weights_path = "./ff_weights.pth"
+        weights_path = "./1702020394.pth"
+        self.ff_net = torch_net.FeedForwardNN(2, 32, 4, Control_Type.BASELINE)
 
         self.ff_net.load_state_dict(torch.load(weights_path))
         self.ff_net.eval()

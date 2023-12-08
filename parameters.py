@@ -7,7 +7,7 @@ PUSH = 3
 SWING = 4
 
 # parameters that can be changed by users
-control_type = Control_Type.FF_GENERAL
+control_type = Control_Type.FF
 env_id = SWING
 training_type = "PPO"
 
@@ -28,7 +28,7 @@ else:
 
 if env_id == DOUBLE_PENDULUM:
     xml = 'double_links_fast.xml'
-    episode_length_in_seconds = 20
+    episode_length_in_seconds = 5
 elif env_id == INVERTED_PENDULUM:
     xml = 'inverted_pendulum_fast.xml'
     episode_length_in_seconds = 120
@@ -64,7 +64,7 @@ if training_type == "feedforward":
 
     # create controllers
     if control_type == Control_Type.BASELINE:
-        controller = BaselineController(controller_params)
+        controller = BaselineController(controller_params, env_id)
     elif control_type == Control_Type.PID:
         controller = PIDController()
     elif control_type == Control_Type.EP:

@@ -26,8 +26,8 @@ net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, pa.control_t
 
 # create training data
 num_of_targets = 0
-max_training_angle = 0.5
-angle_interval = 0.25
+max_training_angle = 0.9
+angle_interval = 0.45
 traning_samples = []
 for i in np.arange(-max_training_angle, max_training_angle, angle_interval):
     for j in np.arange(-max_training_angle, max_training_angle, angle_interval):
@@ -48,6 +48,7 @@ pa.env_id = 0
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
 for epoch in range(num_epochs):
     mean_ep_loss = 0
+    old_mean_ep_loss = 0
     for batch_id in range(num_of_targets):
         # reset at the beginning of each episode
         batch_size = episode_length
@@ -85,10 +86,11 @@ for epoch in range(num_epochs):
         #update network
         optimizer.step()
 
+    old_mean_ep_loss = mean_ep_loss
     mean_ep_loss /= num_of_targets
     print(f"epoch: {epoch}, mean_ep_loss: {mean_ep_loss}")
     writer.add_scalar("Loss/mean_ep_loss", mean_ep_loss, epoch)
-    if mean_ep_loss < 5:
+    if mean_ep_loss < 4.8:
         break
 
 writer.flush()
