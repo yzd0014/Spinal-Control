@@ -8,7 +8,7 @@ from control import *
 
 # m_target = np.array([-0.58, 0.34])
 m_target = np.array([-10, 0])
-modelid = "1701392135"
+modelid = "1701987955"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -165,6 +165,14 @@ def scroll(window, xoffset, yoffset):
 def init_controller(model,data):
     mj.mj_resetData(model, data)
     if env_id == 0:
+        data.qpos[0] = m_target[0]
+        data.qpos[1] = m_target[1]
+        mj.mj_forward(model, data)
+        m_target[0] = data.xpos[2][0]
+        m_target[1] = data.xpos[2][2]
+        mj.mj_resetData(model, data)
+        print(f"target: {m_target}")
+
         controller.target_pos = np.array([m_target[0], m_target[1]])
     elif env_id == 1:
         # data.qpos[0] = 0.4
@@ -176,6 +184,8 @@ def init_controller(model,data):
     elif env_id == 2:
         controller.target_pos = np.array([m_target[0], m_target[1]])
         model.eq_active[0] = 1
+    elif env_id == 3:
+        controller.target_pos[0] = -1.3
     mj.mj_forward(model, data)
 
 ep_error = 0
@@ -201,7 +211,8 @@ def callback(model, data):
         global_timer = data.time
 
     controller.callback(model, data)
-    # print(controller.l_desired)
+    print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
+    # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
     # print(data.ctrl[0], data.ctrl[1])
     # print(data.qpos[0], data.qpos[1])
 

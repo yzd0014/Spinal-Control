@@ -24,12 +24,12 @@
             <site name="s7" pos="-0.06 0 0.4" size="0.02"/>
          </body>
       </body>
-      <body name="rotation-target" pos="0.17 0 0.5" euler="0 0 0">
-        <joint type="hinge" axis="0 -1 0" damping="0.2"/>
-        <geom type="box" size="0.05 0.1 0.25" rgba="0 .9 0 1" mass="0.001"/>
-        <body pos="0 0 -0.2" euler="0 0 0">
-            <geom type="box" size="0.01 0.15 0.01" rgba="0 0 1 1" mass="0.00001"/>
-        </body>
+      <body name="slider" pos="0.7 0 0.6" euler="0 0 0">
+        <joint type="slide" axis="1 0 0" damping="1" limited="true" range="-2 2"/>
+        <geom type="box" pos="-0.1 0 0" size="0.1 0.1 0.1" rgba="0 .9 0 1" mass="0.01"/>
+      </body>
+      <body name="marker" pos="-0.6 0.3 0.6" euler="0 0 0">
+        <geom type="box" pos="-0.1 0 0" size="0.1 0.1 0.1" rgba="1 0 0 1" mass="0.01"/>
       </body>
    </worldbody>
    <tendon>

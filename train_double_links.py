@@ -45,23 +45,33 @@ if __name__ == "__main__":
     if env_id == DOUBLE_PENDULUM:
         n_steps = controller_params.episode_length_in_ticks * num_episodes
         batch_size = controller_params.episode_length_in_ticks
-        n_epochs = 10
+        n_epochs = 5
+        learning_rate = 0.0003
     elif env_id == INVERTED_PENDULUM:
         n_steps = int(100/controller_params.brain_dt)
         batch_size = n_steps
         n_epochs = 20
         reward_target = 100
+        learning_rate = 0.0003
     elif env_id == TOSS:
         n_steps = int(200/controller_params.brain_dt)
         batch_size = n_steps
         # batch_size = int(n_steps/5)
         n_epochs = 10
         reward_target = 8.2
-    elif env_id == ROTATION:
-        n_steps = int(100/controller_params.brain_dt)
-        batch_size = n_steps
+        learning_rate = 0.0003
+    elif env_id == PUSH:
+        n_steps = controller_params.episode_length_in_ticks * 10
+        batch_size = controller_params.episode_length_in_ticks
         n_epochs = 10
-        reward_target = -0.02
+        reward_target = -16
+        learning_rate = 0.0003
+    elif env_id == SWING:
+        n_steps = controller_params.episode_length_in_ticks * 20
+        batch_size = controller_params.episode_length_in_ticks
+        n_epochs = 5
+        reward_target = 9.8
+        learning_rate = 0.0003
 
     TIMESTEPS = n_steps
     model = PPO('MlpPolicy', env, \
@@ -70,6 +80,7 @@ if __name__ == "__main__":
                 n_steps=n_steps, \
                 batch_size=batch_size, \
                 n_epochs=n_epochs, \
+                learning_rate=learning_rate, \
                 verbose=1, \
                 tensorboard_log=logdir)
 

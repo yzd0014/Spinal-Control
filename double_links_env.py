@@ -42,13 +42,15 @@ class DoubleLinkEnv(gym.Env):
             self.controller = FeedForwardController(env_id)
         elif self.control_type == Control_Type.EP_GENERAL:
             self.controller = GeneralEPController()
+        elif self.control_type == Control_Type.FF_GENERAL:
+            self.controller = FeedForwardGeneralController(env_id)
 
         mj.set_mjcb_control(self.controller.callback)
 
         # Other stuff
         self.dt_brain = c_params.brain_dt
         self.instance_id = instance_id
-        self.cartesian = False
+        self.cartesian = True
         self.cartesian_target = np.zeros(3)
         self.rendering = False
         if self.rendering == True:
@@ -88,11 +90,15 @@ class DoubleLinkEnv(gym.Env):
             self.done = True
 
         if self.env_id == 0:
-            if self.cartesian == True:
-                position_error = self.data.xpos[2] - self.cartesian_target
+            if self.done == False:
+                reward = 0
             else:
-                position_error = self.data.qpos - self.target_qs[self.target_iter]
-            reward = -np.linalg.norm(position_error)
+                if self.cartesian == True:
+                    curr_pos = np.array([self.data.xpos[2][0], self.data.xpos[2][2]])
+                    position_error = 100 * (curr_pos - self.controller.target_pos)
+                else:
+                    position_error = self.data.qpos - self.target_qs[self.target_iter]
+                reward = -np.linalg.norm(position_error)
         elif self.env_id == 1:
             reward = self.dt_brain
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
@@ -113,11 +119,20 @@ class DoubleLinkEnv(gym.Env):
                 reward = 10 * np.exp(-dist)
                 # print(self.data.xpos[4][0])
         elif self.env_id == 3:
-            if self.done == False:
-                reward = 0
+            dist = np.linalg.norm(self.data.xpos[2] - self.data.xpos[3])
+            pos_err = np.abs(self.controller.target_pos[0] - self.data.qpos[2])
+            vel_pen = 0
+            if self.data.qvel[2] > 0:
+                vel_pen = 0.01
+            reward = -pos_err - 0.1 * dist - vel_pen
+        elif self.env_id == 4:
+            current_pos = self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]
+            if current_pos > np.pi or current_pos < -np.pi:
+                self.done = True
+                vel_err = abs(self.data.qvel[0] + self.data.qvel[1] + self.data.qvel[2])
+                reward = 10 * np.exp(-0.5 * vel_err)
             else:
-                err = np.linalg.norm(self.controller.target_pos[0] - self.data.qpos[2])
-                reward = -err
+                reward = 0
 
         observation = self.controller.get_obs(self.data)
         info = {}
@@ -138,12 +153,15 @@ class DoubleLinkEnv(gym.Env):
             self.data.qpos[0] = m_target[0]
             self.data.qpos[1] = m_target[1]
             mj.mj_forward(self.model, self.data)
-            self.cartesian_target = self.data.xpos[2]
+            self.cartesian_target = self.data.xpos[2].copy()
 
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
 
-            self.controller.target_pos = np.array([m_target[0], m_target[1]])
+            if self.cartesian == True:
+                self.controller.target_pos = np.array([self.cartesian_target[0], self.cartesian_target[2]])
+            else:
+                self.controller.target_pos = np.array([m_target[0], m_target[1]])
         elif self.env_id == 1:
             mj.mj_resetData(self.model, self.data)
             self.data.qpos[0] = 0.4
@@ -160,7 +178,11 @@ class DoubleLinkEnv(gym.Env):
         elif self.env_id == 3:
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
-            self.controller.target_pos[0] = -0.5 * np.pi
+            self.controller.target_pos[0] = -1.3
+
+        elif self.env_id == 4:
+            mj.mj_resetData(self.model, self.data)
+            mj.mj_forward(self.model, self.data)
 
         observation = self.controller.get_obs(self.data)
         return observation

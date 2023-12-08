@@ -3,11 +3,12 @@ from control import *
 DOUBLE_PENDULUM = 0
 INVERTED_PENDULUM = 1
 TOSS = 2
-ROTATION = 3
+PUSH = 3
+SWING = 4
 
 # parameters that can be changed by users
-control_type = Control_Type.EP
-env_id = TOSS
+control_type = Control_Type.FF_GENERAL
+env_id = SWING
 training_type = "PPO"
 
 if env_id == DOUBLE_PENDULUM:
@@ -27,15 +28,18 @@ else:
 
 if env_id == DOUBLE_PENDULUM:
     xml = 'double_links_fast.xml'
-    episode_length_in_seconds = 5
+    episode_length_in_seconds = 20
 elif env_id == INVERTED_PENDULUM:
     xml = 'inverted_pendulum_fast.xml'
     episode_length_in_seconds = 120
 elif env_id == TOSS:
     xml = 'toss.xml'
     episode_length_in_seconds = 1000
-elif env_id == ROTATION:
-    xml = 'rotation.xml'
+elif env_id == PUSH:
+    xml = 'slider.xml'
+    episode_length_in_seconds = 20
+elif env_id == SWING:
+    xml = 'inverted_pendulum_fast.xml'
     episode_length_in_seconds = 10
 
 controller_params = ControllerParams(alpha=0.4691358024691358, \
