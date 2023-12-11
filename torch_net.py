@@ -20,6 +20,8 @@ class FeedForwardNN(nn.Module):
             self.output_activation = nn.Sigmoid()
         elif control_type == control.Control_Type.PID or control_type == control.Control_Type.EP:
             self.output_activation = nn.Tanh()
+        else:
+            self.output_activation = nn.Sigmoid()
 
         # self.fc4 = nn.Linear(2, output_size)
         # init.xavier_uniform_(self.fc4.weight)

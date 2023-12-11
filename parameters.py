@@ -7,9 +7,9 @@ PUSH = 3
 SWING = 4
 
 # parameters that can be changed by users
-control_type = Control_Type.FF
-env_id = SWING
-training_type = "PPO"
+control_type = Control_Type.DEFAULT
+env_id = -1
+training_type = "feedforward"
 
 if env_id == DOUBLE_PENDULUM:
     controller_input_size = 2
@@ -17,14 +17,14 @@ if env_id == DOUBLE_PENDULUM:
 elif env_id == INVERTED_PENDULUM:
     controller_input_size = 6
 else:
-    controller_input_size = -1
+    controller_input_size = 2
 
 if control_type == Control_Type.BASELINE:
     controller_output_size = 4
 elif control_type == Control_Type.PID or control_type == Control_Type.EP:
     controller_output_size = 2
 else:
-    controller_output_size = -1
+    controller_output_size = 2
 
 if env_id == DOUBLE_PENDULUM:
     xml = 'double_links_fast.xml'
@@ -41,6 +41,9 @@ elif env_id == PUSH:
 elif env_id == SWING:
     xml = 'inverted_pendulum_fast.xml'
     episode_length_in_seconds = 10
+else:
+    xml = 'double_links_fast.xml'
+    episode_length_in_seconds = 5
 
 controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     beta=0.9, \
@@ -69,4 +72,6 @@ if training_type == "feedforward":
         controller = PIDController()
     elif control_type == Control_Type.EP:
         controller = EPController()
+    else:
+        controller = TemplateController(controller_params, env_id)
     mj.set_mjcb_control(controller.callback)

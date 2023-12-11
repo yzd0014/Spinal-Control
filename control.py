@@ -12,6 +12,7 @@ import torch
 import torch_net
 
 class Control_Type(Enum):
+    DEFAULT = -1
     BASELINE = 1
     NEURON = 2
     NEURON_SIMPLE = 3
@@ -31,7 +32,8 @@ control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.EP: "ep",
                     Control_Type.FF: "feedforward",
                     Control_Type.EP_GENERAL: "ep-general",
-                    Control_Type.FF_GENERAL: "feedforward-general"
+                    Control_Type.FF_GENERAL: "feedforward-general",
+                    Control_Type.DEFAULT: "default"
                     }
 
 
@@ -502,7 +504,7 @@ class PIDController():
         return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
-# Baseline Controller
+# Spinal Optimal Controller
 # -----------------------------------------------------------------------------
 class SpinalOptimalController():
     def __init__(self):
@@ -579,3 +581,53 @@ class SpinalOptimalController():
         elif env_id == 1:
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         return obs
+# -----------------------------------------------------------------------------
+# Template Controller
+# -----------------------------------------------------------------------------
+class TemplateController(object):
+    def __init__(self, p, env_id):
+        self.action = np.zeros(2)
+        self.target_pos = np.zeros(2)
+        self.env_id = env_id
+
+    def callback(self, model, data):
+        for i in range(2):
+            if self.target_pos[i] >= 0:
+                data.ctrl[i * 2] = self.action[i]
+            else:
+                data.ctrl[i * 2 + 1] = self.action[i]
+
+    def set_action(self, newaction):
+        for i in range(2):
+            self.action[i] = newaction[i]
+
+    def get_obs(self, data):
+        if self.env_id == 0:
+            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        elif self.env_id == 1:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        elif self.env_id == 2:
+            obs = np.array([self.target_pos[0], self.target_pos[1],  data.time])
+        elif self.env_id == 3:
+            obs = np.array([self.target_pos[0], data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
+                            data.xpos[2][0], data.xpos[2][1], data.xpos[2][2], \
+                           data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        elif self.env_id == 4:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+
+        return obs
+
+    def get_action_space(self):
+        return spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
+
+    def get_obs_space(self):
+        if self.env_id == 0:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 1:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 2:
+            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
+        elif self.env_id == 3:
+            return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
+        elif self.env_id == 4:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
