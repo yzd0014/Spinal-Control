@@ -6,9 +6,9 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-# m_target = np.array([-0.58, 0.34])
-m_target = np.array([-10, 0])
-modelid = "1701987955"
+m_target = np.array([0.1, -0.2])
+# m_target = np.array([-10, 0])
+modelid = "1702354433"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -211,7 +211,7 @@ def callback(model, data):
         global_timer = data.time
 
     controller.callback(model, data)
-    print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
+    # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
     # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
     # print(data.ctrl[0], data.ctrl[1])
     # print(data.qpos[0], data.qpos[1])

@@ -602,7 +602,7 @@ class TemplateController(object):
             self.action[i] = newaction[i]
 
     def get_obs(self, data):
-        if self.env_id == 0:
+        if self.env_id == 0 or self.env_id == -1:
             obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
         elif self.env_id == 1:
             obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])

@@ -56,10 +56,9 @@ pa.env_id = 0
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
 for epoch in range(num_epochs):
     mean_ep_loss = 0
-    old_mean_ep_loss = 0
     for batch_id in range(num_of_targets):
         # reset at the beginning of each episode
-        batch_size = 1
+        batch_size = episode_length
         pa.controller.target_pos = np.array([traning_samples[batch_id][0], traning_samples[batch_id][1]])
         cocontraction = traning_samples[batch_id][2]
         mj.mj_resetData(pa.model, pa.data)
@@ -69,12 +68,8 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
 
         #track loss
-        batch_loss = torch.tensor(0.0, dtype=torch.float32)
-
-        # feedforward to generate one of two actions for each joint
-        observation_tensor = torch.tensor(pa.controller.target_pos, requires_grad=False, dtype=torch.float32)
-        u_tensor = net(observation_tensor.view(1, input_size))  # 1xinput_size
-
+        loss = torch.tensor(0.0, dtype=torch.float32)
+        new_state_tensor = torch.tensor(0.0, dtype=torch.float32)
         #set cocontraction
         for i in range(2):
             if pa.controller.target_pos[i] >= 0:
@@ -82,27 +77,30 @@ for epoch in range(num_epochs):
             else:
                 pa.data.ctrl[i * 2] = cocontraction
         for i in range(batch_size):
+            # generate action
+            obs = pa.controller.get_obs(pa.data)
+            observation_tensor = torch.tensor(obs, requires_grad=False, dtype=torch.float32)
+            u_tensor = net(observation_tensor.view(1, input_size))  # 1xinput_size
+
             # simulation with action to genearsate new state
-            physics_op = physics_grad.physics.apply
+            physics_op = physics_grad.double_pendulum_physics.apply
             new_state_tensor = physics_op(u_tensor)
 
-            #loss
-            target_state_tensor = torch.tensor(pa.controller.target_pos, requires_grad=False)
-            loss = torch.norm(target_state_tensor - new_state_tensor, p=2)
-            batch_loss = torch.add(batch_loss, loss)
+        #loss
+        target_state_tensor = torch.tensor(pa.controller.target_pos, requires_grad=False)
+        loss = torch.norm(target_state_tensor - new_state_tensor, p=2)
 
-        mean_ep_loss += batch_loss.item()
-        batch_loss.backward()
+        mean_ep_loss += loss.item()
+        loss.backward()
         #update network
         optimizer.step()
 
-    old_mean_ep_loss = mean_ep_loss
     mean_ep_loss /= num_of_targets
     print(f"epoch: {epoch}, mean_ep_loss: {mean_ep_loss}")
     writer.add_scalar("Loss/mean_ep_loss", mean_ep_loss, epoch)
     if epoch % 50 == 0:
         torch.save(net.state_dict(), f'{models_dir}/{int(time.time())}.pth')
-    if mean_ep_loss < 0.005:
+    if mean_ep_loss < 0.01:
         break
 
 writer.flush()

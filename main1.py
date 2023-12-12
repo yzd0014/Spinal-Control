@@ -6,10 +6,10 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-# m_target = np.array([-0.58, 0.34])
-m_target = np.array([-10, 0])
-cocontraction = 0.25
-modelid = "1701987955"
+m_target = np.array([-0.25, -0.9])
+# m_target = np.array([-10, 0])
+cocontraction = 0
+modelid = "1702363073"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -138,12 +138,13 @@ def scroll(window, xoffset, yoffset):
 def init_controller(model,data):
     mj.mj_resetData(model, data)
     mj.mj_forward(model, data)
+    controller.target_pos = np.array([m_target[0], m_target[1]])
 
 ep_error = 0
 def callback(model, data):
     global global_timer, ep_error
     if data.time - global_timer >= dt_brain or data.time < 0.000101:
-        observation = controller.target_pos
+        observation = controller.get_obs(data)
         observation_tensor = torch.tensor(observation, requires_grad=False, dtype=torch.float32)
         u_tensor = ff_net(observation_tensor.view(1, controller_params.input_size))
         u = np.zeros(controller_params.output_size)
@@ -158,6 +159,8 @@ def callback(model, data):
         global_timer = data.time
 
     controller.callback(model, data)
+    # print(data.qpos)
+    print(data.ctrl)
 
 
 #get the full path
