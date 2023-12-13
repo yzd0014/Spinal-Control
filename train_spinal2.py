@@ -83,7 +83,7 @@ for epoch in range(num_epochs):
             # generate actiavtion
             obs = pa.controller.get_obs(pa.data)
             observation_tensor = torch.tensor(obs, requires_grad=False, dtype=torch.float32)
-            u_tensor = net(observation_tensor.view(1, input_size))  # 1xinput_size
+            u_tensor = (observation_tensor.view(1, input_size))  # 1xinput_size
 
             # simulation with action to genearsate new state
             physics_op = physics_grad.physics.apply

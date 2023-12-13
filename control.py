@@ -591,14 +591,14 @@ class TemplateController(object):
         self.env_id = env_id
 
     def callback(self, model, data):
-        for i in range(2):
+        for i in range(1):
             if self.target_pos[i] >= 0:
                 data.ctrl[i * 2] = self.action[i]
             else:
                 data.ctrl[i * 2 + 1] = self.action[i]
 
     def set_action(self, newaction):
-        for i in range(2):
+        for i in range(1):
             self.action[i] = newaction[i]
 
     def get_obs(self, data):

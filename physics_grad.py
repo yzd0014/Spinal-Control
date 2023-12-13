@@ -88,14 +88,16 @@ class physics(torch.autograd.Function):
         ctx.steps_simulated = steps_simulated
         ctx.data_after_simulation = copy.deepcopy(pa.data)
 
-        new_state = np.array([pa.data.qpos[0], pa.data.qpos[1]])
-        new_state_tensor = torch.tensor(new_state, requires_grad=True, dtype=torch.float32).view(1, joint_number)
+        # new_state = np.array([pa.data.qpos[0], pa.data.qpos[1]])
+        # new_state_tensor = torch.tensor(new_state, requires_grad=True, dtype=torch.float32).view(1, joint_number)
+        new_state = pa.data.qpos[0]
+        new_state_tensor = torch.tensor(new_state, requires_grad=True, dtype=torch.float32)
 
         return new_state_tensor
 
     @staticmethod
     def backward(ctx, grad_output):
-        joint_number = 2
+        joint_number = 1
         input, = ctx.saved_tensors
         data_before_simulation = ctx.data_before_simulation
         data_after_simulation = ctx.data_after_simulation

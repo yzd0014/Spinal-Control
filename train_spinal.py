@@ -11,6 +11,7 @@ import parameters as pa
 import pickle
 from control import *
 from torch.utils.tensorboard import SummaryWriter
+from generate_targets import *
 
 #tensorboard
 logdir = f"logs/{int(time.time())}-{control_type_dic[pa.control_type]}/"
@@ -29,20 +30,6 @@ hidden_size = pa.controller_params.hidden_size
 output_size = pa.controller_params.output_size
 net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, pa.control_type)
 
-# create training data
-num_of_targets = 0
-max_training_angle = 0.9
-angle_interval = 0.45
-max_cocontraction = 0.5
-cocontraction_interval = 0.25
-traning_samples = []
-for i in np.arange(-max_training_angle, max_training_angle+0.1, angle_interval):
-    for j in np.arange(-max_training_angle, max_training_angle+0.1, angle_interval):
-        for k in np.arange(0, max_cocontraction+0.1, cocontraction_interval):
-            traning_samples.append(np.array([i, j, k]))
-            num_of_targets += 1
-print(f"total number of training samples: {num_of_targets}")
-
 # traning configuration
 num_epochs = 5000
 learning_rate = 0.0001
@@ -60,8 +47,10 @@ for epoch in range(num_epochs):
     for batch_id in range(num_of_targets):
         # reset at the beginning of each episode
         batch_size = 1
-        pa.controller.target_pos = np.array([traning_samples[batch_id][0], traning_samples[batch_id][1]])
-        cocontraction = traning_samples[batch_id][2]
+        # pa.controller.target_pos = np.array([traning_samples[batch_id][0], traning_samples[batch_id][1]])\
+        # cocontraction = traning_samples[batch_id][2]
+        pa.controller.target_pos[0] = traning_samples[batch_id][0]
+        cocontraction = traning_samples[batch_id][1]
         mj.mj_resetData(pa.model, pa.data)
         mj.mj_forward(pa.model, pa.data)
 
@@ -72,11 +61,11 @@ for epoch in range(num_epochs):
         batch_loss = torch.tensor(0.0, dtype=torch.float32)
 
         # feedforward to generate one of two actions for each joint
-        observation_tensor = torch.tensor(pa.controller.target_pos, requires_grad=False, dtype=torch.float32)
+        observation_tensor = torch.tensor(pa.controller.target_pos[0], requires_grad=False, dtype=torch.float32)
         u_tensor = net(observation_tensor.view(1, input_size))  # 1xinput_size
 
         #set cocontraction
-        for i in range(2):
+        for i in range(1):
             if pa.controller.target_pos[i] >= 0:
                 pa.data.ctrl[i * 2 + 1] = cocontraction
             else:
@@ -87,7 +76,7 @@ for epoch in range(num_epochs):
             new_state_tensor = physics_op(u_tensor)
 
             #loss
-            target_state_tensor = torch.tensor(pa.controller.target_pos, requires_grad=False)
+            target_state_tensor = torch.tensor(pa.controller.target_pos[0], requires_grad=False)
             loss = torch.norm(target_state_tensor - new_state_tensor, p=2)
             batch_loss = torch.add(batch_loss, loss)
 
@@ -102,7 +91,7 @@ for epoch in range(num_epochs):
     writer.add_scalar("Loss/mean_ep_loss", mean_ep_loss, epoch)
     if epoch % 50 == 0:
         torch.save(net.state_dict(), f'{models_dir}/{int(time.time())}.pth')
-    if mean_ep_loss < 0.005:
+    if mean_ep_loss < 0.02:
         break
 
 writer.flush()

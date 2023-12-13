@@ -18,14 +18,14 @@ if env_id == DOUBLE_PENDULUM:
 elif env_id == INVERTED_PENDULUM:
     controller_input_size = 6
 else:
-    controller_input_size = 6
+    controller_input_size = 1
 
 if control_type == Control_Type.BASELINE:
     controller_output_size = 4
 elif control_type == Control_Type.PID or control_type == Control_Type.EP:
     controller_output_size = 2
 else:
-    controller_output_size = 2
+    controller_output_size = 1
 
 if env_id == DOUBLE_PENDULUM:
     xml = 'double_links_fast.xml'
@@ -43,8 +43,8 @@ elif env_id == SWING:
     xml = 'inverted_pendulum_fast.xml'
     episode_length_in_seconds = 10
 else:
-    xml = 'double_links_damping.xml'
-    episode_length_in_seconds = 5
+    xml = 'single_link.xml'
+    episode_length_in_seconds = 10
 
 controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     beta=0.9, \
@@ -55,7 +55,7 @@ controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     hidden_size=8, \
                                     output_size=controller_output_size, \
                                     episode_length_in_seconds=episode_length_in_seconds,\
-                                    brain_dt=0.1)
+                                    brain_dt=10)
 #############################################################################################
 if training_type == "feedforward":
     # initialize mujoco
