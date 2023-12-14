@@ -18,7 +18,7 @@ if env_id == DOUBLE_PENDULUM:
 elif env_id == INVERTED_PENDULUM:
     controller_input_size = 6
 else:
-    controller_input_size = 1
+    controller_input_size = 2
 
 if control_type == Control_Type.BASELINE:
     controller_output_size = 4
@@ -52,7 +52,7 @@ controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     fc=10, \
                                     model_dir = xml, \
                                     input_size=controller_input_size, \
-                                    hidden_size=8, \
+                                    hidden_size=32, \
                                     output_size=controller_output_size, \
                                     episode_length_in_seconds=episode_length_in_seconds,\
                                     brain_dt=10)

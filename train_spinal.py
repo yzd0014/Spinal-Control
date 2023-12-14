@@ -29,10 +29,13 @@ input_size = pa.controller_params.input_size
 hidden_size = pa.controller_params.hidden_size
 output_size = pa.controller_params.output_size
 net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, pa.control_type)
+# weights_path = "./debug.pth"
+# net.load_state_dict(torch.load(weights_path))
+# net.eval()
 
 # traning configuration
 num_epochs = 5000
-learning_rate = 0.0001
+learning_rate = 0.0005
 
 # intialize simutlation parameters
 dt_brain = pa.controller_params.brain_dt
@@ -60,16 +63,17 @@ for epoch in range(num_epochs):
         #track loss
         batch_loss = torch.tensor(0.0, dtype=torch.float32)
 
-        # feedforward to generate one of two actions for each joint
-        observation_tensor = torch.tensor(pa.controller.target_pos[0], requires_grad=False, dtype=torch.float32)
-        u_tensor = net(observation_tensor.view(1, input_size))  # 1xinput_size
-
         #set cocontraction
         for i in range(1):
             if pa.controller.target_pos[i] >= 0:
                 pa.data.ctrl[i * 2 + 1] = cocontraction
             else:
                 pa.data.ctrl[i * 2] = cocontraction
+
+        # feedforward to generate one of two actions for each joint
+        observation_tensor = torch.tensor(np.array([pa.controller.target_pos[0], cocontraction]), requires_grad=False, dtype=torch.float32)
+        u_tensor = net(observation_tensor.view(1, input_size))  # 1xinput_size
+
         for i in range(batch_size):
             # simulation with action to genearsate new state
             physics_op = physics_grad.physics.apply
@@ -82,6 +86,9 @@ for epoch in range(num_epochs):
 
         mean_ep_loss += batch_loss.item()
         batch_loss.backward()
+        # print("grad")
+        # for param in net.parameters():
+        #     print(param.grad)
         #update network
         optimizer.step()
 

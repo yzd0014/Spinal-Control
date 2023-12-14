@@ -6,41 +6,22 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([0.9, -0.45])
+m_target = np.array([-1.2, -0.7])
 # m_target = np.array([-10, 0])
-cocontraction = 0.5
+cocontraction = 0
 modelid = "1702516376"
 #######################################################################
-# Load Params
-print("\n\n")
-print("loading env and control parameters " + "./models/" + modelid + "\n")
-
 training_type, control_type, env_id, controller_params = pickle.load(open("./models/" + modelid + "/" \
                                          + "env_contr_params.p", "rb"))
 
-episode_length = controller_params.episode_length_in_ticks
-dt_brain = controller_params.brain_dt
-
-# For saving data
-data_dir = "datalog"
-if not os.path.exists(data_dir):
-    os.makedirs(data_dir)
-fdata = open(f"{data_dir}/{modelid}", 'w')
-# fdata = open("./datalog/" + modelid, 'w')
-
-# Find most recent model
-models_dir = "./models/" + modelid + "/"
-allmodels = sorted(os.listdir(models_dir))
-allmodels.sort(key=lambda fn: \
-    os.path.getmtime(os.path.join(models_dir, fn)))
-
+env_id = 0
+dt_brain = 0.1
 #load feedforward model
-feedforward_model_path0 = f"./models/{modelid}/{allmodels[-1]}"
-ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size,
-                                 controller_params.output_size, control_type)
+feedforward_model_path0 = "./1702020394.pth" #wide range model
+ff_net = torch_net.FeedForwardNN(2, 32, 4, Control_Type.BASELINE)
 ff_net.load_state_dict(torch.load(feedforward_model_path0))
 ff_net.eval()
-xml_path = controller_params.model_dir
+xml_path = 'double_links_fast.xml'
 
 sim_pause = True
 next_frame = False
@@ -55,7 +36,7 @@ lastx = 0
 lasty = 0
 
 # Neuron Controller
-controller = TemplateController(controller_params, env_id)
+controller = BaselineController(controller_params, env_id)
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
@@ -145,24 +126,17 @@ ep_error = 0
 def callback(model, data):
     global global_timer, ep_error
     if data.time - global_timer >= dt_brain or data.time < 0.000101:
-        # observation = controller.get_obs(data)
-        # observation_tensor = torch.tensor(observation, requires_grad=False, dtype=torch.float32)
-        observation_tensor = torch.tensor(np.array([controller.target_pos[0], cocontraction]), requires_grad=False, dtype=torch.float32)
-        u_tensor = ff_net(observation_tensor.view(1, controller_params.input_size))
-        u = np.zeros(controller_params.output_size)
-        for i in range(controller_params.output_size):
+        observation_tensor = torch.tensor(controller.target_pos, requires_grad=False, dtype=torch.float32)
+        u_tensor = ff_net(observation_tensor.view(1, 2))
+        u = np.zeros(4)
+        for i in range(4):
             u[i] = u_tensor[0][i].item()
         controller.set_action(u)
-        for i in range(1):
-            if controller.target_pos[i] >= 0:
-                data.ctrl[i * 2 + 1] = cocontraction
-            else:
-                data.ctrl[i * 2] = cocontraction
         global_timer = data.time
 
     controller.callback(model, data)
-    print(data.qpos)
-    # print(data.ctrl)
+    # print(data.qpos)
+    print(data.ctrl)
 
 
 #get the full path
@@ -238,4 +212,3 @@ while not glfw.window_should_close(window):
     glfw.poll_events()
 
 glfw.terminate()
-fdata.close()
