@@ -589,13 +589,14 @@ class TemplateController(object):
         self.action = np.zeros(2)
         self.target_pos = np.zeros(2)
         self.env_id = env_id
+        self.cocontraction = 0
 
     def callback(self, model, data):
         for i in range(1):
             if self.target_pos[i] >= 0:
-                data.ctrl[i * 2] = self.action[i]
+                data.ctrl[i * 2] = self.action[i] + self.cocontraction
             else:
-                data.ctrl[i * 2 + 1] = self.action[i]
+                data.ctrl[i * 2 + 1] = self.action[i] + self.cocontraction
 
     def set_action(self, newaction):
         for i in range(1):

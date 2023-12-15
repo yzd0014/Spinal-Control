@@ -103,7 +103,7 @@ class physics(torch.autograd.Function):
         data_after_simulation = ctx.data_after_simulation
         steps_simulated = ctx.steps_simulated
 
-        eps = 0.000001
+        eps = 0.00001
         grad = np.zeros((joint_number, u_dim))
 
         u = np.zeros(u_dim)

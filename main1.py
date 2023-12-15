@@ -6,10 +6,10 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([0.9, -0.45])
+m_target = np.array([0.43, -0.45])
 # m_target = np.array([-10, 0])
-cocontraction = 0.5
-modelid = "1702516376"
+cocontraction = 0.7
+modelid = "1702619395"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -153,6 +153,7 @@ def callback(model, data):
         for i in range(controller_params.output_size):
             u[i] = u_tensor[0][i].item()
         controller.set_action(u)
+        controller.cocontraction = cocontraction
         for i in range(1):
             if controller.target_pos[i] >= 0:
                 data.ctrl[i * 2 + 1] = cocontraction
@@ -161,7 +162,7 @@ def callback(model, data):
         global_timer = data.time
 
     controller.callback(model, data)
-    print(data.qpos)
+    print(f"{data.qpos}-{data.ctrl}")
     # print(data.ctrl)
 
 

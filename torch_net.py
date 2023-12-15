@@ -13,7 +13,6 @@ class FeedForwardNN(nn.Module):
         init.xavier_uniform_(self.fc2.weight)
         init.zeros_(self.fc2.bias)
         self.fc3 = nn.Linear(hidden_size, output_size)
-        # self.fc3 = nn.Linear(hidden_size, 2)
         init.xavier_uniform_(self.fc3.weight)
         init.zeros_(self.fc3.bias)
         if control_type == control.Control_Type.BASELINE:
@@ -23,10 +22,6 @@ class FeedForwardNN(nn.Module):
         else:
             self.output_activation = nn.Sigmoid()
 
-        # self.fc4 = nn.Linear(2, output_size)
-        # init.xavier_uniform_(self.fc4.weight)
-        # init.zeros_(self.fc4.bias)
-
     def forward(self, x):
         x = self.fc1(x)
         x = self.relu(x)
@@ -34,8 +29,4 @@ class FeedForwardNN(nn.Module):
         x = self.relu(x)
         x = self.fc3(x)
         x = self.output_activation(x)
-        x = self.relu(x)
-
-        # x = self.fc4(x)
-        # x= self.output_activation(x)
         return x

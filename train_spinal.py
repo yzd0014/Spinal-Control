@@ -35,7 +35,7 @@ net = torch_net.FeedForwardNN(input_size, hidden_size, output_size, pa.control_t
 
 # traning configuration
 num_epochs = 5000
-learning_rate = 0.0005
+learning_rate = 0.0003
 
 # intialize simutlation parameters
 dt_brain = pa.controller_params.brain_dt
@@ -54,6 +54,7 @@ for epoch in range(num_epochs):
         # cocontraction = traning_samples[batch_id][2]
         pa.controller.target_pos[0] = traning_samples[batch_id][0]
         cocontraction = traning_samples[batch_id][1]
+        pa.controller.cocontraction = cocontraction
         mj.mj_resetData(pa.model, pa.data)
         mj.mj_forward(pa.model, pa.data)
 
@@ -98,7 +99,7 @@ for epoch in range(num_epochs):
     writer.add_scalar("Loss/mean_ep_loss", mean_ep_loss, epoch)
     if epoch % 50 == 0:
         torch.save(net.state_dict(), f'{models_dir}/{int(time.time())}.pth')
-    if mean_ep_loss < 0.02:
+    if mean_ep_loss < 0.01:
         break
 
 writer.flush()
