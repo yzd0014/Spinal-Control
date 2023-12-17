@@ -8,7 +8,7 @@ from control import *
 
 m_target = np.array([0.1, -0.2])
 # m_target = np.array([-10, 0])
-modelid = "1702354433"
+modelid = "1700438413"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -175,12 +175,12 @@ def init_controller(model,data):
 
         controller.target_pos = np.array([m_target[0], m_target[1]])
     elif env_id == 1:
-        # data.qpos[0] = 0.4
-        # data.qpos[1] = -0.87
-        # data.qpos[2] = -2.32
-        data.qpos[0] = 0
-        data.qpos[1] = 0
-        data.qpos[2] = -2.95
+        data.qpos[0] = 0.4
+        data.qpos[1] = -0.87
+        data.qpos[2] = -2.32
+        # data.qpos[0] = 0
+        # data.qpos[1] = 0
+        # data.qpos[2] = -2.95
     elif env_id == 2:
         controller.target_pos = np.array([m_target[0], m_target[1]])
         model.eq_active[0] = 1
@@ -213,7 +213,7 @@ def callback(model, data):
     controller.callback(model, data)
     # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
     # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
-    # print(data.ctrl[0], data.ctrl[1])
+    print(data.ctrl)
     # print(data.qpos[0], data.qpos[1])
 
     # if control_type != Control_Type.NEURON_OPTIMAL and control_type != Control_Type.PID:

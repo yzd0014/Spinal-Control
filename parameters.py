@@ -8,9 +8,9 @@ PUSH = 3
 SWING = 4
 
 # parameters that can be changed by users
-control_type = Control_Type.DEFAULT
-env_id = DOUBLE_PENDULUM_DAMPING
-training_type = "feedforward"
+control_type = Control_Type.FF_OPTIMAL
+env_id = SWING
+training_type = "PPO"
 
 if env_id == DOUBLE_PENDULUM:
     controller_input_size = 2
@@ -55,7 +55,7 @@ controller_params = ControllerParams(alpha=0.4691358024691358, \
                                     hidden_size=32, \
                                     output_size=controller_output_size, \
                                     episode_length_in_seconds=episode_length_in_seconds,\
-                                    brain_dt=10)
+                                    brain_dt=0.1)
 #############################################################################################
 if training_type == "feedforward":
     # initialize mujoco

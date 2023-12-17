@@ -44,6 +44,8 @@ class DoubleLinkEnv(gym.Env):
             self.controller = GeneralEPController()
         elif self.control_type == Control_Type.FF_GENERAL:
             self.controller = FeedForwardGeneralController(env_id)
+        elif self.control_type == Control_Type.FF_OPTIMAL:
+            self.controller = AngleStiffnessController(env_id, enable_cocontraction=False)
 
         mj.set_mjcb_control(self.controller.callback)
 
@@ -71,23 +73,24 @@ class DoubleLinkEnv(gym.Env):
         self.observation_space = self.controller.get_obs_space()
 
     def step(self, action):
-        self.controller.set_action(action)
-        time_prev = self.data.time
-
-        while self.data.time - time_prev < self.dt_brain:
-            mj.mj_step(self.model, self.data)
-
-        if self.rendering == True:
-            mj.mjv_updateScene(self.model, self.data, self.opt, None, \
-                               self.cam, mj.mjtCatBit.mjCAT_ALL.value, \
-                               self.scene)
-            mj.mjr_render(self.viewport, self.scene, self.context)
-            glfw.swap_buffers(self.window)
-            glfw.poll_events()
-
         self.ticks += 1
         if self.ticks >= self.episode_length:
             self.done = True
+
+        self.controller.set_action(action)
+        time_prev = self.data.time
+        while self.data.time - time_prev < self.dt_brain:
+            mj.mj_step(self.model, self.data)
+
+            if self.env_id == 4:
+                current_pos = self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]
+                if current_pos > np.pi or current_pos < -np.pi:
+                    self.done = True
+                    vel_err = abs(self.data.qvel[0] + self.data.qvel[1] + self.data.qvel[2])
+                    reward = 10 * np.exp(-0.5 * vel_err)
+                    break
+                else:
+                    reward = 0
 
         if self.env_id == 0:
             if self.done == False:
@@ -125,17 +128,11 @@ class DoubleLinkEnv(gym.Env):
             if self.data.qvel[2] > 0:
                 vel_pen = 0.01
             reward = -pos_err - 0.1 * dist - vel_pen
-        elif self.env_id == 4:
-            current_pos = self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]
-            if current_pos > np.pi or current_pos < -np.pi:
-                self.done = True
-                vel_err = abs(self.data.qvel[0] + self.data.qvel[1] + self.data.qvel[2])
-                reward = 10 * np.exp(-0.5 * vel_err)
-            else:
-                reward = 0
 
         observation = self.controller.get_obs(self.data)
         info = {}
+        if self.rendering == True:
+            self.render()
         return observation, reward, self.done, info
 
     def reset(self):
@@ -234,3 +231,11 @@ class DoubleLinkEnv(gym.Env):
 
     def get_num_of_targets(self):
         return self.num_of_targets;
+
+    def rendering(self):
+        mj.mjv_updateScene(self.model, self.data, self.opt, None, \
+                           self.cam, mj.mjtCatBit.mjCAT_ALL.value, \
+                           self.scene)
+        mj.mjr_render(self.viewport, self.scene, self.context)
+        glfw.swap_buffers(self.window)
+        glfw.poll_events()

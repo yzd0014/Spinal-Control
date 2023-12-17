@@ -6,7 +6,7 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([-1.2, -0.7])
+m_target = np.array([-0.23, 0.34])
 # m_target = np.array([-10, 0])
 cocontraction = 0
 modelid = "1702516376"
@@ -22,7 +22,7 @@ ff_net = torch_net.FeedForwardNN(2, 32, 4, Control_Type.BASELINE)
 ff_net.load_state_dict(torch.load(feedforward_model_path0))
 ff_net.eval()
 # xml_path = 'double_links_fast.xml'
-xml_path = 'single_link.xml'
+xml_path = 'double_links_fast.xml'
 
 sim_pause = True
 next_frame = False
@@ -37,7 +37,7 @@ lastx = 0
 lasty = 0
 
 # Neuron Controller
-# controller = BaselineController(controller_params, env_id)
+controller = AngleStiffnessController(env_id, enable_cocontraction=False)
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
@@ -121,7 +121,7 @@ def scroll(window, xoffset, yoffset):
 def init_controller(model,data):
     mj.mj_resetData(model, data)
     mj.mj_forward(model, data)
-    # controller.target_pos = np.array([m_target[0], m_target[1]])
+    controller.target_pos = np.array([m_target[0], m_target[1]])
 
 ep_error = 0
 def callback(model, data):
@@ -132,12 +132,12 @@ def callback(model, data):
         # u = np.zeros(4)
         # for i in range(4):
         #     u[i] = u_tensor[0][i].item()
-        # controller.set_action(u)
-        data.ctrl[0] = 0.23001
-        data.ctrl[1] = 0.2
+        controller.set_action(controller.target_pos)
+        # data.ctrl[0] = 0.23001
+        # data.ctrl[1] = 0.2
         global_timer = data.time
 
-    # controller.callback(model, data)
+    controller.callback(model, data)
     print(data.qpos)
     # print(data.ctrl)
 

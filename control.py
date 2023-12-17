@@ -22,6 +22,7 @@ class Control_Type(Enum):
     FF = 7
     EP_GENERAL = 8
     FF_GENERAL = 9
+    FF_OPTIMAL = 10
 
 
 control_type_dic = {Control_Type.BASELINE: "baseline",
@@ -33,7 +34,8 @@ control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.FF: "feedforward",
                     Control_Type.EP_GENERAL: "ep-general",
                     Control_Type.FF_GENERAL: "feedforward-general",
-                    Control_Type.DEFAULT: "default"
+                    Control_Type.DEFAULT: "default",
+                    Control_Type.FF_OPTIMAL: "feedforward-optimal"
                     }
 
 
@@ -140,9 +142,9 @@ class FeedForwardController(object):
     def __init__(self, env_id):
         self.action = np.zeros(2)
         self.target_pos = np.zeros(2)
-        #weights_path = "./ff_weights.pth"
-        weights_path = "./1702020394.pth"
-        self.ff_net = torch_net.FeedForwardNN(2, 32, 4, Control_Type.BASELINE)
+        weights_path = "./ff_weights.pth"
+        # weights_path = "./1702020394.pth"
+        self.ff_net = torch_net.FeedForwardNN(2, 64, 4, Control_Type.BASELINE)
 
         self.ff_net.load_state_dict(torch.load(weights_path))
         self.ff_net.eval()
@@ -155,7 +157,7 @@ class FeedForwardController(object):
     def callback(self, model, data):
         action_tensor = torch.tensor(self.action, dtype=torch.float32)
         u_tensor = self.ff_net(action_tensor.view(1, 2))
-        for i in range(2):
+        for i in range(4):
             data.ctrl[i] = u_tensor[0][i].item()
 
         if self.env_id == 2:
@@ -632,3 +634,83 @@ class TemplateController(object):
             return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
         elif self.env_id == 4:
             return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+
+# -----------------------------------------------------------------------------
+# Feedforward Controller
+# -----------------------------------------------------------------------------
+class AngleStiffnessController(object):
+    def __init__(self, env_id, enable_cocontraction=False):
+        self.enable_cocontraction = enable_cocontraction
+        if self.enable_cocontraction:
+            self.action_dim = 4
+        else:
+            self.action_dim = 2
+
+        self.action = np.zeros(self.action_dim)
+        self.target_pos = np.zeros(2)
+        self.cocontraction = [0.5, 0.01] #range from 0 to 1
+        weights_path = "./ff_optimal_1702622336.pth"
+        # weights_path = "./1702020394.pth"
+        self.ff_net = torch_net.FeedForwardNN(2, 32, 1, Control_Type.BASELINE)
+
+        self.ff_net.load_state_dict(torch.load(weights_path))
+        self.ff_net.eval()
+        self.env_id = env_id
+
+    def set_action(self, newaction):
+
+        for i in range(self.action_dim):
+            self.action[i] = newaction[i]
+
+    def callback(self, model, data):
+        for i in range(2):
+            if self.enable_cocontraction:
+                self.cocontraction[i] = self.action[i + 2]
+            if self.action[i] >= 0:
+                action_tensor = torch.tensor(np.array([self.action[i], self.cocontraction[i]]), dtype=torch.float32)
+                u_tensor = self.ff_net(action_tensor.view(1, 2))
+                data.ctrl[i * 2] = u_tensor[0][0].item() + self.cocontraction[i]
+                data.ctrl[i * 2 + 1] = self.cocontraction[i]
+            else:
+                action_tensor = torch.tensor(np.array([-self.action[i], self.cocontraction[i]]), dtype=torch.float32)
+                u_tensor = self.ff_net(action_tensor.view(1, 2))
+                data.ctrl[i * 2] = self.cocontraction[i]
+                data.ctrl[i * 2 + 1] = u_tensor[0][0].item() + self.cocontraction[i]
+
+        if self.env_id == 2:
+            if data.time > 3:
+                model.eq_active[0] = 0
+
+    def get_action_space(self):
+        if self.enable_cocontraction:
+            return spaces.Box(low=np.array([-5, -5, 0, 0]), high=np.array([5, 5, 1, 1]),  dtype=np.float32)
+        else:
+            return spaces.Box(low=-5, high=5, shape=(2,), dtype=np.float32)
+
+    def get_obs_space(self):
+        if self.env_id == 0:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 1:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 2:
+            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
+        elif self.env_id == 3:
+            return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
+        elif self.env_id == 4:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+
+    def get_obs(self, data):
+        if self.env_id == 0:
+            obs = np.array(
+                [self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        elif self.env_id == 1:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        elif self.env_id == 2:
+            obs = np.array([self.target_pos[0], self.target_pos[1], data.time])
+        elif self.env_id == 3:
+            obs = np.array([self.target_pos[0], data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
+                            data.xpos[2][0], data.xpos[2][1], data.xpos[2][2], \
+                            data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        elif self.env_id == 4:
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        return obs
