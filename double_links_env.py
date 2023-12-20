@@ -82,7 +82,22 @@ class DoubleLinkEnv(gym.Env):
         while self.data.time - time_prev < self.dt_brain:
             mj.mj_step(self.model, self.data)
 
-            if self.env_id == 4:
+            if self.env_id == 2:
+                if self.data.ncon > 0:
+                    if self.data.contact[0].geom1 == 0 and self.data.contact[0].geom2 == 3:
+                        self.done = True
+                    elif self.data.contact[0].geom1 == 3 and self.data.contact[0].geom2 == 0:
+                        self.done = True
+
+                if self.done == False:
+                    reward = 0
+                else:
+                    dist = np.linalg.norm(
+                        np.array([self.data.xpos[3][0], self.data.xpos[3][1]]) - self.controller.target_pos)
+                    reward = 10 * np.exp(-dist)
+                    # print(self.data.xpos[4][0])
+                    break
+            elif self.env_id == 4:
                 current_pos = self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]
                 if current_pos > np.pi or current_pos < -np.pi:
                     self.done = True
@@ -108,19 +123,7 @@ class DoubleLinkEnv(gym.Env):
             position_penalty = abs(current_q - np.pi)
             if position_penalty > 0.25 * np.pi:
                 self.done = True
-        elif self.env_id == 2:
-            if self.data.ncon > 0:
-                if self.data.contact[0].geom1 == 0 and self.data.contact[0].geom2 == 3:
-                    self.done = True
-                elif self.data.contact[0].geom1 == 3 and self.data.contact[0].geom2 == 0:
-                    self.done = True
 
-            if self.done == False:
-                reward = 0
-            else:
-                dist = np.linalg.norm(np.array([self.data.xpos[3][0], self.data.xpos[3][1]]) - self.controller.target_pos)
-                reward = 10 * np.exp(-dist)
-                # print(self.data.xpos[4][0])
         elif self.env_id == 3:
             dist = np.linalg.norm(self.data.xpos[2] - self.data.xpos[3])
             pos_err = np.abs(self.controller.target_pos[0] - self.data.qpos[2])
@@ -232,7 +235,7 @@ class DoubleLinkEnv(gym.Env):
     def get_num_of_targets(self):
         return self.num_of_targets;
 
-    def rendering(self):
+    def render(self):
         mj.mjv_updateScene(self.model, self.data, self.opt, None, \
                            self.cam, mj.mjtCatBit.mjCAT_ALL.value, \
                            self.scene)

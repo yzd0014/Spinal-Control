@@ -648,7 +648,7 @@ class AngleStiffnessController(object):
 
         self.action = np.zeros(self.action_dim)
         self.target_pos = np.zeros(2)
-        self.cocontraction = [0.3, 0.3] #range from 0 to 1
+        self.cocontraction = [0.1, 0.1] #range from 0 to 1
         weights_path = "./ff_optimal_1702622336.pth"
         self.ff_net = torch_net.FeedForwardNN(2, 32, 1, Control_Type.BASELINE)
 

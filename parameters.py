@@ -35,7 +35,7 @@ elif env_id == INVERTED_PENDULUM:
     episode_length_in_seconds = 120
 elif env_id == TOSS:
     xml = 'toss.xml'
-    episode_length_in_seconds = 1000
+    episode_length_in_seconds = 10000
 elif env_id == PUSH:
     xml = 'slider.xml'
     episode_length_in_seconds = 20
