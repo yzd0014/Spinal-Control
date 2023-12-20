@@ -58,7 +58,7 @@ if __name__ == "__main__":
         batch_size = n_steps
         # batch_size = int(n_steps/5)
         n_epochs = 10
-        reward_target = 8.2
+        reward_target = -1
         learning_rate = 0.0003
     elif env_id == PUSH:
         n_steps = controller_params.episode_length_in_ticks * 10

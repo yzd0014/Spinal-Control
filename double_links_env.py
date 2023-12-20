@@ -94,7 +94,7 @@ class DoubleLinkEnv(gym.Env):
                 else:
                     dist = np.linalg.norm(
                         np.array([self.data.xpos[3][0], self.data.xpos[3][1]]) - self.controller.target_pos)
-                    reward = 10 * np.exp(-dist)
+                    reward = -dist
                     # print(self.data.xpos[4][0])
                     break
             elif self.env_id == 4:
