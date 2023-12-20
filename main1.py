@@ -6,9 +6,9 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([5, -0.45])
+m_target = np.array([0.55, -0.45])
 # m_target = np.array([-10, 0])
-cocontraction = 0
+cocontraction = 0.5
 modelid = "1702619395"
 #######################################################################
 # Load Params

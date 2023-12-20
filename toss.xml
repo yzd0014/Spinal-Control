@@ -30,7 +30,7 @@
       </body>
       <body name="projectile" pos="0 0 0.39">
         <joint type="free"/>
-        <geom type="box" size="0.1 0.1 0.1"/>
+        <geom type="box" size="0.1 0.1 0.1" mass="0.1"/>
       </body>
    </worldbody>
    <tendon>
@@ -61,10 +61,10 @@
     <weld body1="end_factor" body2="projectile"/>
    </equality>
    <actuator> 
-        <muscle  name="r-muscle" tendon="r-tendon" range="0.75 1.15" scale="4000"/>
-        <muscle  name="l-muscle" tendon="l-tendon" range="0.75 1.15" scale="4000"/>
-        <muscle  name="r-ctrl" tendon="r-middle" range="0.75 1.15" scale="4000"/>
-        <muscle  name="l-ctrl" tendon="l-middle" range="0.75 1.15" scale="4000"/>
+        <muscle  name="r-muscle" tendon="r-tendon" range="0.75 1.15" scale="400"/>
+        <muscle  name="l-muscle" tendon="l-tendon" range="0.75 1.15" scale="400"/>
+        <muscle  name="r-ctrl" tendon="r-middle" range="0.75 1.15" scale="400"/>
+        <muscle  name="l-ctrl" tendon="l-middle" range="0.75 1.15" scale="400"/>
         <motor name="motor0" joint="joint0"/>
         <motor name="motor1" joint="joint1"/>
    </actuator>

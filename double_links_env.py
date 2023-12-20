@@ -45,7 +45,7 @@ class DoubleLinkEnv(gym.Env):
         elif self.control_type == Control_Type.FF_GENERAL:
             self.controller = FeedForwardGeneralController(env_id)
         elif self.control_type == Control_Type.FF_OPTIMAL:
-            self.controller = AngleStiffnessController(env_id, enable_cocontraction=False)
+            self.controller = AngleStiffnessController(env_id, enable_cocontraction=True)
 
         mj.set_mjcb_control(self.controller.callback)
 

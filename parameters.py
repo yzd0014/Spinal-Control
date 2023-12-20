@@ -9,7 +9,7 @@ SWING = 4
 
 # parameters that can be changed by users
 control_type = Control_Type.FF_OPTIMAL
-env_id = SWING
+env_id = TOSS
 training_type = "PPO"
 
 if env_id == DOUBLE_PENDULUM:

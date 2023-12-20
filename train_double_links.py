@@ -70,7 +70,7 @@ if __name__ == "__main__":
         n_steps = controller_params.episode_length_in_ticks * 20
         batch_size = controller_params.episode_length_in_ticks
         n_epochs = 5
-        reward_target = 9.8
+        reward_target = 9.4
         learning_rate = 0.0003
 
     TIMESTEPS = n_steps
