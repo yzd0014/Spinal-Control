@@ -64,7 +64,7 @@ if __name__ == "__main__":
         n_steps = controller_params.episode_length_in_ticks * 10
         batch_size = controller_params.episode_length_in_ticks
         n_epochs = 10
-        reward_target = -16
+        reward_target = -0.1
         learning_rate = 0.0003
     elif env_id == SWING:
         n_steps = controller_params.episode_length_in_ticks * 20

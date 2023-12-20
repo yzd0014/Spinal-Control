@@ -8,8 +8,8 @@ PUSH = 3
 SWING = 4
 
 # parameters that can be changed by users
-control_type = Control_Type.FF_OPTIMAL
-env_id = TOSS
+control_type = Control_Type.BASELINE
+env_id = PUSH
 training_type = "PPO"
 
 if env_id == DOUBLE_PENDULUM:
@@ -37,8 +37,8 @@ elif env_id == TOSS:
     xml = 'toss.xml'
     episode_length_in_seconds = 10000
 elif env_id == PUSH:
-    xml = 'slider.xml'
-    episode_length_in_seconds = 20
+    xml = 'push.xml'
+    episode_length_in_seconds = 10
 elif env_id == SWING:
     xml = 'inverted_pendulum_fast.xml'
     episode_length_in_seconds = 10

@@ -55,6 +55,7 @@ class DoubleLinkEnv(gym.Env):
         self.cartesian = True
         self.cartesian_target = np.zeros(3)
         self.rendering = False
+
         if self.rendering == True:
             self.init_window()
 
@@ -97,6 +98,14 @@ class DoubleLinkEnv(gym.Env):
                     reward = -dist
                     # print(self.data.xpos[4][0])
                     break
+            elif self.env_id == 3:
+                if self.done == True and np.linalg.norm(self.data.cvel[3]) < 0.0001:
+                    dist = np.linalg.norm(
+                        np.array([self.data.xpos[3][0], self.data.xpos[3][1]]) - self.controller.target_pos)
+                    reward = -dist
+                    break
+                else:
+                    reward = 0
             elif self.env_id == 4:
                 current_pos = self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]
                 if current_pos > np.pi or current_pos < -np.pi:
@@ -123,14 +132,6 @@ class DoubleLinkEnv(gym.Env):
             position_penalty = abs(current_q - np.pi)
             if position_penalty > 0.25 * np.pi:
                 self.done = True
-
-        elif self.env_id == 3:
-            dist = np.linalg.norm(self.data.xpos[2] - self.data.xpos[3])
-            pos_err = np.abs(self.controller.target_pos[0] - self.data.qpos[2])
-            vel_pen = 0
-            if self.data.qvel[2] > 0:
-                vel_pen = 0.01
-            reward = -pos_err - 0.1 * dist - vel_pen
 
         observation = self.controller.get_obs(self.data)
         info = {}
@@ -178,7 +179,7 @@ class DoubleLinkEnv(gym.Env):
         elif self.env_id == 3:
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
-            self.controller.target_pos[0] = -1.3
+            self.controller.target_pos = np.array([-7, 0])
 
         elif self.env_id == 4:
             mj.mj_resetData(self.model, self.data)
