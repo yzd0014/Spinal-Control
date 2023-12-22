@@ -412,11 +412,11 @@ class BaselineController(object):
         elif self.env_id == 2:
             obs = np.array([self.target_pos[0], self.target_pos[1],  data.time])
         elif self.env_id == 3:
-            obs = np.array([self.target_pos[0], data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
-                            data.xpos[2][0], data.xpos[2][1], data.xpos[2][2], \
+            obs = np.array([self.target_pos[0], self.target_pos[1], \
+                            data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
                            data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
         elif self.env_id == 4:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2], data.time])
 
         return obs
 
@@ -437,9 +437,9 @@ class BaselineController(object):
         elif self.env_id == 2:
             return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
         elif self.env_id == 3:
-            return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
+            return spaces.Box(low=-100, high=100, shape=(9,), dtype=np.float32)
         elif self.env_id == 4:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+            return spaces.Box(low=-100, high=100, shape=(7,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # PID Controller
@@ -696,7 +696,7 @@ class AngleStiffnessController(object):
         elif self.env_id == 3:
             return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
         elif self.env_id == 4:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+            return spaces.Box(low=-100, high=100, shape=(7,), dtype=np.float32)
 
     def get_obs(self, data):
         if self.env_id == 0:
@@ -711,5 +711,5 @@ class AngleStiffnessController(object):
                             data.xpos[2][0], data.xpos[2][1], data.xpos[2][2], \
                             data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
         elif self.env_id == 4:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2], data.time])
         return obs

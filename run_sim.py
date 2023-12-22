@@ -8,7 +8,7 @@ from control import *
 
 m_target = np.array([0.1, -0.2])
 # m_target = np.array([-10, 0])
-modelid = "1703070386"
+modelid = "1703193255"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -189,8 +189,10 @@ def init_controller(model,data):
     mj.mj_forward(model, data)
 
 ep_error = 0
+ticks = 0
 def callback(model, data):
-    global global_timer, ep_error
+    global global_timer, ep_error, ticks
+    ticks += 1
     if data.time - global_timer >= dt_brain or data.time < 0.000101:
         if training_type == "PPO":
             observation = controller.get_obs(data)
@@ -211,6 +213,11 @@ def callback(model, data):
         global_timer = data.time
 
     controller.callback(model, data)
+    if ticks >= episode_length:
+        current_pos = data.qpos[0] + data.qpos[1] + data.qpos[2]
+        pos_err = abs(current_pos - np.pi)
+        vel_err = abs(data.qvel[0] + data.qvel[1] + data.qvel[2])
+        print(3 * pos_err + vel_err)
     # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
     # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
     print(data.ctrl)

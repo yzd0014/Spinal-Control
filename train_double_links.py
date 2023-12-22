@@ -58,20 +58,20 @@ if __name__ == "__main__":
         batch_size = n_steps
         # batch_size = int(n_steps/5)
         n_epochs = 10
-        reward_target = -1
+        reward_target = -0.2
         learning_rate = 0.0003
     elif env_id == PUSH:
         n_steps = controller_params.episode_length_in_ticks * 10
         batch_size = controller_params.episode_length_in_ticks
         n_epochs = 10
         reward_target = -0.1
-        learning_rate = 0.0003
+        learning_rate = 0.0001
     elif env_id == SWING:
-        n_steps = controller_params.episode_length_in_ticks * 20
-        batch_size = controller_params.episode_length_in_ticks
-        n_epochs = 5
-        reward_target = 9.4
-        learning_rate = 0.0003
+        n_steps = int(100/controller_params.brain_dt)
+        batch_size = n_steps
+        n_epochs = 10
+        reward_target = -0.02
+        learning_rate = 0.0002
 
     TIMESTEPS = n_steps
     model = PPO('MlpPolicy', env, \

@@ -45,7 +45,7 @@ class DoubleLinkEnv(gym.Env):
         elif self.control_type == Control_Type.FF_GENERAL:
             self.controller = FeedForwardGeneralController(env_id)
         elif self.control_type == Control_Type.FF_OPTIMAL:
-            self.controller = AngleStiffnessController(env_id, enable_cocontraction=True)
+            self.controller = AngleStiffnessController(env_id, enable_cocontraction=False)
 
         mj.set_mjcb_control(self.controller.callback)
 
@@ -107,14 +107,13 @@ class DoubleLinkEnv(gym.Env):
                 else:
                     reward = 0
             elif self.env_id == 4:
-                current_pos = self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]
-                if current_pos > np.pi or current_pos < -np.pi:
-                    self.done = True
-                    vel_err = abs(self.data.qvel[0] + self.data.qvel[1] + self.data.qvel[2])
-                    reward = 10 * np.exp(-0.5 * vel_err)
-                    break
-                else:
+                if self.done == False:
                     reward = 0
+                else:
+                    current_pos = self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]
+                    pos_err = abs(current_pos - np.pi)
+                    vel_err = abs(self.data.qvel[0] + self.data.qvel[1] + self.data.qvel[2])
+                    reward = -3 * pos_err - vel_err
 
         if self.env_id == 0:
             if self.done == False:
