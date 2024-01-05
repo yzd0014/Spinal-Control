@@ -46,6 +46,7 @@ if __name__ == "__main__":
         n_steps = controller_params.episode_length_in_ticks * num_episodes
         batch_size = controller_params.episode_length_in_ticks
         n_epochs = 5
+        reward_target = -0.4
         learning_rate = 0.0003
     elif env_id == INVERTED_PENDULUM:
         n_steps = int(100/controller_params.brain_dt)

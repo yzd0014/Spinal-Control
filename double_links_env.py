@@ -45,14 +45,15 @@ class DoubleLinkEnv(gym.Env):
         elif self.control_type == Control_Type.FF_GENERAL:
             self.controller = FeedForwardGeneralController(env_id)
         elif self.control_type == Control_Type.FF_OPTIMAL:
-            self.controller = AngleStiffnessController(env_id, enable_cocontraction=False)
+            self.controller = AngleStiffnessController(env_id, enable_cocontraction=True)
 
-        mj.set_mjcb_control(self.controller.callback)
+        # Set callback
+        mj.set_mjcb_control(self.env_callback)
 
         # Other stuff
         self.dt_brain = c_params.brain_dt
         self.instance_id = instance_id
-        self.cartesian = True
+        self.cartesian = False
         self.cartesian_target = np.zeros(3)
         self.rendering = False
 
@@ -63,8 +64,8 @@ class DoubleLinkEnv(gym.Env):
 
         self.num_of_targets = 0
         self.target_qs = []
-        for i in np.arange(-0.5, 0.5, 0.25):
-            for j in np.arange(-0.5, 0.5, 0.25):
+        for i in np.arange(0.1, 0.71, 0.3):
+            for j in np.arange(0.1, 0.71, 0.3):
                 self.target_qs.append(np.array([i, j]))
                 self.num_of_targets += 1
 
@@ -74,8 +75,7 @@ class DoubleLinkEnv(gym.Env):
         self.observation_space = self.controller.get_obs_space()
 
     def step(self, action):
-        self.ticks += 1
-        if self.ticks >= self.episode_length:
+        if self.ticks >= self.episode_length - 1:
             self.done = True
 
         self.controller.set_action(action)
@@ -98,44 +98,45 @@ class DoubleLinkEnv(gym.Env):
                     reward = -dist
                     # print(self.data.xpos[4][0])
                     break
-            elif self.env_id == 3:
-                if self.done == True and np.linalg.norm(self.data.cvel[3]) < 0.0001:
-                    dist = np.linalg.norm(
-                        np.array([self.data.xpos[3][0], self.data.xpos[3][1]]) - self.controller.target_pos)
-                    reward = -dist
-                    break
-                else:
-                    reward = 0
-            elif self.env_id == 4:
-                if self.done == False:
-                    reward = 0
-                else:
-                    current_pos = self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]
-                    pos_err = abs(current_pos - np.pi)
-                    vel_err = abs(self.data.qvel[0] + self.data.qvel[1] + self.data.qvel[2])
-                    reward = -3 * pos_err - vel_err
-
+          
         if self.env_id == 0:
-            if self.done == False:
-                reward = 0
+            if self.cartesian == True:
+                curr_pos = np.array([self.data.xpos[2][0], self.data.xpos[2][2]])
+                position_error = 100 * (curr_pos - self.controller.target_pos)
             else:
-                if self.cartesian == True:
-                    curr_pos = np.array([self.data.xpos[2][0], self.data.xpos[2][2]])
-                    position_error = 100 * (curr_pos - self.controller.target_pos)
-                else:
-                    position_error = self.data.qpos - self.target_qs[self.target_iter]
-                reward = -np.linalg.norm(position_error)
+                position_error = self.data.qpos - self.target_qs[self.target_iter]
+            reward = -np.linalg.norm(position_error)
+
         elif self.env_id == 1:
             reward = self.dt_brain
             current_q = abs(self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]) % (2 * np.pi)
             position_penalty = abs(current_q - np.pi)
             if position_penalty > 0.25 * np.pi:
                 self.done = True
+        elif self.env_id == 3:
+            if self.done == False:
+                reward = 0
+            else:
+                pos_err = np.linalg.norm(
+                    np.array([self.data.xpos[3][0], self.data.xpos[3][1]]) - self.controller.target_pos)
+                vel_err = np.linalg.norm(self.data.cvel[3])
+                reward = -pos_err - vel_err
+        elif self.env_id == 4:
+            if self.done == False:
+                reward = 0
+            else:
+                current_pos = self.data.qpos[0] + self.data.qpos[1] + self.data.qpos[2]
+                pos_err = abs(current_pos - np.pi)
+                vel_err = abs(self.data.qvel[0] + self.data.qvel[1] + self.data.qvel[2])
+                reward = -3 * pos_err - vel_err
 
         observation = self.controller.get_obs(self.data)
         info = {}
+
         if self.rendering == True:
             self.render()
+        self.ticks += 1
+
         return observation, reward, self.done, info
 
     def reset(self):
@@ -242,3 +243,15 @@ class DoubleLinkEnv(gym.Env):
         mj.mjr_render(self.viewport, self.scene, self.context)
         glfw.swap_buffers(self.window)
         glfw.poll_events()
+
+    def env_callback(self, model, data):
+        self.controller.callback(model, data)
+
+        if self.env_id == 0:
+            max_force = 4
+            max_angle = 0.88
+            data.ctrl[4] = -data.qpos[0] / max_angle * max_force
+            data.ctrl[5] = -data.qpos[1] / max_angle * max_force
+        elif self.env_id == 2:
+            if data.time > 3:
+                model.eq_active[0] = 0

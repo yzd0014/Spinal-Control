@@ -71,10 +71,6 @@ class EPController(object):
             data.ctrl[i * 2] = self.C + self.action[i]
             data.ctrl[i * 2 + 1] = self.C - self.action[i]
 
-        if self.env_id == 2:
-            if data.time > 3:
-                model.eq_active[0] = 0
-
     def get_obs(self, data):
         if self.env_id == 0:
             obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
@@ -160,10 +156,6 @@ class FeedForwardController(object):
         for i in range(4):
             data.ctrl[i] = u_tensor[0][i].item()
 
-        if self.env_id == 2:
-            if data.time > 3:
-                model.eq_active[0] = 0
-
     def get_action_space(self):
         return spaces.Box(low=-5, high=5, shape=(2,), dtype=np.float32)
 
@@ -217,10 +209,6 @@ class FeedForwardGeneralController(object):
         u_tensor = self.ff_net(action_tensor.view(1, 4))
         for i in range(4):
             data.ctrl[i] = u_tensor[0][i].item()
-
-        if self.env_id == 2:
-            if data.time > 3:
-                model.eq_active[0] = 0
 
     def get_action_space(self):
         return spaces.Box(low=0, high=5, shape=(4,), dtype=np.float32)
@@ -390,10 +378,6 @@ class BaselineController(object):
     def callback(self, model, data):
         # self.get_obs(data)
         data.ctrl[0:4] = self.action
-
-        if self.env_id == 2:
-            if data.time > 3:
-                model.eq_active[0] = 0
 
     def set_action(self, newaction):
         for i in range(4):
@@ -675,10 +659,6 @@ class AngleStiffnessController(object):
                 u_tensor = self.ff_net(action_tensor.view(1, 2))
                 data.ctrl[i * 2] = self.cocontraction[i]
                 data.ctrl[i * 2 + 1] = u_tensor[0][0].item() + self.cocontraction[i]
-
-        if self.env_id == 2:
-            if data.time > 3:
-                model.eq_active[0] = 0
 
     def get_action_space(self):
         if self.enable_cocontraction:

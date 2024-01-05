@@ -6,9 +6,9 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([0.1, -0.2])
+m_target = np.array([0.2, 0.2])
 # m_target = np.array([-10, 0])
-modelid = "1703193255"
+modelid = "1704425113"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -213,14 +213,17 @@ def callback(model, data):
         global_timer = data.time
 
     controller.callback(model, data)
-    if ticks >= episode_length:
-        current_pos = data.qpos[0] + data.qpos[1] + data.qpos[2]
-        pos_err = abs(current_pos - np.pi)
-        vel_err = abs(data.qvel[0] + data.qvel[1] + data.qvel[2])
-        print(3 * pos_err + vel_err)
+    if env_id == 0:
+        max_force = 4
+        max_angle = 0.88
+        data.ctrl[4] = -data.qpos[0] / max_angle * max_force
+        data.ctrl[5] = -data.qpos[1] / max_angle * max_force
+    elif env_id == 2:
+        if data.time > 3:
+            model.eq_active[0] = 0
     # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
     # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
-    print(data.ctrl)
+    # print(data.ctrl)
     # print(data.qpos[0], data.qpos[1])
 
     # if control_type != Control_Type.NEURON_OPTIMAL and control_type != Control_Type.PID:
