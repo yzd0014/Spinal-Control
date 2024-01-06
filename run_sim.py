@@ -6,7 +6,7 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 
-m_target = np.array([0.2, 0.2])
+m_target = np.array([0.1, 0.1])
 # m_target = np.array([-10, 0])
 modelid = "1704425113"
 #######################################################################
@@ -212,15 +212,8 @@ def callback(model, data):
 
         global_timer = data.time
 
-    controller.callback(model, data)
-    if env_id == 0:
-        max_force = 4
-        max_angle = 0.88
-        data.ctrl[4] = -data.qpos[0] / max_angle * max_force
-        data.ctrl[5] = -data.qpos[1] / max_angle * max_force
-    elif env_id == 2:
-        if data.time > 3:
-            model.eq_active[0] = 0
+    # controller.callback(model, data)
+    evn_controller(env_id, model, data)
     # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
     # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
     # print(data.ctrl)

@@ -52,6 +52,17 @@ class ControllerParams:
         self.output_size = output_size
         self.brain_dt = brain_dt
         self.episode_length_in_ticks = int(episode_length_in_seconds / brain_dt)
+
+def evn_controller(env_id, model, data):
+    if env_id == 0:
+        max_force = 4
+        max_angle = 0.88
+        data.ctrl[4] = -np.pow(data.qpos[0] / max_angle, 2) * max_force
+        data.ctrl[5] = -np.pow(data.qpos[1] / max_angle, 2) * max_force
+    elif env_id == 2:
+        if data.time > 3:
+            model.eq_active[0] = 0
+
 # -----------------------------------------------------------------------------
 # EP Controller
 # -----------------------------------------------------------------------------

@@ -64,8 +64,8 @@ class DoubleLinkEnv(gym.Env):
 
         self.num_of_targets = 0
         self.target_qs = []
-        for i in np.arange(0.1, 0.71, 0.3):
-            for j in np.arange(0.1, 0.71, 0.3):
+        for i in np.arange(0.2, 0.71, 0.5):
+            for j in np.arange(0.2, 0.71, 0.5):
                 self.target_qs.append(np.array([i, j]))
                 self.num_of_targets += 1
 
@@ -246,12 +246,4 @@ class DoubleLinkEnv(gym.Env):
 
     def env_callback(self, model, data):
         self.controller.callback(model, data)
-
-        if self.env_id == 0:
-            max_force = 4
-            max_angle = 0.88
-            data.ctrl[4] = -data.qpos[0] / max_angle * max_force
-            data.ctrl[5] = -data.qpos[1] / max_angle * max_force
-        elif self.env_id == 2:
-            if data.time > 3:
-                model.eq_active[0] = 0
+        evn_controller(self.env_id, model, data)

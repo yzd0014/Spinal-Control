@@ -43,10 +43,10 @@ if __name__ == "__main__":
                                        vf=[64, 64]))
     reward_target = 0
     if env_id == DOUBLE_PENDULUM:
-        n_steps = controller_params.episode_length_in_ticks * num_episodes
+        n_steps = controller_params.episode_length_in_ticks * num_episodes * 5
         batch_size = controller_params.episode_length_in_ticks
         n_epochs = 5
-        reward_target = -0.4
+        reward_target = -1.6
         learning_rate = 0.0003
     elif env_id == INVERTED_PENDULUM:
         n_steps = int(100/controller_params.brain_dt)
