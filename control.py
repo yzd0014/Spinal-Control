@@ -10,6 +10,7 @@ import fir
 from gym import spaces
 import torch
 import torch_net
+from stable_baselines3 import PPO
 
 class Control_Type(Enum):
     DEFAULT = -1
@@ -23,6 +24,7 @@ class Control_Type(Enum):
     EP_GENERAL = 8
     FF_GENERAL = 9
     FF_OPTIMAL = 10
+    PPO = 11
 
 
 control_type_dic = {Control_Type.BASELINE: "baseline",
@@ -35,7 +37,8 @@ control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.EP_GENERAL: "ep-general",
                     Control_Type.FF_GENERAL: "feedforward-general",
                     Control_Type.DEFAULT: "default",
-                    Control_Type.FF_OPTIMAL: "feedforward-optimal"
+                    Control_Type.FF_OPTIMAL: "feedforward-optimal",
+                    Control_Type.PPO: "ppo"
                     }
 
 
@@ -55,10 +58,11 @@ class ControllerParams:
 
 def evn_controller(env_id, model, data):
     if env_id == 0:
-        max_force = 4
-        max_angle = 0.88
-        data.ctrl[4] = -np.pow(data.qpos[0] / max_angle, 2) * max_force
-        data.ctrl[5] = -np.pow(data.qpos[1] / max_angle, 2) * max_force
+        # max_force = 4
+        # max_angle = 0.88
+        # data.ctrl[4] = -np.pow(data.qpos[0] / max_angle, 2) * max_force
+        # data.ctrl[5] = -np.pow(data.qpos[1] / max_angle, 2) * max_force
+        pass
     elif env_id == 2:
         if data.time > 3:
             model.eq_active[0] = 0
@@ -82,36 +86,8 @@ class EPController(object):
             data.ctrl[i * 2] = self.C + self.action[i]
             data.ctrl[i * 2 + 1] = self.C - self.action[i]
 
-    def get_obs(self, data):
-        if self.env_id == 0:
-            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 1:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        elif self.env_id == 2:
-            obs = np.array([self.target_pos[0], self.target_pos[1],  data.time])
-        elif self.env_id == 3:
-            obs = np.array([self.target_pos[0], data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
-                            data.xpos[2][0], data.xpos[2][1], data.xpos[2][2], \
-                            data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 4:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-
-        return obs
-
     def get_action_space(self):
         return spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
-
-    def get_obs_space(self):
-        if self.env_id == 0:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 1:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 2:
-            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
-        elif self.env_id == 3:
-            return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
-        elif self.env_id == 4:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # General EP Controller
@@ -170,33 +146,6 @@ class FeedForwardController(object):
     def get_action_space(self):
         return spaces.Box(low=-5, high=5, shape=(2,), dtype=np.float32)
 
-    def get_obs_space(self):
-        if self.env_id == 0:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 1:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 2:
-            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
-        elif self.env_id == 3:
-            return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
-        elif self.env_id == 4:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-
-    def get_obs(self, data):
-        if self.env_id == 0:
-            obs = np.array(
-                [self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 1:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        elif self.env_id == 2:
-            obs = np.array([self.target_pos[0], self.target_pos[1], data.time])
-        elif self.env_id == 3:
-            obs = np.array([self.target_pos[0], data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
-                            data.xpos[2][0], data.xpos[2][1], data.xpos[2][2], \
-                            data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 4:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        return obs
 # -----------------------------------------------------------------------------
 # Feedforward Controller
 # -----------------------------------------------------------------------------
@@ -224,33 +173,6 @@ class FeedForwardGeneralController(object):
     def get_action_space(self):
         return spaces.Box(low=0, high=5, shape=(4,), dtype=np.float32)
 
-    def get_obs_space(self):
-        if self.env_id == 0:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 1:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 2:
-            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
-        elif self.env_id == 3:
-            return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
-        elif self.env_id == 4:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-
-    def get_obs(self, data):
-        if self.env_id == 0:
-            obs = np.array(
-                [self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 1:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        elif self.env_id == 2:
-            obs = np.array([self.target_pos[0], self.target_pos[1], data.time])
-        elif self.env_id == 3:
-            obs = np.array([self.target_pos[0], data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
-                            data.xpos[2][0], data.xpos[2][1], data.xpos[2][2], \
-                            data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 4:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        return obs
 # -----------------------------------------------------------------------------
 # Neural Controller
 # -----------------------------------------------------------------------------
@@ -377,11 +299,6 @@ class BaselineParams:
 
 class BaselineController(object):
     def __init__(self, p, env_id):
-        # b, a = signal.butter(1, p.fc, 'low', fs=p.fs)
-        # self.fq0 = iir.IirFilt(b, a)
-        # self.fq1 = iir.IirFilt(b, a)
-        # self.fv0 = iir.IirFilt(b, a)
-        # self.fv1 = iir.IirFilt(b, a)
         self.action = np.zeros(4)
         self.target_pos = np.zeros(2)
         self.env_id = env_id
@@ -394,47 +311,8 @@ class BaselineController(object):
         for i in range(4):
             self.action[i] = newaction[i]
 
-    def get_obs(self, data):
-        if self.env_id == 0:
-            # q0_est = self.fq0.filter(data.qpos[0])
-            # q1_est = self.fq1.filter(data.qpos[1])
-            # v0_est = self.fv0.filter(data.qvel[0])
-            # v1_est = self.fv1.filter(data.qvel[1])
-            # obs = np.array([self.target_pos[0], self.target_pos[1], q0_est, q1_est, v0_est, v1_est])
-            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 1:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        elif self.env_id == 2:
-            obs = np.array([self.target_pos[0], self.target_pos[1],  data.time])
-        elif self.env_id == 3:
-            obs = np.array([self.target_pos[0], self.target_pos[1], \
-                            data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
-                           data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 4:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2], data.time])
-
-        return obs
-
-    def reset_filter(self):
-        self.fq0.reset()
-        self.fq1.reset()
-        self.fv0.reset()
-        self.fv1.reset()
-
     def get_action_space(self):
         return spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
-
-    def get_obs_space(self):
-        if self.env_id == 0:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 1:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 2:
-            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
-        elif self.env_id == 3:
-            return spaces.Box(low=-100, high=100, shape=(9,), dtype=np.float32)
-        elif self.env_id == 4:
-            return spaces.Box(low=-100, high=100, shape=(7,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # PID Controller
@@ -497,8 +375,6 @@ class PIDController():
     def get_action_space(self):
         return spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
 
-    def get_obs_space(self, env_id):
-        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # Spinal Optimal Controller
@@ -567,17 +443,6 @@ class SpinalOptimalController():
             # data.ctrl[i] = (data.actuator_length[i] + 0.1 * data.actuator_velocity[i] - self.actions[i]) / self.lmax
             data.ctrl[i] = self.actions[i]
 
-    def get_obs(self, data, env_id):
-        # q0_est = self.fq0.filter(data.qpos[0])
-        # q1_est = self.fq1.filter(data.qpos[1])
-        # v0_est = self.fv0.filter(data.qvel[0])
-        # v1_est = self.fv1.filter(data.qvel[1])
-        # self.obs = np.array([q0_est, q1_est, v0_est, v1_est])
-        if env_id == 0:
-            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif env_id == 1:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        return obs
 # -----------------------------------------------------------------------------
 # Template Controller
 # -----------------------------------------------------------------------------
@@ -599,36 +464,8 @@ class TemplateController(object):
         for i in range(1):
             self.action[i] = newaction[i]
 
-    def get_obs(self, data):
-        if self.env_id == 0 or self.env_id == -1:
-            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 1:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        elif self.env_id == 2:
-            obs = np.array([self.target_pos[0], self.target_pos[1],  data.time])
-        elif self.env_id == 3:
-            obs = np.array([self.target_pos[0], data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
-                            data.xpos[2][0], data.xpos[2][1], data.xpos[2][2], \
-                           data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 4:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-
-        return obs
-
     def get_action_space(self):
         return spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
-
-    def get_obs_space(self):
-        if self.env_id == 0:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 1:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 2:
-            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
-        elif self.env_id == 3:
-            return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
-        elif self.env_id == 4:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # Feedforward Controller
@@ -677,30 +514,28 @@ class AngleStiffnessController(object):
         else:
             return spaces.Box(low=-5, high=5, shape=(2,), dtype=np.float32)
 
-    def get_obs_space(self):
-        if self.env_id == 0:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 1:
-            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-        elif self.env_id == 2:
-            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
-        elif self.env_id == 3:
-            return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
-        elif self.env_id == 4:
-            return spaces.Box(low=-100, high=100, shape=(7,), dtype=np.float32)
+# -----------------------------------------------------------------------------
+# Feedforward Controller
+# -----------------------------------------------------------------------------
+class PPOController(object):
+    def __init__(self, env_id):
+        self.action = np.zeros(2)
+        self.target_pos = np.zeros(2)
 
-    def get_obs(self, data):
-        if self.env_id == 0:
-            obs = np.array(
-                [self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 1:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        elif self.env_id == 2:
-            obs = np.array([self.target_pos[0], self.target_pos[1], data.time])
-        elif self.env_id == 3:
-            obs = np.array([self.target_pos[0], data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
-                            data.xpos[2][0], data.xpos[2][1], data.xpos[2][2], \
-                            data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif self.env_id == 4:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2], data.time])
-        return obs
+        PPO_model_path = "./8955000.zip"
+        self.PPO_model = PPO.load(PPO_model_path)
+
+        self.env_id = env_id
+
+    def set_action(self, newaction):
+        for i in range(2):
+            self.action[i] = newaction[i]
+
+    def callback(self, model, data):
+        spinal_input = np.array([self.action[0], self.action[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        spinal_output, _states = self.PPO_model.predict(spinal_input)
+        for i in range(4):
+            data.ctrl[i] = spinal_output[i]
+
+    def get_action_space(self):
+        return spaces.Box(low=-2, high=2, shape=(2,), dtype=np.float32)

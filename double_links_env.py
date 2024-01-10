@@ -8,6 +8,22 @@ import os
 from control import *
 
 
+
+def get_obs(controller, data, env_id):
+    if env_id == 0:
+        obs = np.array([controller.target_pos[0], controller.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+    elif env_id == 1:
+        obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+    elif env_id == 2:
+        obs = np.array([controller.target_pos[0], controller.target_pos[1], data.time])
+    elif env_id == 3:
+        obs = np.array([controller.target_pos[0], data.xpos[3][0], data.xpos[3][1], data.xpos[3][2], \
+                        data.xpos[2][0], data.xpos[2][1], data.xpos[2][2], \
+                        data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+    elif env_id == 4:
+        obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2], data.time])
+    return obs
+
 class DoubleLinkEnv(gym.Env):
     """Custom Environment that follows gym interface."""
 
@@ -46,6 +62,8 @@ class DoubleLinkEnv(gym.Env):
             self.controller = FeedForwardGeneralController(env_id)
         elif self.control_type == Control_Type.FF_OPTIMAL:
             self.controller = AngleStiffnessController(env_id, enable_cocontraction=True)
+        elif self.control_type == Control_Type.PPO:
+            self.controller = PPOController(env_id)
 
         # Set callback
         mj.set_mjcb_control(self.env_callback)
@@ -64,15 +82,15 @@ class DoubleLinkEnv(gym.Env):
 
         self.num_of_targets = 0
         self.target_qs = []
-        for i in np.arange(0.2, 0.71, 0.5):
-            for j in np.arange(0.2, 0.71, 0.5):
+        for i in np.arange(-0.7, 0.71, 0.35):
+            for j in np.arange(-0.7, 0.71, 0.35):
                 self.target_qs.append(np.array([i, j]))
                 self.num_of_targets += 1
 
         self.target_iter = 0
 
         self.action_space = self.controller.get_action_space()
-        self.observation_space = self.controller.get_obs_space()
+        self.observation_space = self.get_obs_space(env_id)
 
     def step(self, action):
         if self.ticks >= self.episode_length - 1:
@@ -130,7 +148,7 @@ class DoubleLinkEnv(gym.Env):
                 vel_err = abs(self.data.qvel[0] + self.data.qvel[1] + self.data.qvel[2])
                 reward = -3 * pos_err - vel_err
 
-        observation = self.controller.get_obs(self.data)
+        observation = get_obs(self.controller, self.data, self.env_id)
         info = {}
 
         if self.rendering == True:
@@ -185,7 +203,7 @@ class DoubleLinkEnv(gym.Env):
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
 
-        observation = self.controller.get_obs(self.data)
+        observation = get_obs(self.controller, self.data, self.env_id)
         return observation
 
     def close(self):
@@ -247,3 +265,16 @@ class DoubleLinkEnv(gym.Env):
     def env_callback(self, model, data):
         self.controller.callback(model, data)
         evn_controller(self.env_id, model, data)
+
+    def get_obs_space(self):
+        if self.env_id == 0:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 1:
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+        elif self.env_id == 2:
+            return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
+        elif self.env_id == 3:
+            return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
+        elif self.env_id == 4:
+            return spaces.Box(low=-100, high=100, shape=(7,), dtype=np.float32)
+

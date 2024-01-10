@@ -5,10 +5,11 @@ import torch_net
 from mujoco.glfw import glfw
 import pickle
 from control import *
+import double_links_env
 
-m_target = np.array([0.1, 0.1])
+m_target = np.array([-0.7, -0.7])
 # m_target = np.array([-10, 0])
-modelid = "1704425113"
+modelid = "1704843986"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -165,13 +166,13 @@ def scroll(window, xoffset, yoffset):
 def init_controller(model,data):
     mj.mj_resetData(model, data)
     if env_id == 0:
-        data.qpos[0] = m_target[0]
-        data.qpos[1] = m_target[1]
-        mj.mj_forward(model, data)
-        m_target[0] = data.xpos[2][0]
-        m_target[1] = data.xpos[2][2]
-        mj.mj_resetData(model, data)
-        print(f"target: {m_target}")
+        # data.qpos[0] = m_target[0]
+        # data.qpos[1] = m_target[1]
+        # mj.mj_forward(model, data)
+        # m_target[0] = data.xpos[2][0]
+        # m_target[1] = data.xpos[2][2]
+        # mj.mj_resetData(model, data)
+        # print(f"target: {m_target}")
 
         controller.target_pos = np.array([m_target[0], m_target[1]])
     elif env_id == 1:
@@ -195,7 +196,7 @@ def callback(model, data):
     ticks += 1
     if data.time - global_timer >= dt_brain or data.time < 0.000101:
         if training_type == "PPO":
-            observation = controller.get_obs(data)
+            observation = double_links_env.get_obs(controller, data, env_id)
             action, _states = PPO_model.predict(observation)
             controller.set_action(action)
         elif training_type == "feedforward":
@@ -212,7 +213,7 @@ def callback(model, data):
 
         global_timer = data.time
 
-    # controller.callback(model, data)
+    controller.callback(model, data)
     evn_controller(env_id, model, data)
     # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
     # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
