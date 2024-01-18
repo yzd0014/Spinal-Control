@@ -9,7 +9,7 @@ import double_links_env
 
 m_target = np.array([-0.7, -0.7])
 # m_target = np.array([-10, 0])
-modelid = "1704843986"
+modelid = "1705611622"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -38,6 +38,7 @@ if training_type == "PPO":
     runid = runid[0]
     PPO_model_path0 = "./models/" + modelid + "/" + runid
     PPO_model = PPO.load(PPO_model_path0)
+    weights = PPO_model.get_parameters()
 elif training_type == "feedforward":
     feedforward_model_path0 = f"./models/{modelid}/{allmodels[-1]}"
     ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size, controller_params.output_size, control_type)
@@ -83,6 +84,8 @@ elif control_type == Control_Type.EP:
     controller = EPController(env_id)
 elif control_type == Control_Type.FF:
     controller = FeedForwardController(env_id)
+elif control_type == Control_Type.FF_OPTIMAL:
+    controller = AngleStiffnessController(env_id, enable_cocontraction=True)
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:

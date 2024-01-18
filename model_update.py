@@ -8,12 +8,15 @@ env = double_links_env.DoubleLinkEnv(control_type=control_type, env_id=env_id, c
 
 PPO_model_path = "./models/1705534107/585000.zip"
 PPO_model = PPO.load(PPO_model_path, env=env, device='cpu')
-weights = PPO_model.get_parameters()
-policy_weights = weights['policy']
-offset_tensor = torch.zeros([64, 64], dtype=torch.float64)
+PPO_parameters = PPO_model.get_parameters()
+policy_weights = PPO_parameters['policy']
+offset_tensor = torch.zeros([4, 64], dtype=torch.float64)
 init.xavier_uniform_(offset_tensor)
-offset_tensor = torch.mul(offset_tensor, 50)
-policy_weights['mlp_extractor.policy_net.2.weight'] = torch.add(policy_weights['mlp_extractor.policy_net.2.weight'], offset_tensor)
+offset_tensor = torch.mul(offset_tensor, 1)
+# policy_weights['mlp_extractor.policy_net.2.weight'] = torch.add(policy_weights['mlp_extractor.policy_net.2.weight'], offset_tensor)
+policy_weights['action_net.weight'] = torch.add(policy_weights['action_net.weight'], offset_tensor)
+PPO_model.set_parameters(load_path_or_dict=PPO_parameters, device='cpu')
+# PPO_parameters2 = PPO_model.get_parameters()
 
 models_dir = f"models/{int(time.time())}/"
 logdir = f"logs/{int(time.time())}-{control_type_dic[control_type]}/"
@@ -27,6 +30,7 @@ if not os.path.exists(logdir):
 reward_target = 100
 TIMESTEPS =  int(100/controller_params.brain_dt)
 iters = 0
+PPO_model.save(f"{models_dir}/{TIMESTEPS * iters}")
 while True:
     iters += 1
     PPO_model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, \

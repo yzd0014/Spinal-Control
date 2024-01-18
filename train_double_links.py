@@ -94,7 +94,7 @@ if __name__ == "__main__":
     print(model.policy)
 
     iters = 0
-    while True:
+    while False:
         iters += 1
         model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, \
                     tb_log_name=f"PPO")
@@ -102,3 +102,4 @@ if __name__ == "__main__":
         if mean_reward > reward_target:
             break
         model.save(f"{models_dir}/{TIMESTEPS * iters}")
+    pickle.dump(TIMESTEPS * iters, open(logdir + "num_timesteps.p", "wb"))
