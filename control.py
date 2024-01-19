@@ -312,7 +312,7 @@ class BaselineController(object):
             self.action[i] = newaction[i]
 
     def get_action_space(self):
-        return spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
+        return spaces.Box(low=0, high=0.8, shape=(4,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # PID Controller

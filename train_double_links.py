@@ -49,8 +49,8 @@ if __name__ == "__main__":
         reward_target = -1
         learning_rate = 0.0003
     elif env_id == INVERTED_PENDULUM:
-        n_steps = int(100/controller_params.brain_dt)
-        batch_size = n_steps
+        n_steps = int(200/controller_params.brain_dt)
+        batch_size = int(n_steps * 0.5)
         n_epochs = 20
         reward_target = 100
         learning_rate = 0.0003
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     print(model.policy)
 
     iters = 0
-    while False:
+    while True:
         iters += 1
         model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, \
                     tb_log_name=f"PPO")
@@ -102,4 +102,6 @@ if __name__ == "__main__":
         if mean_reward > reward_target:
             break
         model.save(f"{models_dir}/{TIMESTEPS * iters}")
-    pickle.dump(TIMESTEPS * iters, open(logdir + "num_timesteps.p", "wb"))
+    file = open(logdir + "num_timesteps.txt", "w")
+    file.write(str(TIMESTEPS * iters))
+    file.close()

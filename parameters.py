@@ -8,7 +8,7 @@ PUSH = 3
 SWING = 4
 
 # parameters that can be changed by users
-control_type = Control_Type.FF_OPTIMAL
+control_type = Control_Type.BASELINE
 env_id = INVERTED_PENDULUM
 training_type = "PPO"
 

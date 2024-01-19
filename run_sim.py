@@ -9,7 +9,7 @@ import double_links_env
 
 m_target = np.array([-0.7, -0.7])
 # m_target = np.array([-10, 0])
-modelid = "1705611622"
+modelid = "1705619670"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -179,12 +179,12 @@ def init_controller(model,data):
 
         controller.target_pos = np.array([m_target[0], m_target[1]])
     elif env_id == 1:
-        data.qpos[0] = 0.4
-        data.qpos[1] = -0.87
-        data.qpos[2] = -2.32
-        # data.qpos[0] = 0
-        # data.qpos[1] = 0
-        # data.qpos[2] = -2.95
+        # data.qpos[0] = 0.4
+        # data.qpos[1] = -0.87
+        # data.qpos[2] = -2.32
+        data.qpos[0] = 0
+        data.qpos[1] = 0
+        data.qpos[2] = -2.51
     elif env_id == 2:
         controller.target_pos = np.array([m_target[0], m_target[1]])
         model.eq_active[0] = 1
@@ -220,7 +220,7 @@ def callback(model, data):
     evn_controller(env_id, model, data)
     # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
     # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
-    # print(data.ctrl)
+    print(data.ctrl)
     # print(data.qpos[0], data.qpos[1])
 
     # if control_type != Control_Type.NEURON_OPTIMAL and control_type != Control_Type.PID:
