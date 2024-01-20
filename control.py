@@ -330,47 +330,24 @@ class PIDController():
     def callback(self, model, data):
         Kp = 20
         Ki = 0
-        Kd = 0
+        Kd = 1
 
         for i in range(2):
             self.q_error[i] += (self.action[i] - data.qpos[i]) * model.opt.timestep
             tao = Kp * (self.action[i] - data.qpos[i]) + Ki * self.q_error[i] * data.time - Kd * data.qvel[i]
 
-            # if tao > 0:
-            #     data.ctrl[2*i] = tao
-            # else:
-            #     data.ctrl[2 * i + 1] = -tao
-            if self.action[i] > 0:
-                data.ctrl[2 * i] = self.action[i]
-                data.ctrl[2 * i + 1] = 0
+            data.ctrl[2 * i] = 0
+            data.ctrl[2 * i + 1] = 0
+            if tao > 0:
+                data.ctrl[2*i] = tao
             else:
-                data.ctrl[2 * i] = 0
-                data.ctrl[2 * i + 1] = -self.action[i]
-
-    def get_obs(self, data, env_id):
-        if env_id == 0:
-            obs = np.array([self.target_pos[0], self.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        elif env_id == 1:
-            obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
-        return obs
-
-    def compute_physics_gradient(self, model, data_before_simulation, data_after_simulation, eps, num_of_steps, env_id, grad):
-        if env_id == 0:
-            num_joints = 2
-        elif env_id == 1:
-            num_joints = 3
-
-        old_action = self.q_bar.copy()
-        for i in range(2):
-            data_copy = copy.deepcopy(data_before_simulation)
-            action_temp = old_action.copy()
-            action_temp[i] += eps
-            self.set_action(action_temp)
-            for k in range(num_of_steps):
-                mj.mj_step(model, data_copy)
-            for j in range(num_joints):
-                grad[j][i] = (data_copy.qpos[j] - data_after_simulation.qpos[j]) / eps
-        self.set_action(old_action)
+                data.ctrl[2 * i + 1] = -tao
+            # if self.action[i] > 0:
+            #     data.ctrl[2 * i] = self.action[i]
+            #     data.ctrl[2 * i + 1] = 0
+            # else:
+            #     data.ctrl[2 * i] = 0
+            #     data.ctrl[2 * i + 1] = -self.action[i]
 
     def get_action_space(self):
         return spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)

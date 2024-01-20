@@ -1,34 +1,18 @@
-import numpy as np
-from stable_baselines3 import PPO
-import torch
-import torch_net
+import mujoco as mj
 from mujoco.glfw import glfw
-import pickle
-from control import *
+import numpy as np
+import os
+import parameters as params
+import double_links_env
+import control
 
-m_target = np.array([-0.23, 0.34])
-# m_target = np.array([-10, 0])
-cocontraction = 0
-modelid = "1702516376"
-#######################################################################
-training_type, control_type, env_id, controller_params = pickle.load(open("./models/" + modelid + "/" \
-                                         + "env_contr_params.p", "rb"))
-
-env_id = 0
-dt_brain = 0.1
-#load feedforward model
-feedforward_model_path0 = "./1702020394.pth" #wide range model
-ff_net = torch_net.FeedForwardNN(2, 32, 4, Control_Type.BASELINE)
-ff_net.load_state_dict(torch.load(feedforward_model_path0))
-ff_net.eval()
-# xml_path = 'double_links_fast.xml'
-xml_path = 'double_links_fast.xml'
-
+xml_path = 'double_links_fast.xml' #xml file (assumes this is in the same folder as this file)
 sim_pause = True
 next_frame = False
 simend = 5 #simulation time
 print_camera_config = 0 #set to 1 to print camera config
                         #this is useful for initializing view of the model)
+
 # For callback functions
 button_left = False
 button_middle = False
@@ -36,8 +20,27 @@ button_right = False
 lastx = 0
 lasty = 0
 
-# Neuron Controller
-controller = AngleStiffnessController(env_id, enable_cocontraction=False)
+m_target = np.array([0.2, -0.4])
+dt_brain = params.controller_params.brain_dt
+controller = control.PIDController()
+
+def init_controller(model,data):
+    # data.ctrl[4] = 1
+    mj.mj_forward(model, data)
+    controller.target_pos = m_target
+
+def controller_callback(model, data):
+    global global_timer
+
+    if data.time - global_timer >= dt_brain or data.time < 0.000101:
+        controller.set_action(m_target)
+        global_timer = data.time
+
+    controller.callback(model, data)
+    double_links_env.evn_controller(0, model, data)
+    # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
+    # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
+    print({f"{data.qpos}-{data.ctrl}"})
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
@@ -118,30 +121,6 @@ def scroll(window, xoffset, yoffset):
     mj.mjv_moveCamera(model, action, 0.0, -0.05 *
                       yoffset, scene, cam)
 
-def init_controller(model,data):
-    mj.mj_resetData(model, data)
-    mj.mj_forward(model, data)
-    controller.target_pos = np.array([m_target[0], m_target[1]])
-
-ep_error = 0
-def callback(model, data):
-    global global_timer, ep_error
-    if data.time - global_timer >= dt_brain or data.time < 0.000101:
-        # observation_tensor = torch.tensor(controller.target_pos, requires_grad=False, dtype=torch.float32)
-        # u_tensor = ff_net(observation_tensor.view(1, 2))
-        # u = np.zeros(4)
-        # for i in range(4):
-        #     u[i] = u_tensor[0][i].item()
-        controller.set_action(controller.target_pos)
-        # data.ctrl[0] = 0.23001
-        # data.ctrl[1] = 0.2
-        global_timer = data.time
-
-    controller.callback(model, data)
-    print(data.qpos)
-    # print(data.ctrl)
-
-
 #get the full path
 dirname = os.path.dirname(__file__)
 abspath = os.path.join(dirname + "/" + xml_path)
@@ -182,9 +161,9 @@ cam.lookat = np.array([0.0, -1, 2])
 
 #initialize the controller
 init_controller(model,data)
-#set the controller
-mj.set_mjcb_control(callback)
 
+#set the controller
+mj.set_mjcb_control(controller_callback)
 global_timer = data.time
 while not glfw.window_should_close(window):
     if sim_pause == False or next_frame == True:
