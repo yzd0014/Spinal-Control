@@ -1,6 +1,6 @@
 from control import *
 
-DOUBLE_PENDULUM_DAMPING = -1
+SINGLE_PENDULUM = -1
 DOUBLE_PENDULUM = 0
 INVERTED_PENDULUM = 1
 TOSS = 2
@@ -42,7 +42,7 @@ elif env_id == PUSH:
 elif env_id == SWING:
     xml = 'inverted_pendulum_fast.xml'
     episode_length_in_seconds = 1.5
-else:
+elif env_id == SINGLE_PENDULUM:
     xml = 'single_link.xml'
     episode_length_in_seconds = 10
 
@@ -73,6 +73,6 @@ if training_type == "feedforward":
         controller = PIDController()
     elif control_type == Control_Type.EP:
         controller = EPController()
-    else:
+    elif control_type == SINGLE_PENDULUM:
         controller = TemplateController(controller_params, env_id)
     mj.set_mjcb_control(controller.callback)
