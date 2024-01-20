@@ -6,10 +6,11 @@ from mujoco.glfw import glfw
 import pickle
 from control import *
 import double_links_env
+from stable_baselines3 import SAC
 
 m_target = np.array([-0.7, -0.7])
 # m_target = np.array([-10, 0])
-modelid = "1705619670"
+modelid = "1705752303"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -19,6 +20,7 @@ training_type, control_type, env_id, controller_params = pickle.load(open("./mod
                                          + "env_contr_params.p", "rb"))
 episode_length = controller_params.episode_length_in_ticks
 dt_brain = controller_params.brain_dt
+training_type = "SAC"
 
 # For saving data
 data_dir = "datalog"
@@ -33,12 +35,13 @@ allmodels = sorted(os.listdir(models_dir))
 allmodels.sort(key=lambda fn: \
     os.path.getmtime(os.path.join(models_dir, fn)))
 
+runid = allmodels[-1].split(".")
+runid = runid[0]
+model_path = "./models/" + modelid + "/" + runid
 if training_type == "PPO":
-    runid = allmodels[-1].split(".")
-    runid = runid[0]
-    PPO_model_path0 = "./models/" + modelid + "/" + runid
-    PPO_model = PPO.load(PPO_model_path0)
-    weights = PPO_model.get_parameters()
+    RL_model = PPO.load(model_path)
+elif training_type == "SAC":
+    RL_model = SAC.load(model_path)
 elif training_type == "feedforward":
     feedforward_model_path0 = f"./models/{modelid}/{allmodels[-1]}"
     ff_net = torch_net.FeedForwardNN(controller_params.input_size, controller_params.hidden_size, controller_params.output_size, control_type)
@@ -179,12 +182,12 @@ def init_controller(model,data):
 
         controller.target_pos = np.array([m_target[0], m_target[1]])
     elif env_id == 1:
-        # data.qpos[0] = 0.4
-        # data.qpos[1] = -0.87
-        # data.qpos[2] = -2.32
-        data.qpos[0] = 0
-        data.qpos[1] = 0
-        data.qpos[2] = -2.51
+        data.qpos[0] = 0.4
+        data.qpos[1] = -0.87
+        data.qpos[2] = -2.32
+        # data.qpos[0] = 0
+        # data.qpos[1] = 0
+        # data.qpos[2] = -2.51
     elif env_id == 2:
         controller.target_pos = np.array([m_target[0], m_target[1]])
         model.eq_active[0] = 1
@@ -198,9 +201,9 @@ def callback(model, data):
     global global_timer, ep_error, ticks
     ticks += 1
     if data.time - global_timer >= dt_brain or data.time < 0.000101:
-        if training_type == "PPO":
+        if training_type == "PPO" or training_type == "SAC":
             observation = double_links_env.get_obs(controller, data, env_id)
-            action, _states = PPO_model.predict(observation)
+            action, _states = RL_model.predict(observation)
             controller.set_action(action)
         elif training_type == "feedforward":
             # observation = controller.get_obs(data, env_id)

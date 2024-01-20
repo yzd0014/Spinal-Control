@@ -302,7 +302,7 @@ class BaselineController(object):
         self.action = np.zeros(4)
         self.target_pos = np.zeros(2)
         self.env_id = env_id
-        self.joint_num = 1
+        self.joint_num = 2
 
     def callback(self, model, data):
         for i in range(self.joint_num * 2):
@@ -451,7 +451,7 @@ class TemplateController(object):
 class AngleStiffnessController(object):
     def __init__(self, env_id, enable_cocontraction=False):
         self.enable_cocontraction = enable_cocontraction
-        self.joint_num = 1
+        self.joint_num = 2
         if self.enable_cocontraction:
             if self.joint_num == 2:
                 self.action_dim = 4

@@ -75,42 +75,44 @@ if __name__ == "__main__":
         learning_rate = 0.0002
 
     TIMESTEPS = n_steps
-    # model = PPO('MlpPolicy', env, \
-    #             policy_kwargs=policy_kwargs, \
-    #             device='cpu', \
-    #             n_steps=n_steps, \
-    #             batch_size=batch_size, \
-    #             n_epochs=n_epochs, \
-    #             learning_rate=learning_rate, \
-    #             verbose=1, \
-    #             tensorboard_log=logdir)
-
-    model = SAC("MlpPolicy", env,  \
-                device='cpu', \
-                batch_size = 256, \
-                train_freq = (1,"episode"), \
-                buffer_size = 1000000, \
-                tau = 0.005, \
-                gamma = 0.99, \
-                target_update_interval = 1, \
-                learning_starts = 500, \
-                use_sde = True, \
-                use_sde_at_warmup = True, \
-                sde_sample_freq = 64, \
-                verbose=1, \
-                gradient_steps = -1, \
-                tensorboard_log=logdir)
+    if training_type == "PPO":
+        model = PPO('MlpPolicy', env, \
+                    policy_kwargs=policy_kwargs, \
+                    device='cpu', \
+                    n_steps=n_steps, \
+                    batch_size=batch_size, \
+                    n_epochs=n_epochs, \
+                    learning_rate=learning_rate, \
+                    verbose=1, \
+                    tensorboard_log=logdir)
+    elif training_type == "SAC":
+        model = SAC("MlpPolicy", env,  \
+                    device='cpu', \
+                    batch_size = 256, \
+                    train_freq = (1,"episode"), \
+                    buffer_size = 1000000, \
+                    tau = 0.005, \
+                    gamma = 0.99, \
+                    target_update_interval = 1, \
+                    learning_starts = 500, \
+                    use_sde = True, \
+                    use_sde_at_warmup = True, \
+                    sde_sample_freq = 64, \
+                    verbose=1, \
+                    gradient_steps = -1, \
+                    tensorboard_log=logdir)
     print(model.policy)
 
     iters = 0
     while True:
         iters += 1
         model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, \
-                    tb_log_name=f"PPO")
+                    tb_log_name=training_type)
         mean_reward = safe_mean([ep_info["r"] for ep_info in model.ep_info_buffer])
+        model.save(f"{models_dir}/{TIMESTEPS * iters}")
         if mean_reward > reward_target:
             break
-        model.save(f"{models_dir}/{TIMESTEPS * iters}")
+
     file = open(logdir + "num_timesteps.txt", "w")
     file.write(str(TIMESTEPS * iters))
     file.close()
