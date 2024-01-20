@@ -49,8 +49,8 @@ if __name__ == "__main__":
         reward_target = -1
         learning_rate = 0.0003
     elif env_id == INVERTED_PENDULUM:
-        n_steps = int(200/controller_params.brain_dt)
-        batch_size = int(n_steps * 0.5)
+        n_steps = int(100/controller_params.brain_dt)
+        batch_size = int(n_steps)
         n_epochs = 20
         reward_target = 100
         learning_rate = 0.0003
@@ -75,22 +75,31 @@ if __name__ == "__main__":
         learning_rate = 0.0002
 
     TIMESTEPS = n_steps
-    model = PPO('MlpPolicy', env, \
-                policy_kwargs=policy_kwargs, \
-                device='cpu', \
-                n_steps=n_steps, \
-                batch_size=batch_size, \
-                n_epochs=n_epochs, \
-                learning_rate=learning_rate, \
-                verbose=1, \
-                tensorboard_log=logdir)
-
-    # model = SAC("MlpPolicy", env,  \
+    # model = PPO('MlpPolicy', env, \
+    #             policy_kwargs=policy_kwargs, \
     #             device='cpu', \
-    #             batch_size = controller_params.episode_length_in_ticks, \
-    #             train_freq = controller_params.episode_length_in_ticks, \
-    #             verbose=1,\
+    #             n_steps=n_steps, \
+    #             batch_size=batch_size, \
+    #             n_epochs=n_epochs, \
+    #             learning_rate=learning_rate, \
+    #             verbose=1, \
     #             tensorboard_log=logdir)
+
+    model = SAC("MlpPolicy", env,  \
+                device='cpu', \
+                batch_size = 256, \
+                train_freq = (1,"episode"), \
+                buffer_size = 1000000, \
+                tau = 0.005, \
+                gamma = 0.99, \
+                target_update_interval = 1, \
+                learning_starts = 500, \
+                use_sde = True, \
+                use_sde_at_warmup = True, \
+                sde_sample_freq = 64, \
+                verbose=1, \
+                gradient_steps = -1, \
+                tensorboard_log=logdir)
     print(model.policy)
 
     iters = 0

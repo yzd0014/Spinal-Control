@@ -8,7 +8,7 @@ PUSH = 3
 SWING = 4
 
 # parameters that can be changed by users
-control_type = Control_Type.PID
+control_type = Control_Type.BASELINE
 env_id = INVERTED_PENDULUM
 training_type = "PPO"
 
@@ -43,7 +43,8 @@ elif env_id == SWING:
     xml = 'inverted_pendulum_fast.xml'
     episode_length_in_seconds = 1.5
 elif env_id == SINGLE_PENDULUM:
-    xml = 'single_link.xml'
+    # xml = 'single_link.xml'
+    xml = 'muscle_control_narrow.xml'
     episode_length_in_seconds = 10
 
 controller_params = ControllerParams(alpha=0.4691358024691358, \

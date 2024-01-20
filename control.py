@@ -302,17 +302,18 @@ class BaselineController(object):
         self.action = np.zeros(4)
         self.target_pos = np.zeros(2)
         self.env_id = env_id
+        self.joint_num = 1
 
     def callback(self, model, data):
-        # self.get_obs(data)
-        data.ctrl[0:4] = self.action
+        for i in range(self.joint_num * 2):
+            data.ctrl[i] = self.action[i]
 
     def set_action(self, newaction):
-        for i in range(4):
+        for i in range(self.joint_num * 2):
             self.action[i] = newaction[i]
 
     def get_action_space(self):
-        return spaces.Box(low=0, high=0.8, shape=(4,), dtype=np.float32)
+        return spaces.Box(low=0, high=1, shape=(self.joint_num * 2,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # PID Controller
@@ -450,10 +451,17 @@ class TemplateController(object):
 class AngleStiffnessController(object):
     def __init__(self, env_id, enable_cocontraction=False):
         self.enable_cocontraction = enable_cocontraction
+        self.joint_num = 1
         if self.enable_cocontraction:
-            self.action_dim = 4
+            if self.joint_num == 2:
+                self.action_dim = 4
+            elif self.joint_num == 1:
+                self.action_dim = 2
         else:
-            self.action_dim = 2
+            if self.joint_num == 2:
+                self.action_dim = 2
+            elif self.joint_num == 1:
+                self.action_dim = 1
 
         self.action = np.zeros(self.action_dim)
         self.target_pos = np.zeros(2)
@@ -466,30 +474,33 @@ class AngleStiffnessController(object):
         self.env_id = env_id
 
     def set_action(self, newaction):
-
         for i in range(self.action_dim):
             self.action[i] = newaction[i]
 
     def callback(self, model, data):
-        for i in range(2):
+        for i in range(self.joint_num):
             if self.enable_cocontraction:
-                self.cocontraction[i] = self.action[i + 2]
-            if self.action[i] >= 0:
-                action_tensor = torch.tensor(np.array([self.action[i], self.cocontraction[i]]), dtype=torch.float32)
+                self.cocontraction[i] = self.action[i*2+1]
+            if self.action[i*2] >= 0:
+                action_tensor = torch.tensor(np.array([self.action[i*2], self.cocontraction[i]]), dtype=torch.float32)
                 u_tensor = self.ff_net(action_tensor.view(1, 2))
                 data.ctrl[i * 2] = u_tensor[0][0].item() + self.cocontraction[i]
                 data.ctrl[i * 2 + 1] = self.cocontraction[i]
             else:
-                action_tensor = torch.tensor(np.array([-self.action[i], self.cocontraction[i]]), dtype=torch.float32)
+                action_tensor = torch.tensor(np.array([-self.action[i*2], self.cocontraction[i]]), dtype=torch.float32)
                 u_tensor = self.ff_net(action_tensor.view(1, 2))
                 data.ctrl[i * 2] = self.cocontraction[i]
                 data.ctrl[i * 2 + 1] = u_tensor[0][0].item() + self.cocontraction[i]
 
     def get_action_space(self):
         if self.enable_cocontraction:
-            return spaces.Box(low=np.array([-5, -5, 0, 0]), high=np.array([5, 5, 1, 1]),  dtype=np.float32)
+            if self.joint_num == 2:
+                return spaces.Box(low=np.array([-5, 0, -5, 0]), high=np.array([5, 1, 5, 1]),  dtype=np.float32)
+            elif self.joint_num == 1:
+                return spaces.Box(low=np.array([-5, 0]), high=np.array([5, 1]),  dtype=np.float32)
         else:
-            return spaces.Box(low=-5, high=5, shape=(2,), dtype=np.float32)
+            return spaces.Box(low=-5, high=5, shape=(self.joint_num,), dtype=np.float32)
+
 
 # -----------------------------------------------------------------------------
 # Feedforward Controller

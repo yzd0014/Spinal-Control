@@ -1,5 +1,5 @@
 <mujoco>
-    <option timestep="0.001">
+    <option timestep="0.005">
 		<flag gravity="disable"/>
 	</option>
     <size nuserdata="3"/>
