@@ -10,7 +10,7 @@ SWING = 4
 # parameters that can be changed by users
 control_type = Control_Type.FF_OPTIMAL
 env_id = INVERTED_PENDULUM
-training_type = "PPO"
+training_type = "SAC"
 
 if env_id == DOUBLE_PENDULUM:
     controller_input_size = 2

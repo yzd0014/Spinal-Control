@@ -27,8 +27,6 @@ if __name__ == "__main__":
         os.makedirs(logdir)
 
     env = double_links_env.DoubleLinkEnv(control_type=control_type, env_id=env_id, c_params=controller_params)#this will also update controller_params
-
-    training_type = "PPO"
     pickle.dump([training_type, \
                 control_type, \
                  env_id, \
@@ -38,9 +36,7 @@ if __name__ == "__main__":
     num_episodes = env.get_num_of_targets()
     print(f"total number of targets: {num_episodes}")
 
-    policy_kwargs = dict(activation_fn=th.nn.Tanh, \
-                         net_arch=dict(pi=[64, 64], \
-                                       vf=[64, 64]))
+
     reward_target = 0
     if env_id == DOUBLE_PENDULUM:
         n_steps = controller_params.episode_length_in_ticks * num_episodes
@@ -76,6 +72,9 @@ if __name__ == "__main__":
 
     TIMESTEPS = n_steps
     if training_type == "PPO":
+        policy_kwargs = dict(activation_fn=th.nn.ReLU, \
+                             net_arch=dict(pi=[32, 32], \
+                                           vf=[64, 64]))
         model = PPO('MlpPolicy', env, \
                     policy_kwargs=policy_kwargs, \
                     device='cpu', \
@@ -86,7 +85,11 @@ if __name__ == "__main__":
                     verbose=1, \
                     tensorboard_log=logdir)
     elif training_type == "SAC":
-        model = SAC("MlpPolicy", env,  \
+        policy_kwargs = dict(activation_fn=th.nn.ReLU, \
+                             net_arch=dict(pi=[4, 4], \
+                                           qf=[16, 16]))
+        model = SAC("MlpPolicy", env, \
+                    policy_kwargs=policy_kwargs, \
                     device='cpu', \
                     batch_size = 256, \
                     train_freq = (1,"episode"), \
