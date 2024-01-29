@@ -72,8 +72,8 @@ if __name__ == "__main__":
 
     TIMESTEPS = n_steps
     if training_type == "PPO":
-        policy_kwargs = dict(activation_fn=th.nn.ReLU, \
-                             net_arch=dict(pi=[32, 32], \
+        policy_kwargs = dict(activation_fn=th.nn.Tanh, \
+                             net_arch=dict(pi=[64, 64], \
                                            vf=[64, 64]))
         model = PPO('MlpPolicy', env, \
                     policy_kwargs=policy_kwargs, \
