@@ -13,7 +13,3 @@ class IirFilt(object):
     out = (np.dot(self.x,self.b) - np.dot(self.y[0:-1],self.a[1:]))/self.a[0]
     self.y = np.concatenate((np.array([out]),self.y[0:-1]))
     return out
-
-  def reset(self):
-    self.x = np.zeros(self.n)
-    self.y = np.zeros(self.n)

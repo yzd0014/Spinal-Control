@@ -5,7 +5,7 @@ from stable_baselines3 import TD3
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.monitor import Monitor
 import os
-import double_links_env
+import double_links_ballistic_env
 import time
 import pickle
 
@@ -24,14 +24,13 @@ if __name__=="__main__":
     os.makedirs(logdir)
 
   pickle.dump([control_type,
-               episode_sec,
+               episode_length,
                num_episodes,
                fs_brain_factor,
                controller_params],
                open(models_dir + "env_contr_params.p", "wb"))
 
-  env = double_links_env.DoubleLinkEnv(control_type=control_type,
-                                episode_sec=episode_sec,
+  env = double_links_ballistic_env.DoubleLinkEnv(control_type=control_type,
                                 fs_brain_factor=fs_brain_factor,
                                 c_params=controller_params)
 
@@ -42,20 +41,16 @@ if __name__=="__main__":
 
   m_steps = episode_length*num_episodes
   TIMESTEPS = m_steps
+
+  print(episode_length)
+  print(num_episodes)
+  exit()
   model = PPO('MlpPolicy', env,
-                learning_rate=0.0003,
-                n_steps=m_steps,
-                batch_size=episode_length,
-                n_epochs=10,
-                gamma=0.99,
-                gae_lambda=0.95,
-                clip_range=0.2,
-                clip_range_vf=None,
-                ent_coef=0,
-                vf_coef=0.5,
-                target_kl=None,
-                use_sde=False,
                 policy_kwargs=policy_kwargs,
+                device='auto',
+                n_steps=m_steps*10,
+                batch_size=10,
+                n_epochs=10,
                 verbose=0,
                 tensorboard_log=logdir)
   print(model.policy)

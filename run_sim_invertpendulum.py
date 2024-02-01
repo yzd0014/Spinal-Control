@@ -1,5 +1,5 @@
 from stable_baselines3 import PPO
-from stable_baselines3 import TD3
+from stable_baselines3 import SAC
 import mujoco as mj
 from mujoco.glfw import glfw
 import numpy as np
@@ -12,7 +12,7 @@ from control import *
 
 global_timer = 0
 
-def run_sim(modelid,target):
+def run_sim(modelid):
 
   # Load Params
   print("\n\n")
@@ -41,10 +41,7 @@ def run_sim(modelid,target):
   runid = allmodels[-1].split(".")
   runid = runid[0]
 
-
-
-
-  xml_path = 'double_links_fast.xml'
+  xml_path = 'inverted_pendulum_fast.xml'
 
   simend = 5 #simulation time
   print_camera_config = 0 #set to 1 to print camera config
@@ -61,22 +58,24 @@ def run_sim(modelid,target):
   def callback(model, data):
     global global_timer
     if data.time - global_timer >= dt_brain:
-      observation = np.concatenate(([target[0], target[1]], \
-                                    controller.obs, \
-                                    np.array([0,0])))
-      action, _states = PPO_model.predict(observation)
+      observation = np.concatenate((controller.obs,
+                                    np.array([data.qpos[-1],
+                                              data.qvel[-1],
+                                              0, 0])))
+      action, _states = rl_model.predict(observation)
       controller.set_action(action)
       global_timer = data.time
+      print(str(data.time) + '\n')
 
     controller.callback(model,data)
-    data2write = np.concatenate(([target[0],target[1]], \
-                                data.qpos, \
-                                controller.obs, \
-                                data.actuator_length, \
-                                data.ctrl, \
-                                controller.action))
-    datastr = ','.join(str(x) for x in data2write)
-    fdata.write(datastr + '\n')
+    #data2write = np.concatenate(([target[0],target[1]], \
+    #                            data.qpos, \
+    #                            controller.obs, \
+    #                            data.actuator_length, \
+    #                            data.ctrl, \
+    #                            controller.action))
+    #datastr = ','.join(str(x) for x in data2write)
+    #fdata.write(datastr + '\n')
 
 
   #get the full path
@@ -89,6 +88,8 @@ def run_sim(modelid,target):
   data = mj.MjData(model)                # MuJoCo data
   cam = mj.MjvCamera()                        # Abstract camera
   opt = mj.MjvOption()                        # visualization options
+
+  data.qpos[2] = np.pi
 
   # Init GLFW, create window, make OpenGL context current, request v-sync
   glfw.init()
@@ -114,8 +115,13 @@ def run_sim(modelid,target):
 
   #load modes for each controller
   w = -0.48
-  PPO_model_path0 = "./models/" + modelid + "/" + runid
-  PPO_model = PPO.load(PPO_model_path0)
+  rl_model_path = "./models/" + modelid + "/" + runid
+
+  if controller_params.RL_type == "PPO":
+    rl_model = PPO.load(rl_model_path)
+  elif controller_params.RL_type == "SAC":
+    rl_model = SAC.load(rl_model_path)
+
 
   #set the controller
   mj.set_mjcb_control(callback)
@@ -140,7 +146,6 @@ def run_sim(modelid,target):
   fdata.close()
 
 def main(argv):
-  target = np.array([0.45, -0.45])
   modelid = ''
   opts, args = getopt.getopt(argv,"m:t")
   for opt, arg in opts:
@@ -149,7 +154,7 @@ def main(argv):
     elif opt == '-t':
       target = arg
 
-  run_sim(modelid,target)
+  run_sim(modelid)
 
 if __name__=="__main__":
   main(sys.argv[1:])

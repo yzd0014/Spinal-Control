@@ -7,11 +7,8 @@ import os
 
 from control import *
 
-targetMax = 0.85
-targetMin = -0.85
 
-
-class DoubleLinkEnv(gym.Env):
+class InvertPendulumEnv(gym.Env):
     """Custom Environment that follows gym interface."""
     def __init__(self,  \
                   control_type = Control_Type.NEURON, \
@@ -19,7 +16,7 @@ class DoubleLinkEnv(gym.Env):
                   episode_sec = 1, \
                   fs_brain_factor = 20, \
                   c_params = None):
-      super(DoubleLinkEnv, self).__init__()
+      super(InvertPendulumEnv, self).__init__()
 
       # Env parameters
       self.control_type = control_type
@@ -27,21 +24,20 @@ class DoubleLinkEnv(gym.Env):
       self.dt_brain = (1.0/c_params.fs) * fs_brain_factor
       self.c_params = c_params
 
-
       self.controller = InitController(self.control_type,c_params)
+      self.action_space = self.controller.get_action_space()
+      self.observation_space = self.controller.get_obs_space()
 
       # Other stuff
       self.instance_id = instance_id
-      self.rendering = False
+      self.rendering = False;
       self.init_mujoco()
+      self.data.qpos[2] = np.pi
       if self.rendering == True:
        self.init_window()
 
       #self.target = self.gen_random_target();
-      self.target = np.array([0.45, -0.45])
-      self.action_space = self.controller.get_action_space()
-      self.observation_space = self.controller.get_obs_space()
-
+      #self.target = np.array([0.45, -0.45])
     def step(self, action):
       self.controller.set_action(action)
       time_prev = self.data.time
@@ -49,14 +45,15 @@ class DoubleLinkEnv(gym.Env):
       loop_reward = 0
       while self.data.time - time_prev < self.dt_brain:
         mj.mj_step(self.model, self.data)
-        position_error = np.linalg.norm(self.data.qpos - self.target)
-        #loop_reward += -position_error + (position_error<0.001)/position_error
-        loop_reward += -position_error
+        #loop_reward += 1
 
-      reward = loop_reward
-      observation = np.concatenate((self.target, \
-                                    self.controller.obs, \
-                                    np.array([0,0])))
+      reward = self.data.time
+      #reward = 1
+
+      observation = np.concatenate((self.controller.obs,
+                                    np.array([self.data.qpos[-1],
+                                      self.data.qvel[-1],0,0])))
+
 
       if self.rendering == True:
         mj.mjv_updateScene(self.model, self.data, self.opt, None, \
@@ -66,8 +63,11 @@ class DoubleLinkEnv(gym.Env):
         glfw.swap_buffers(self.window)
         glfw.poll_events()
 
-      if self.data.time >= self.episode_sec:
+      if abs(sum(self.data.qpos) - np.pi) > 0.25*np.pi:
         self.done = True
+      #elif self.data.time > 100:
+      #  reward += 100
+      #  self.done = True
 
       info = {}
       return observation, reward, self.done, info
@@ -75,12 +75,11 @@ class DoubleLinkEnv(gym.Env):
     def reset(self):
       self.done = False
       self.ticks = 0
-      #self.target = self.gen_random_target()
-      self.target = np.array([0.45, -0.45])
       mj.mj_resetData(self.model, self.data)
       mj.mj_forward(self.model, self.data)
-      observation = np.concatenate([self.target, \
-                                    self.data.qpos, self.data.qvel, \
+      self.data.qpos[2] = np.pi
+      observation = np.concatenate([self.data.qpos,
+                                    self.data.qvel,
                                     np.array([0,0])])
       return observation
 
@@ -91,7 +90,7 @@ class DoubleLinkEnv(gym.Env):
           glfw.terminate()
 
     def init_mujoco(self):
-      xml_path = 'double_links_fast.xml'
+      xml_path = 'inverted_pendulum_fast.xml'
       dirname = os.path.dirname(__file__)
       abspath = os.path.join(dirname + "/" + xml_path)
       xml_path = abspath
@@ -122,11 +121,3 @@ class DoubleLinkEnv(gym.Env):
 
       viewport_width, viewport_height = glfw.get_framebuffer_size(self.window)
       self.viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
-
-    def get_num_of_targets(self):
-      return self.num_of_targets;
-
-    def gen_random_target(self):
-      return np.array([np.random.uniform(targetMin,targetMax), \
-                        np.random.uniform(targetMin,targetMax)])
-

@@ -8,16 +8,28 @@ import os
 import double_links_env
 import time
 import pickle
+import sys
 
 from control import *
 from parameters import *
 
 # model to load
-modelid = "1694199502"
+#modelid = "1694296421"
+#modelid = "1694296257"
 
-if __name__=="__main__":
+
+def cont_train_double_links(modelid):
 
   models_dir = "./models/" + modelid + "/"
+  print("\n\n")
+  print("loading env and control parameters " + models_dir + "\n")
+
+  control_type, \
+  episode_length, \
+  num_episodes, \
+  fs_brain_factor, \
+  controller_params  = pickle.load(open(models_dir \
+                                    + "env_contr_params.p", "rb"))
   logdir = "./logs/" + modelid + f"-{control_type_dic[control_type]}/"
 
   # Find most recent model
@@ -28,15 +40,6 @@ if __name__=="__main__":
   runid = allmodels[-1].split(".")
   runid = runid[0]
 
-  print("\n\n")
-  print("loading env and control parameters " + models_dir + "\n")
-
-  control_type, \
-  episode_length, \
-  fs_brain_factor, \
-  controller_params  = pickle.load(open(models_dir \
-                                    + "env_contr_params.p", "rb"))
-
   print("loading " + models_dir + runid + "\n")
   print("logging " + logdir + "\n")
 
@@ -44,10 +47,6 @@ if __name__=="__main__":
                                 fs_brain_factor=fs_brain_factor, \
                                 c_params=controller_params)
 
-  num_episodes = env.get_num_of_targets()
-  print(f"total number of targets: {num_episodes}")
-
-  num_episodes = env.get_num_of_targets()
   m_steps = episode_length*num_episodes
   TIMESTEPS = m_steps
 
@@ -61,3 +60,6 @@ if __name__=="__main__":
                 tb_log_name=f"PPO",progress_bar=True)
     model.save(f"{models_dir}{TIMESTEPS*iters}")
 
+
+if __name__=="__main__":
+  cont_train_double_links(*sys.argv[1:])
