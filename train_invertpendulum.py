@@ -7,6 +7,7 @@ import os
 import invertpendulum_env
 import time
 import pickle
+from stable_baselines3.common.utils import safe_mean
 
 from control import *
 from parameters import *
@@ -36,18 +37,20 @@ if __name__=="__main__":
 
 
   m_steps = episode_length*num_episodes
+  m_steps = 1000
   TIMESTEPS = m_steps
 
   # PPO -----------------------------------------------------------------------
   if controller_params.RL_type == "PPO":
     policy_kwargs = dict(activation_fn=th.nn.Tanh,
-                          net_arch=dict(pi=[256, 256],
-                          vf=[256, 256]))
+                          net_arch=dict(pi=[64, 64],
+                          vf=[64, 64]))
     model = PPO('MlpPolicy', env,
+                  device='cpu',
                   learning_rate=0.0003,
                   n_steps=m_steps,
-                  batch_size=episode_length,
-                  n_epochs=10,
+                  batch_size=m_steps,
+                  n_epochs=20,
                   gamma=0.99,
                   gae_lambda=0.95,
                   clip_range=0.2,
@@ -57,7 +60,7 @@ if __name__=="__main__":
                   target_kl=None,
                   use_sde=False,
                   policy_kwargs=policy_kwargs,
-                  verbose=0,
+                  verbose=1,
                   tensorboard_log=logdir)
 
 
@@ -78,15 +81,19 @@ if __name__=="__main__":
                 use_sde = True,
                 use_sde_at_warmup = True,
                 sde_sample_freq=64,
-                verbose=0,
+                verbose=1,
                 gradient_steps = -1,
                 tensorboard_log=logdir)
 
   print(model.policy)
+  reward_target = 100
 
   iters = 0
   while True:
     iters += 1
     model.learn(total_timesteps=TIMESTEPS,reset_num_timesteps=False,
-                tb_log_name=controller_params.RL_type,progress_bar=True)
+                tb_log_name=controller_params.RL_type,progress_bar=False)
     model.save(f"{models_dir}/{TIMESTEPS * iters}")
+    mean_reward = safe_mean([ep_info["r"] for ep_info in model.ep_info_buffer])
+    if mean_reward > reward_target:
+        break

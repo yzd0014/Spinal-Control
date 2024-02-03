@@ -454,7 +454,8 @@ class NeuronEP2Controller(object):
     q1_est = self.fq1.filter(data.qpos[1])
     v0_est = self.fv0.filter(data.qvel[0])
     v1_est = self.fv1.filter(data.qvel[1])
-    self.obs = np.array([q0_est,q1_est,v0_est,v1_est])
+    # self.obs = np.array([q0_est,q1_est,v0_est,v1_est])
+    self.obs = np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[0]])
 
   def set_action(self,newaction):
     self.action = newaction
@@ -578,8 +579,9 @@ class BaselineController(object):
     q0_est = self.fq0.filter(data.qpos[0])
     q1_est = self.fq1.filter(data.qpos[1])
     v0_est = self.fv0.filter(data.qvel[0])
-    v1_est = self.fv1.filter(data.qvel[1])
-    self.obs = np.array([q0_est,q1_est,v0_est,v1_est])
+    v1_est = self.fv1.filter(data.qvel[0])
+    # self.obs = np.array([q0_est,q1_est,v0_est,v1_est])
+    self.obs = np.array([data.qpos[0], data.qpos[1], data.qvel[0], data.qvel[0]])
 
   def get_action_space(self):
     return  spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
