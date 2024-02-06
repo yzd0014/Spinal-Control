@@ -23,7 +23,6 @@ class InvertPendulumEnv(gym.Env):
       self.episode_sec = episode_sec
       self.dt_brain = (1.0/c_params.fs) * fs_brain_factor
       self.c_params = c_params
-      self.episode_length = 120 / self.dt_brain
 
       self.controller = InitController(self.control_type,c_params)
       self.action_space = self.controller.get_action_space()
@@ -33,25 +32,23 @@ class InvertPendulumEnv(gym.Env):
       self.instance_id = instance_id
       self.rendering = False;
       self.init_mujoco()
-      self.ticks = 0
+      self.data.qpos[2] = np.pi
       if self.rendering == True:
        self.init_window()
 
       #self.target = self.gen_random_target();
       #self.target = np.array([0.45, -0.45])
     def step(self, action):
-      if self.ticks >= self.episode_length - 1:
-        self.done = True
-
       self.controller.set_action(action)
       time_prev = self.data.time
+
       loop_reward = 0
       while self.data.time - time_prev < self.dt_brain:
         mj.mj_step(self.model, self.data)
         #loop_reward += 1
 
-      # reward = self.data.time
-      reward = self.dt_brain
+      reward = self.data.time
+      #reward = 1
 
       observation = np.concatenate((self.controller.obs,
                                     np.array([self.data.qpos[-1],
@@ -66,10 +63,12 @@ class InvertPendulumEnv(gym.Env):
         glfw.swap_buffers(self.window)
         glfw.poll_events()
 
-      if abs(abs(sum(self.data.qpos)) - np.pi) > 0.25*np.pi:
+      if abs(sum(self.data.qpos) - np.pi) > 0.25*np.pi:
         self.done = True
+      #elif self.data.time > 100:
+      #  reward += 100
+      #  self.done = True
 
-      self.ticks += 1
       info = {}
       return observation, reward, self.done, info
 
@@ -77,11 +76,8 @@ class InvertPendulumEnv(gym.Env):
       self.done = False
       self.ticks = 0
       mj.mj_resetData(self.model, self.data)
-      self.data.qpos[0] = 0.4
-      self.data.qpos[1] = -0.87
-      self.data.qpos[2] = -2.32
       mj.mj_forward(self.model, self.data)
-      # self.data.qpos[2] = np.pi
+      self.data.qpos[2] = np.pi
       observation = np.concatenate([self.data.qpos,
                                     self.data.qvel,
                                     np.array([0,0])])

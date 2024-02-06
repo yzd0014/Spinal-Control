@@ -6,7 +6,7 @@ import pickle
 fs = 200;
 
 # loop factor for brain sampling
-fs_brain_factor = 20
+fs_brain_factor = 10
 fc = (fs/fs_brain_factor)/2
 
 # Choose controller here
@@ -54,17 +54,17 @@ fc = (fs/fs_brain_factor)/2
 #                                   fs=fs)
 
 # Neuron Fully Connected EP Parameters
-# control_type = Control_Type.NEURON_EP2
-# controller_params = NeuronEP2Params(gamma=1,
-#                                    fc=fc,
-#                                    fs=fs)
-# controller_params.RL_type = "PPO"
-
-# Baseline models
-control_type = Control_Type.BASELINE
-controller_params = BaselineParams(fc=fc, \
+control_type = Control_Type.NEURON_EP2
+controller_params = NeuronEP2Params(gamma=1,
+                                   fc=fc,
                                    fs=fs)
 controller_params.RL_type = "PPO"
+
+# Baseline models
+#control_type = Control_Type.BASELINE
+#controller_params = BaselineParams(fc=fc, \
+#                                    fs=fs)
+#controller_params.RL_type = "PPO"
 
 # episode length
 episode_sec = 5
