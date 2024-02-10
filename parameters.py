@@ -43,26 +43,31 @@ fc = (fs/fs_brain_factor)/2
 #                                  fc=fc, \
 #                                  fs=fs)
 
-# Neuron Fully Connected EP Parameters
-#control_type = Control_Type.NEURON_EP2
-#controller_params = NeuronEP2Params(gamma=1,
+
+
+
+#
+#control_type = Control_Type.NEURON_EP
+#controller_params = NeuronEPParams(gamma=1,
+#                                   C=1,
 #                                   fc=fc,
 #                                   fs=fs)
 
-control_type = Control_Type.NEURON_EP
-controller_params = NeuronEPParams(gamma=1,
-                                   C=1,
+# Neuron Fully Connected EP Parameters
+control_type = Control_Type.NEURON_EP2
+controller_params = NeuronEP2Params(gamma=1,
                                    fc=fc,
                                    fs=fs)
+controller_params.RL_type = "PPO"
 
 # Baseline models
 #control_type = Control_Type.BASELINE
 #controller_params = BaselineParams(fc=fc, \
 #                                    fs=fs)
-
+#controller_params.RL_type = "PPO"
 
 # episode length
-episode_sec = 2
+episode_sec = 5
 episode_length = int(episode_sec*(fs/fs_brain_factor))
 num_episodes = 100
 

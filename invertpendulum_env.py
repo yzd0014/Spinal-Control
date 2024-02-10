@@ -7,9 +7,6 @@ import os
 
 from control import *
 
-targetMax = 0.85
-targetMin = -0.85
-
 
 class InvertPendulumEnv(gym.Env):
     """Custom Environment that follows gym interface."""
@@ -48,11 +45,11 @@ class InvertPendulumEnv(gym.Env):
       loop_reward = 0
       while self.data.time - time_prev < self.dt_brain:
         mj.mj_step(self.model, self.data)
-        #position_error = np.linalg.norm(self.data.qpos - self.target)
-        #loop_reward += -position_error + (position_error<0.001)/position_error
-        #loop_reward += -position_error
+        #loop_reward += 1
 
       reward = self.data.time
+      #reward = 1
+
       observation = np.concatenate((self.controller.obs,
                                     np.array([self.data.qpos[-1],
                                       self.data.qvel[-1],0,0])))
@@ -67,8 +64,10 @@ class InvertPendulumEnv(gym.Env):
         glfw.poll_events()
 
       if abs(sum(self.data.qpos) - np.pi) > 0.25*np.pi:
-        reward += self.data.time
         self.done = True
+      #elif self.data.time > 100:
+      #  reward += 100
+      #  self.done = True
 
       info = {}
       return observation, reward, self.done, info
@@ -76,8 +75,6 @@ class InvertPendulumEnv(gym.Env):
     def reset(self):
       self.done = False
       self.ticks = 0
-      #self.target = self.gen_random_target()
-      #self.target = np.array([0.45, -0.45])
       mj.mj_resetData(self.model, self.data)
       mj.mj_forward(self.model, self.data)
       self.data.qpos[2] = np.pi

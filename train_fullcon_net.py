@@ -103,53 +103,53 @@ def cost(p):
 # Partial set
 # -----------------------------------------------------------------------------
 #x0 = np.array([1,0.9,1,0.9])
-x0 = pickle.load(open("x0_minimal.p", "rb"))
-# map partial set to full set
-pfun = lambda x : np.array([x[0], 0, 0, x[0], 0, 0,
-                            0, 0, x[2], 0, 0, x[2],
-                            x[1], 0, 0, x[1], 0, 0,
-                            0, 0, x[3], 0, 0, x[3]])
-bounds = Bounds(np.ones(4)*0,
-                np.concatenate((np.ones(2)*1, np.ones(2)*0.9)),
-                keep_feasible=True)
-Fcost = lambda x : cost(pfun(x))
-res = minimize(Fcost, x0, bounds=bounds, method = 'Nelder-Mead', \
-                options={'disp': True, \
-                          'verbose': True, \
-                          'maxiter': 1e3, \
-                          'maxfev' : 1e3, \
-                          'xatol' : 1e-5})
-print('\n\n')
-print(res)
-print('\n\n')
-res.x
-print(res.x)
-p = pfun(res.x)
-pickle.dump(res.x,open("./x0_minimal.p", "wb"))
-pickle.dump(p,open("./p0_minimal.p", "wb"))
-
-# -----------------------------------------------------------------------------
-# Full set
-# -----------------------------------------------------------------------------
-#x0 = np.concatenate((np.ones(12)*0.1,np.ones(12)*0.1))
-#x0 = pickle.load(open("p0.p", "rb"))
-#bounds = Bounds(np.concatenate((np.ones(12)*0,np.ones(12)*0)),
-#                np.concatenate((np.ones(12)*1,np.ones(12)*0.95)),
-#                                keep_feasible=True)
-#
-#res = minimize(cost, x0, bounds=bounds, method = 'Nelder-Mead',
-#                options={'disp': True,
-#                         'verbose': True,
-#                         'maxiter': 1e3,
-#                         'maxfev' : 1e3,
-#                         'xatol' : 1e-5})
+#x0 = pickle.load(open("x0_minimal.p", "rb"))
+## map partial set to full set
+#pfun = lambda x : np.array([x[0], 0, 0, x[0], 0, 0,
+#                            0, 0, x[2], 0, 0, x[2],
+#                            x[1], 0, 0, x[1], 0, 0,
+#                            0, 0, x[3], 0, 0, x[3]])
+#bounds = Bounds(np.ones(4)*0,
+#                np.concatenate((np.ones(2)*1, np.ones(2)*0.9)),
+#                keep_feasible=True)
+#Fcost = lambda x : cost(pfun(x))
+#res = minimize(Fcost, x0, bounds=bounds, method = 'Nelder-Mead', \
+#                options={'disp': True, \
+#                          'verbose': True, \
+#                          'maxiter': 1e3, \
+#                          'maxfev' : 1e3, \
+#                          'xatol' : 1e-5})
 #print('\n\n')
 #print(res)
 #print('\n\n')
 #res.x
 #print(res.x)
-#p = res.x
-#pickle.dump(p,open("./p0.p", "wb"))
+#p = pfun(res.x)
+#pickle.dump(res.x,open("./x0_minimal.p", "wb"))
+#pickle.dump(p,open("./p0_minimal.p", "wb"))
+
+# -----------------------------------------------------------------------------
+# Full set
+# -----------------------------------------------------------------------------
+x0 = np.concatenate((np.ones(12)*0.1,np.ones(12)*0.1))
+#x0 = pickle.load(open("p0.p", "rb"))
+bounds = Bounds(np.concatenate((np.ones(12)*0,np.ones(12)*0)),
+                np.concatenate((np.ones(12)*1,np.ones(12)*0.95)),
+                                keep_feasible=True)
+
+res = minimize(cost, x0, bounds=bounds, method = 'Nelder-Mead',
+                options={'disp': True,
+                         'verbose': True,
+                         'maxiter': 1e3,
+                         'maxfev' : 1e3,
+                         'xatol' : 1e-5})
+print('\n\n')
+print(res)
+print('\n\n')
+res.x
+print(res.x)
+p = res.x
+pickle.dump(p,open("./p0.p", "wb"))
 
 
 

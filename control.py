@@ -444,21 +444,10 @@ class NeuronEP2Controller(object):
 
   def callback(self,model,data):
     self.get_obs(data)
-    normalize_factor = 1
-    s = np.transpose(np.array( \
-        [self.gamma*data.actuator_velocity[0] \
-          + data.actuator_length[0]/normalize_factor,
-        self.gamma*data.actuator_velocity[1] \
-          + data.actuator_length[1]/normalize_factor,
-        self.gamma*data.actuator_velocity[2] \
-          + data.actuator_length[2]/normalize_factor,
-        self.gamma*data.actuator_velocity[3] \
-          + data.actuator_length[3]/normalize_factor]))
-
     data.ctrl[0:4] = self.Aep_inv @ np.transpose(np.array( \
                                       [self.action[0],
-                                      self.action[1], \
-                                      self.action[2], \
+                                      self.action[1],
+                                      self.action[2],
                                       self.action[3]]))
   def get_obs(self,data):
     q0_est = self.fq0.filter(data.qpos[0])
