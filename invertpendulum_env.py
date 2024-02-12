@@ -30,9 +30,8 @@ class InvertPendulumEnv(gym.Env):
 
       # Other stuff
       self.instance_id = instance_id
-      self.rendering = False;
+      self.rendering = False
       self.init_mujoco()
-      self.data.qpos[2] = np.pi
       if self.rendering == True:
        self.init_window()
 
@@ -47,12 +46,13 @@ class InvertPendulumEnv(gym.Env):
         mj.mj_step(self.model, self.data)
         #loop_reward += 1
 
-      reward = self.data.time
-      #reward = 1
+      # reward = self.data.time
+      reward = self.dt_brain
 
-      observation = np.concatenate((self.controller.obs,
-                                    np.array([self.data.qpos[-1],
-                                      self.data.qvel[-1],0,0])))
+      # observation = np.concatenate((self.controller.obs,
+      #                               np.array([self.data.qpos[-1],
+      #                                 self.data.qvel[-1]])))
+      observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
 
 
       if self.rendering == True:
@@ -63,11 +63,12 @@ class InvertPendulumEnv(gym.Env):
         glfw.swap_buffers(self.window)
         glfw.poll_events()
 
-      if abs(sum(self.data.qpos) - np.pi) > 0.25*np.pi:
+      if abs(abs(sum(self.data.qpos)) - np.pi) > 0.25*np.pi:
         self.done = True
-      #elif self.data.time > 100:
-      #  reward += 100
-      #  self.done = True
+
+      if self.data.time > 120:
+          # reward += self.data.time * 10
+          self.done = True
 
       info = {}
       return observation, reward, self.done, info
@@ -76,11 +77,12 @@ class InvertPendulumEnv(gym.Env):
       self.done = False
       self.ticks = 0
       mj.mj_resetData(self.model, self.data)
+      self.data.qpos[0] = 0.4
+      self.data.qpos[1] = -0.87
+      self.data.qpos[2] = -2.32
       mj.mj_forward(self.model, self.data)
-      self.data.qpos[2] = np.pi
       observation = np.concatenate([self.data.qpos,
-                                    self.data.qvel,
-                                    np.array([0,0])])
+                                    self.data.qvel])
       return observation
 
 

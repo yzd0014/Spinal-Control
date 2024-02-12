@@ -6,12 +6,19 @@ from stable_baselines3.common.monitor import Monitor
 import os
 import invertpendulum_env
 import time
+import sys
 import pickle
 
 from control import *
 from parameters import *
 
 if __name__=="__main__":
+  arg1 = sys.argv[1]
+  controller_params.RL_type = "SAC"
+  if arg1 == "0":
+      control_type =  Control_Type.BASELINE
+  elif arg1 == "1":
+      control_type =  Control_Type.NEURON_EP2
 
   models_dir = f"models/{int(time.time())}/"
   logdir = f"logs/{int(time.time())}-{control_type_dic[control_type]}/"
@@ -35,7 +42,8 @@ if __name__=="__main__":
                                              c_params=controller_params)
 
 
-  m_steps = episode_length*num_episodes
+  # m_steps = episode_length*num_episodes
+  m_steps = 1000
   TIMESTEPS = m_steps
 
   # PPO -----------------------------------------------------------------------
@@ -44,6 +52,7 @@ if __name__=="__main__":
                           net_arch=dict(pi=[256, 256],
                           vf=[256, 256]))
     model = PPO('MlpPolicy', env,
+                  device='cpu',
                   learning_rate=0.0003,
                   n_steps=m_steps,
                   batch_size=episode_length,
@@ -57,7 +66,7 @@ if __name__=="__main__":
                   target_kl=None,
                   use_sde=False,
                   policy_kwargs=policy_kwargs,
-                  verbose=0,
+                  verbose=1,
                   tensorboard_log=logdir)
 
 
@@ -67,6 +76,7 @@ if __name__=="__main__":
                           net_arch=dict(pi=[256, 256],
                                         qf=[256, 256]))
     model = SAC("MlpPolicy", env,
+                device='cpu',
                 policy_kwargs=policy_kwargs,
                 batch_size = 256,
                 train_freq = (1, "episode"),
@@ -78,7 +88,7 @@ if __name__=="__main__":
                 use_sde = True,
                 use_sde_at_warmup = True,
                 sde_sample_freq=64,
-                verbose=0,
+                verbose=1,
                 gradient_steps = -1,
                 tensorboard_log=logdir)
 
@@ -88,5 +98,7 @@ if __name__=="__main__":
   while True:
     iters += 1
     model.learn(total_timesteps=TIMESTEPS,reset_num_timesteps=False,
-                tb_log_name=controller_params.RL_type,progress_bar=True)
+                tb_log_name=controller_params.RL_type)
     model.save(f"{models_dir}/{TIMESTEPS * iters}")
+    if iters * TIMESTEPS > 110000:
+      break

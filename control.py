@@ -465,7 +465,7 @@ class NeuronEP2Controller(object):
                       dtype=np.float32)
 
   def get_obs_space(self):
-    return spaces.Box(low=-50, high=50, shape=(8,), dtype=np.float32)
+    return spaces.Box(low=-50, high=50, shape=(6,), dtype=np.float32)
 
 
 
@@ -579,10 +579,11 @@ class BaselineController(object):
     q1_est = self.fq1.filter(data.qpos[1])
     v0_est = self.fv0.filter(data.qvel[0])
     v1_est = self.fv1.filter(data.qvel[1])
-    self.obs = np.array([q0_est,q1_est,v0_est,v1_est])
+
+    self.obs = np.array([q0_est, q1_est, v0_est, v1_est])
 
   def get_action_space(self):
     return  spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
 
   def get_obs_space(self):
-    return spaces.Box(low=-50, high=50, shape=(8,), dtype=np.float32)
+    return spaces.Box(low=-50, high=50, shape=(6,), dtype=np.float32)
