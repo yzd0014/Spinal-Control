@@ -55,9 +55,9 @@ fc = (fs/fs_brain_factor)/2
 
 # Neuron Fully Connected EP Parameters
 # control_type = Control_Type.NEURON_EP2
-controller_params = NeuronEP2Params(gamma=1,
-                                   fc=fc,
-                                   fs=fs)
+# controller_params = NeuronEP2Params(gamma=1,
+#                                    fc=fc,
+#                                    fs=fs)
 # controller_params.RL_type = "SAC"
 
 # Baseline models

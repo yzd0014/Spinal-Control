@@ -14,11 +14,16 @@ from parameters import *
 
 if __name__=="__main__":
   arg1 = sys.argv[1]
-  controller_params.RL_type = "SAC"
   if arg1 == "0":
       control_type =  Control_Type.BASELINE
+      controller_params = BaselineParams(fc=fc, \
+                                         fs=fs)
   elif arg1 == "1":
       control_type =  Control_Type.NEURON_EP2
+      controller_params = NeuronEP2Params(gamma=1,
+                                          fc=fc,
+                                          fs=fs)
+  controller_params.RL_type = "SAC"
 
   models_dir = f"models/{int(time.time())}/"
   logdir = f"logs/{int(time.time())}-{control_type_dic[control_type]}/"
@@ -73,7 +78,7 @@ if __name__=="__main__":
   # SAC -----------------------------------------------------------------------
   elif controller_params.RL_type == "SAC":
     policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                          net_arch=dict(pi=[256, 256],
+                          net_arch=dict(pi=[16, 16],
                                         qf=[256, 256]))
     model = SAC("MlpPolicy", env,
                 device='cpu',
@@ -100,5 +105,5 @@ if __name__=="__main__":
     model.learn(total_timesteps=TIMESTEPS,reset_num_timesteps=False,
                 tb_log_name=controller_params.RL_type)
     model.save(f"{models_dir}/{TIMESTEPS * iters}")
-    if iters * TIMESTEPS > 110000:
+    if iters * TIMESTEPS > 500000:
       break

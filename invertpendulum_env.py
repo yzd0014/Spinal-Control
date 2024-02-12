@@ -4,7 +4,7 @@ from gym import spaces
 import mujoco as mj
 from mujoco.glfw import glfw
 import os
-
+import random
 from control import *
 
 
@@ -46,13 +46,13 @@ class InvertPendulumEnv(gym.Env):
         mj.mj_step(self.model, self.data)
         #loop_reward += 1
 
-      # reward = self.data.time
-      reward = self.dt_brain
+      reward = self.data.time
+      #reward = self.dt_brain
 
-      # observation = np.concatenate((self.controller.obs,
-      #                               np.array([self.data.qpos[-1],
-      #                                 self.data.qvel[-1]])))
-      observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
+      observation = np.concatenate((self.controller.obs,
+                                    np.array([self.data.qpos[-1],
+                                      self.data.qvel[-1]])))
+      # observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
 
 
       if self.rendering == True:
@@ -67,7 +67,7 @@ class InvertPendulumEnv(gym.Env):
         self.done = True
 
       if self.data.time > 120:
-          # reward += self.data.time * 10
+          reward += self.data.time * 10
           self.done = True
 
       info = {}
@@ -77,9 +77,10 @@ class InvertPendulumEnv(gym.Env):
       self.done = False
       self.ticks = 0
       mj.mj_resetData(self.model, self.data)
-      self.data.qpos[0] = 0.4
-      self.data.qpos[1] = -0.87
-      self.data.qpos[2] = -2.32
+      self.data.qpos[0] = random.uniform(-0.3, 0.3)
+      self.data.qpos[1] = random.uniform(-0.3, 0.3)
+      last_link_angle = random.uniform(np.pi - 0.7, np.pi + 0.7)
+      self.data.qpos[2] = last_link_angle - self.data.qpos[0] - self.data.qpos[1]
       mj.mj_forward(self.model, self.data)
       observation = np.concatenate([self.data.qpos,
                                     self.data.qvel])
