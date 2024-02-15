@@ -46,13 +46,13 @@ class InvertPendulumEnv(gym.Env):
         mj.mj_step(self.model, self.data)
         #loop_reward += 1
 
-      reward = self.data.time
-      #reward = self.dt_brain
+      # reward = self.data.time
+      reward = self.dt_brain
 
-      observation = np.concatenate((self.controller.obs,
-                                    np.array([self.data.qpos[-1],
-                                      self.data.qvel[-1]])))
-      # observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
+      # observation = np.concatenate((self.controller.obs,
+      #                               np.array([self.data.qpos[-1],
+      #                                 self.data.qvel[-1]])))
+      observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
 
 
       if self.rendering == True:
@@ -66,8 +66,8 @@ class InvertPendulumEnv(gym.Env):
       if abs(abs(sum(self.data.qpos)) - np.pi) > 0.25*np.pi:
         self.done = True
 
-      if self.data.time > 120:
-          reward += self.data.time * 10
+      if self.data.time > 180:
+          # reward += self.data.time * 10
           self.done = True
 
       info = {}

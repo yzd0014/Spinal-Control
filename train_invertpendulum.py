@@ -13,7 +13,8 @@ from control import *
 from parameters import *
 
 if __name__=="__main__":
-  arg1 = sys.argv[1]
+  # arg1 = sys.argv[1]
+  arg1 = "2"
   if arg1 == "0":
       control_type =  Control_Type.BASELINE
       controller_params = BaselineParams(fc=fc, \
@@ -23,6 +24,10 @@ if __name__=="__main__":
       controller_params = NeuronEP2Params(gamma=1,
                                           fc=fc,
                                           fs=fs)
+  elif arg1 == "2":
+      control_type =  Control_Type.FF
+      controller_params = FeedforwardParams(fc=fc, \
+                                         fs=fs)
   controller_params.RL_type = "SAC"
 
   models_dir = f"models/{int(time.time())}/"

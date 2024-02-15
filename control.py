@@ -2,6 +2,8 @@ import numpy as np
 from enum import Enum
 from scipy import signal
 from gym import spaces
+import torch
+import torch_net
 
 import iir
 import fir
@@ -14,6 +16,7 @@ class Control_Type(Enum):
     NEURON_FC_EP = 5
     NEURON_EP = 6
     NEURON_EP2 = 7
+    FF = 8
 
 control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.NEURON: "neuron",
@@ -21,7 +24,9 @@ control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.NEURON_FULLCON: "neuron-fully-con",
                     Control_Type.NEURON_FC_EP: "neuron-EP-FC",
                     Control_Type.NEURON_EP: "neuron-EP",
-                    Control_Type.NEURON_EP2: "neuron-EP2"}
+                    Control_Type.NEURON_EP2: "neuron-EP2",
+                    Control_Type.FF: "ff"
+                    }
 
 
 def InitController(control_type,p):
@@ -40,6 +45,8 @@ def InitController(control_type,p):
     controller = NeuronEP2Controller(p)
   elif control_type == Control_Type.BASELINE:
     controller = BaselineController(p)
+  elif control_type == Control_Type.FF:
+    controller = FeedforwardParamsController(p)
 
   return controller
 
@@ -546,7 +553,85 @@ class NeuronEPController(object):
 
   def get_obs_space(self):
     return spaces.Box(low=-50, high=50, shape=(8,), dtype=np.float32)
+# -----------------------------------------------------------------------------
+# Feedforward Controller
+# -----------------------------------------------------------------------------
+class FeedforwardParams:
+  def __init__(self,fc,fs):
+    self.fc = fc
+    self.fs = fs
 
+class FeedforwardParamsController(object):
+    def __init__(self, p):
+        self.obs = np.zeros(4)
+        b, a = signal.butter(1, p.fc, 'low', fs=p.fs)
+        self.fq0 = iir.IirFilt(b, a)
+        self.fq1 = iir.IirFilt(b, a)
+        self.fv0 = iir.IirFilt(b, a)
+        self.fv1 = iir.IirFilt(b, a)
+
+        self.enable_cocontraction = True
+        self.joint_num = 2
+        if self.enable_cocontraction:
+            if self.joint_num == 2:
+                self.action_dim = 4
+            elif self.joint_num == 1:
+                self.action_dim = 2
+        else:
+            if self.joint_num == 2:
+                self.action_dim = 2
+            elif self.joint_num == 1:
+                self.action_dim = 1
+
+        self.action = np.zeros(self.action_dim)
+        self.target_pos = np.zeros(2)
+        self.cocontraction = [0.1, 0.1] #range from 0 to 1
+        weights_path = "./ff_optimal_1702622336.pth"
+        self.ff_net = torch_net.FeedForwardNN(2, 32, 1, Control_Type.BASELINE)
+
+        self.ff_net.load_state_dict(torch.load(weights_path))
+        self.ff_net.eval()
+
+    def set_action(self, newaction):
+        for i in range(self.action_dim):
+            self.action[i] = newaction[i]
+
+    def callback(self, model, data):
+        self.get_obs(data)
+
+        for i in range(self.joint_num):
+            if self.enable_cocontraction:
+                self.cocontraction[i] = self.action[i*2+1]
+            if self.action[i*2] >= 0:
+                action_tensor = torch.tensor(np.array([self.action[i*2], self.cocontraction[i]]), dtype=torch.float32)
+                u_tensor = self.ff_net(action_tensor.view(1, 2))
+                data.ctrl[i * 2] = u_tensor[0][0].item() + self.cocontraction[i]
+                data.ctrl[i * 2 + 1] = self.cocontraction[i]
+            else:
+                action_tensor = torch.tensor(np.array([-self.action[i*2], self.cocontraction[i]]), dtype=torch.float32)
+                u_tensor = self.ff_net(action_tensor.view(1, 2))
+                data.ctrl[i * 2] = self.cocontraction[i]
+                data.ctrl[i * 2 + 1] = u_tensor[0][0].item() + self.cocontraction[i]
+
+    def get_obs(self, data):
+        q0_est = self.fq0.filter(data.qpos[0])
+        q1_est = self.fq1.filter(data.qpos[1])
+        v0_est = self.fv0.filter(data.qvel[0])
+        v1_est = self.fv1.filter(data.qvel[1])
+
+        self.obs = np.array([q0_est, q1_est, v0_est, v1_est])
+
+    def get_action_space(self):
+        if self.enable_cocontraction:
+            if self.joint_num == 2:
+                return spaces.Box(low=np.array([-5, 0, -5, 0]), high=np.array([5, 1, 5, 1]),  dtype=np.float32)
+            elif self.joint_num == 1:
+                return spaces.Box(low=np.array([-5, 0]), high=np.array([5, 1]),  dtype=np.float32)
+        else:
+            return spaces.Box(low=-5, high=5, shape=(self.joint_num,), dtype=np.float32)
+
+    def get_obs_space(self):
+        return spaces.Box(low=-50, high=50, shape=(6,), dtype=np.float32)
 # -----------------------------------------------------------------------------
 # Baseline Controller
 #u-----------------------------------------------------------------------------
