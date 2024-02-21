@@ -438,10 +438,10 @@ class NeuronEP2Controller(object):
     self.action = np.zeros(4)
     self.obs = np.zeros(4)
 
-    self.Aep_inv = np.array([[1, 1, 0, 0],
-                             [-1, 1, 0, 0],
-                             [0, 0, 1, 1],
-                             [0, 0, -1, 1]])
+    self.Aep_inv = np.array([[2, 1, 0, 0],
+                             [-2, 1, 0, 0],
+                             [0, 0, 2, 1],
+                             [0, 0, -2, 1]])
 
     b, a = signal.butter(1,p.fc,'low',fs=p.fs)
     self.fq0 = iir.IirFilt(b,a)
@@ -612,6 +612,7 @@ class FeedforwardParamsController(object):
                 u_tensor = self.ff_net(action_tensor.view(1, 2))
                 data.ctrl[i * 2] = self.cocontraction[i]
                 data.ctrl[i * 2 + 1] = u_tensor[0][0].item() + self.cocontraction[i]
+        # print(data.ctrl)
 
     def get_obs(self, data):
         q0_est = self.fq0.filter(data.qpos[0])
@@ -631,7 +632,7 @@ class FeedforwardParamsController(object):
             return spaces.Box(low=-5, high=5, shape=(self.joint_num,), dtype=np.float32)
 
     def get_obs_space(self):
-        return spaces.Box(low=-50, high=50, shape=(6,), dtype=np.float32)
+        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 # -----------------------------------------------------------------------------
 # Baseline Controller
 #u-----------------------------------------------------------------------------

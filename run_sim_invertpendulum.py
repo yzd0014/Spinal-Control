@@ -58,10 +58,11 @@ def run_sim(modelid):
   def callback(model, data):
     global global_timer
     if data.time - global_timer >= dt_brain:
-      observation = np.concatenate((controller.obs,
-                                    np.array([data.qpos[-1],
-                                              data.qvel[-1],
-                                              0, 0])))
+      # observation = np.concatenate((controller.obs,
+      #                               np.array([data.qpos[-1],
+      #                                         data.qvel[-1],
+      #                                         0, 0])))
+      observation = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
       action, _states = rl_model.predict(observation)
       controller.set_action(action)
       global_timer = data.time
@@ -146,7 +147,7 @@ def run_sim(modelid):
   fdata.close()
 
 def main(argv):
-  modelid = ''
+  modelid = '1708030061'
   opts, args = getopt.getopt(argv,"m:t")
   for opt, arg in opts:
     if opt == '-m':
