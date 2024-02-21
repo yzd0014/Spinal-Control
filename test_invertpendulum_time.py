@@ -36,7 +36,7 @@ def callback(model, data):
 def main():
     global dt_brain, controller, rl_model, global_timer
 
-    modelid = '1708486863'
+    modelid = '1708486874'
 
     control_type, \
         episode_length, \
@@ -72,6 +72,7 @@ def main():
     mj.set_mjcb_control(callback)
 
     generate_initial_state()
+    states_tracking = []
     avg_balance_time = 0
     loop_count = 5
     for i in range(loop_count):
@@ -87,6 +88,8 @@ def main():
             while True:
                 mj.mj_step(model, data)
                 if data.time > 10 or abs(abs(sum(data.qpos)) - np.pi) > 0.5*np.pi:
+                    if data.time >= 10:
+                        states_tracking.append(states_count)
                     avg_balance_time += data.time
                     break
             print(f"iter: {i}, state {states_count} done, time: {data.time}")
@@ -95,10 +98,14 @@ def main():
 
     total_states = len(initial_state) * loop_count
     avg_balance_time /= total_states
+    plt.figure(1)
     plt.hist(time_data, bins=10, color='skyblue', edgecolor='black')
     plt.xlabel('time to balance (s)')
     plt.ylabel('Frequency')
     plt.title(f"{control_type_dic[control_type]}, avg time: {avg_balance_time}")
+    plt.figure(2)
+    plt.hist(states_tracking, bins=200, color='skyblue', edgecolor='black')
+    plt.xlabel('initial configuration #')
     plt.show()
 
 if __name__ == "__main__":
