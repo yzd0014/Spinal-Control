@@ -13,8 +13,8 @@ from control import *
 from parameters import *
 
 if __name__=="__main__":
-  # arg1 = sys.argv[1]
-  arg1 = "0"
+  arg1 = sys.argv[1]
+  # arg1 = "0"
   if arg1 == "0":
       control_type =  Control_Type.BASELINE
       controller_params = BaselineParams(fc=fc, \

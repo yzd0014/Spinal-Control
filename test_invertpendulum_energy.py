@@ -70,15 +70,15 @@ def main():
     xml_path = abspath
     model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
     data = mj.MjData(model)  # MuJoCo data
-    cam = mj.MjvCamera()  # Abstract camera
-    opt = mj.MjvOption()
-    mj.mjv_defaultCamera(cam)
-    mj.mjv_defaultOption(opt)
-
-    cam.azimuth = 90
-    cam.elevation = -20
-    cam.distance = 2
-    cam.lookat = np.array([0.0, -1, 2])
+    # cam = mj.MjvCamera()  # Abstract camera
+    # opt = mj.MjvOption()
+    # mj.mjv_defaultCamera(cam)
+    # mj.mjv_defaultOption(opt)
+    #
+    # cam.azimuth = 90
+    # cam.elevation = -20
+    # cam.distance = 2
+    # cam.lookat = np.array([0.0, -1, 2])
 
     controller = InitController(control_type, controller_params)
     mj.set_mjcb_control(callback)
