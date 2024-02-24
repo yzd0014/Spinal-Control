@@ -42,6 +42,7 @@ def run_sim(modelid):
   runid = runid[0]
 
   xml_path = 'inverted_pendulum_fast.xml'
+  xml_path = 'inverted_pendulum_spring.xml'
 
   simend = 5 #simulation time
   print_camera_config = 0 #set to 1 to print camera config
@@ -147,7 +148,7 @@ def run_sim(modelid):
   fdata.close()
 
 def main(argv):
-  modelid = '1708030061'
+  modelid = '1708569170'
   opts, args = getopt.getopt(argv,"m:t")
   for opt, arg in opts:
     if opt == '-m':

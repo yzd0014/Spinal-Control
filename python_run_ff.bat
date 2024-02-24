@@ -2,7 +2,7 @@
 setlocal
 
 rem Set the number of times to execute the Python script
-set iterations=10
+set iterations=8
 
 rem Loop through the iterations
 for /l %%i in (1, 1, %iterations%) do (

@@ -63,7 +63,7 @@ class InvertPendulumEnv(gym.Env):
         glfw.swap_buffers(self.window)
         glfw.poll_events()
 
-      if abs(abs(sum(self.data.qpos)) - np.pi) > 0.25*np.pi:
+      if abs(abs(self.data.qpos[0]+self.data.qpos[1]+self.data.qpos[2]) - np.pi) > 0.25*np.pi:
         self.done = True
 
       if self.data.time > 180:
@@ -77,13 +77,13 @@ class InvertPendulumEnv(gym.Env):
       self.done = False
       self.ticks = 0
       mj.mj_resetData(self.model, self.data)
-      self.data.qpos[0] = random.uniform(-0.3, 0.3)
-      self.data.qpos[1] = random.uniform(-0.3, 0.3)
-      last_link_angle = random.uniform(np.pi - 0.7, np.pi + 0.7)
-      self.data.qpos[2] = last_link_angle - self.data.qpos[0] - self.data.qpos[1]
+      # self.data.qpos[0] = random.uniform(-0.3, 0.3)
+      # self.data.qpos[1] = random.uniform(-0.3, 0.3)
+      # last_link_angle = random.uniform(np.pi - 0.7, np.pi + 0.7)
+      # self.data.qpos[2] = last_link_angle - self.data.qpos[0] - self.data.qpos[1]
+      self.data.qpos[2] = np.pi + 0.1
       mj.mj_forward(self.model, self.data)
-      observation = np.concatenate([self.data.qpos,
-                                    self.data.qvel])
+      observation = np.array([self.data.qpos[0], self.data.qpos[1], self.data.qpos[2], self.data.qvel[0], self.data.qvel[1], self.data.qvel[2]])
       return observation
 
 
@@ -93,7 +93,7 @@ class InvertPendulumEnv(gym.Env):
           glfw.terminate()
 
     def init_mujoco(self):
-      xml_path = 'inverted_pendulum_fast.xml'
+      xml_path = 'inverted_pendulum_spring.xml'
       dirname = os.path.dirname(__file__)
       abspath = os.path.join(dirname + "/" + xml_path)
       xml_path = abspath

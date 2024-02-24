@@ -1,5 +1,5 @@
 from stable_baselines3 import PPO
-from stable_baselines3 import TD3
+from stable_baselines3 import SAC
 import mujoco as mj
 from mujoco.glfw import glfw
 import numpy as np
@@ -64,7 +64,7 @@ def run_sim(modelid,target):
       observation = np.concatenate(([target[0], target[1]], \
                                     controller.obs, \
                                     np.array([0,0])))
-      action, _states = PPO_model.predict(observation)
+      action, _states = RL_model.predict(observation)
       controller.set_action(action)
       global_timer = data.time
 
@@ -114,8 +114,11 @@ def run_sim(modelid,target):
 
   #load modes for each controller
   w = -0.48
-  PPO_model_path0 = "./models/" + modelid + "/" + runid
-  PPO_model = PPO.load(PPO_model_path0)
+  RL_model_path0 = "./models/" + modelid + "/" + runid
+  if controller_params.RL_type == "PPO":
+    RL_model = PPO.load(RL_model_path0)
+  elif controller_params.RL_type == "SAC":
+    RL_model = SAC.load(RL_model_path0)
 
   #set the controller
   mj.set_mjcb_control(callback)
@@ -141,7 +144,7 @@ def run_sim(modelid,target):
 
 def main(argv):
   target = np.array([0.45, -0.45])
-  modelid = ''
+  modelid = '1708486874'
   opts, args = getopt.getopt(argv,"m:t")
   for opt, arg in opts:
     if opt == '-m':

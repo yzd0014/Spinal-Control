@@ -110,5 +110,5 @@ if __name__=="__main__":
     model.learn(total_timesteps=TIMESTEPS,reset_num_timesteps=False,
                 tb_log_name=controller_params.RL_type)
     model.save(f"{models_dir}/{TIMESTEPS * iters}")
-    if iters * TIMESTEPS > 500000:
+    if iters * TIMESTEPS > 143000:
       break
