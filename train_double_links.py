@@ -86,8 +86,8 @@ if __name__ == "__main__":
                     tensorboard_log=logdir)
     elif training_type == "SAC":
         policy_kwargs = dict(activation_fn=th.nn.ReLU, \
-                             net_arch=dict(pi=[4, 4], \
-                                           qf=[16, 16]))
+                             net_arch=dict(pi=[16, 16], \
+                                           qf=[256, 256]))
         model = SAC("MlpPolicy", env, \
                     policy_kwargs=policy_kwargs, \
                     device='cpu', \

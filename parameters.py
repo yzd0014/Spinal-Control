@@ -9,7 +9,7 @@ SWING = 4
 
 # parameters that can be changed by users
 control_type = Control_Type.EP_GENERAL
-env_id = INVERTED_PENDULUM
+env_id = DOUBLE_PENDULUM
 training_type = "PPO"
 
 if env_id == DOUBLE_PENDULUM:

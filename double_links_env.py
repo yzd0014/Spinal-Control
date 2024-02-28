@@ -4,7 +4,7 @@ from gym import spaces
 import mujoco as mj
 from mujoco.glfw import glfw
 import os
-
+import random
 from control import *
 
 
@@ -183,12 +183,13 @@ class DoubleLinkEnv(gym.Env):
                 self.controller.target_pos = np.array([m_target[0], m_target[1]])
         elif self.env_id == 1:
             mj.mj_resetData(self.model, self.data)
-            self.data.qpos[0] = 0.4
-            self.data.qpos[1] = -0.87
-            self.data.qpos[2] = -2.32
-            # self.data.qpos[0] = 0
-            # self.data.qpos[1] = 0
-            # self.data.qpos[2] = -2.51
+            # self.data.qpos[0] = 0.4
+            # self.data.qpos[1] = -0.87
+            # self.data.qpos[2] = -2.32
+            self.data.qpos[0] = random.uniform(-0.3, 0.3)
+            self.data.qpos[1] = random.uniform(-0.3, 0.3)
+            last_link_angle = random.uniform(np.pi - 0.7, np.pi + 0.7)
+            self.data.qpos[2] = last_link_angle - self.data.qpos[0] - self.data.qpos[1]
             mj.mj_forward(self.model, self.data)
 
         elif self.env_id == 2:
