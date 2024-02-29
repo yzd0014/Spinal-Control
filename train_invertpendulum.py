@@ -83,7 +83,7 @@ if __name__=="__main__":
   # SAC -----------------------------------------------------------------------
   elif controller_params.RL_type == "SAC":
     policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                          net_arch=dict(pi=[16, 16],
+                          net_arch=dict(pi=[256, 256],
                                         qf=[256, 256]))
     model = SAC("MlpPolicy", env,
                 device='cpu',
@@ -110,5 +110,5 @@ if __name__=="__main__":
     model.learn(total_timesteps=TIMESTEPS,reset_num_timesteps=False,
                 tb_log_name=controller_params.RL_type)
     model.save(f"{models_dir}/{TIMESTEPS * iters}")
-    if iters * TIMESTEPS > 143000:
+    if iters * TIMESTEPS > 132000:
       break

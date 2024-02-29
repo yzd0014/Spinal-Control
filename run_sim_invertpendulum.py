@@ -41,8 +41,9 @@ def run_sim(modelid):
   runid = allmodels[-1].split(".")
   runid = runid[0]
 
-  xml_path = 'inverted_pendulum_fast.xml'
-  xml_path = 'inverted_pendulum_spring.xml'
+  # xml_path = 'inverted_pendulum_fast.xml'
+  # xml_path = 'inverted_pendulum_spring.xml'
+  xml_path = 'inverted_pendulum6.xml'
 
   simend = 5 #simulation time
   print_camera_config = 0 #set to 1 to print camera config
@@ -67,7 +68,8 @@ def run_sim(modelid):
       action, _states = rl_model.predict(observation)
       controller.set_action(action)
       global_timer = data.time
-      print(str(data.time) + '\n')
+      # print(str(data.time) + '\n')
+      print(action)
 
     controller.callback(model,data)
     #data2write = np.concatenate(([target[0],target[1]], \
@@ -148,7 +150,7 @@ def run_sim(modelid):
   fdata.close()
 
 def main(argv):
-  modelid = '1708569170'
+  modelid = '1709195800'
   opts, args = getopt.getopt(argv,"m:t")
   for opt, arg in opts:
     if opt == '-m':

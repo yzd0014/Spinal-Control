@@ -435,13 +435,23 @@ class NeuronEP2Controller(object):
   def __init__(self,p):
 
     self.gamma = p.gamma
-    self.action = np.zeros(4)
+    self.action_size = 6
+    self.action = np.zeros(self.action_size)
     self.obs = np.zeros(4)
 
-    self.Aep_inv = np.array([[2, 1, 0, 0],
-                             [-2, 1, 0, 0],
-                             [0, 0, 2, 1],
-                             [0, 0, -2, 1]])
+    if self.action_size == 4:
+        self.Aep_inv = np.array([[1, 1, 0, 0],
+                                 [-1, 1, 0, 0],
+                                 [0, 0, 1, 1],
+                                 [0, 0, -1, 1]])
+    elif self.action_size == 6:
+        self.Aep_inv = np.array([[1, 1, 0, 0, 0, 0],
+                                 [-1, 1, 0, 0, 0, 0],
+                                 [0, 0, 1, 1, 0, 0],
+                                 [0, 0, -1, 1, 0, 0],
+                                 [0, 0, 0, 0, 1, 1],
+                                 [0, 0, 0, 0, -1, 1]
+                                 ])
 
     b, a = signal.butter(1,p.fc,'low',fs=p.fs)
     self.fq0 = iir.IirFilt(b,a)
@@ -451,11 +461,22 @@ class NeuronEP2Controller(object):
 
   def callback(self,model,data):
     self.get_obs(data)
-    data.ctrl[0:4] = self.Aep_inv @ np.transpose(np.array( \
-                                      [self.action[0],
-                                      self.action[1],
-                                      self.action[2],
-                                      self.action[3]]))
+    if self.action_size == 4:
+        data.ctrl[0:4] = self.Aep_inv @ np.transpose(np.array( \
+                                          [self.action[0],
+                                          self.action[1],
+                                          self.action[2],
+                                          self.action[3]]))
+    if self.action_size == 6:
+        data.ctrl[0:6] = self.Aep_inv @ np.transpose(np.array( \
+                                          [self.action[0],
+                                          self.action[1],
+                                          self.action[2],
+                                          self.action[3],
+                                            self.action[4],
+                                           self.action[5]
+                                           ]))
+
   def get_obs(self,data):
     q0_est = self.fq0.filter(data.qpos[0])
     q1_est = self.fq1.filter(data.qpos[1])
@@ -467,9 +488,15 @@ class NeuronEP2Controller(object):
     self.action = newaction
 
   def get_action_space(self):
-    return spaces.Box(low=np.array([-1, 0, -1, 0]),
-                      high=np.array([1, 1, 1, 1]),
-                      dtype=np.float32)
+    if self.action_size == 4:
+        return spaces.Box(low=np.array([-1, 0, -1, 0]),
+                          high=np.array([1, 1, 1, 1]),
+                          dtype=np.float32)
+
+    elif self.action_size == 6:
+      return spaces.Box(low=np.array([-1, 0, -1, 0, -1, 0]),
+                        high=np.array([1, 1, 1, 1, 1, 1]),
+                        dtype=np.float32)
 
   def get_obs_space(self):
     return spaces.Box(low=-50, high=50, shape=(6,), dtype=np.float32)
@@ -644,6 +671,7 @@ class BaselineParams:
 class BaselineController(object):
   def __init__(self,p):
     self.obs = np.zeros(4)
+    self.action_size = 6
 
     b, a = signal.butter(1,p.fc,'low',fs=p.fs)
     self.fq0 = iir.IirFilt(b,a)
@@ -651,11 +679,11 @@ class BaselineController(object):
     self.fv0 = iir.IirFilt(b,a)
     self.fv1 = iir.IirFilt(b,a)
 
-    self.action = np.zeros(4)
+    self.action = np.zeros(self.action_size)
 
   def callback(self,model,data):
     self.get_obs(data)
-    data.ctrl[0:4] = self.action
+    data.ctrl[0:self.action_size] = self.action
 
   def set_action(self,newaction):
     self.action = newaction
@@ -669,7 +697,7 @@ class BaselineController(object):
     self.obs = np.array([q0_est, q1_est, v0_est, v1_est])
 
   def get_action_space(self):
-    return  spaces.Box(low=0, high=1.0, shape=(4,), dtype=np.float32)
+    return  spaces.Box(low=0, high=1.0, shape=(self.action_size,), dtype=np.float32)
 
   def get_obs_space(self):
     return spaces.Box(low=-50, high=50, shape=(6,), dtype=np.float32)
