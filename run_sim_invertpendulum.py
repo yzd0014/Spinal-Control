@@ -69,7 +69,7 @@ def run_sim(modelid):
       controller.set_action(action)
       global_timer = data.time
       # print(str(data.time) + '\n')
-      print(action)
+      print(f"angle: {data.qpos[0]+data.qpos[1]+data.qpos[2] - np.pi},{data.ctrl[4]}, {data.ctrl[5]}")
 
     controller.callback(model,data)
     #data2write = np.concatenate(([target[0],target[1]], \
@@ -150,7 +150,7 @@ def run_sim(modelid):
   fdata.close()
 
 def main(argv):
-  modelid = '1709195800'
+  modelid = '1709247699'
   opts, args = getopt.getopt(argv,"m:t")
   for opt, arg in opts:
     if opt == '-m':

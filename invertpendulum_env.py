@@ -94,7 +94,8 @@ class InvertPendulumEnv(gym.Env):
 
     def init_mujoco(self):
       # xml_path = 'inverted_pendulum_spring.xml'
-      xml_path = 'inverted_pendulum6.xml'
+      xml_path = 'inverted_pendulum_fast.xml'
+      # xml_path = 'inverted_pendulum6.xml'
       dirname = os.path.dirname(__file__)
       abspath = os.path.join(dirname + "/" + xml_path)
       xml_path = abspath

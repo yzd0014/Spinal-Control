@@ -671,7 +671,7 @@ class BaselineParams:
 class BaselineController(object):
   def __init__(self,p):
     self.obs = np.zeros(4)
-    self.action_size = 6
+    self.action_size = 4
 
     b, a = signal.butter(1,p.fc,'low',fs=p.fs)
     self.fq0 = iir.IirFilt(b,a)

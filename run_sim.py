@@ -144,7 +144,7 @@ def run_sim(modelid,target):
 
 def main(argv):
   target = np.array([0.45, -0.45])
-  modelid = '1708486874'
+  modelid = '1709247664'
   opts, args = getopt.getopt(argv,"m:t")
   for opt, arg in opts:
     if opt == '-m':
