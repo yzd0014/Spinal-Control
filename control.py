@@ -103,8 +103,8 @@ class GeneralEPController(object):
 
     def callback(self, model, data):
         for i in range(2):
-            data.ctrl[i * 2] = self.action[i*2] - self.action[i*2+1]
-            data.ctrl[i * 2 + 1] = self.action[i*2] + self.action[i*2+1]
+            data.ctrl[i * 2] = 0.5 * self.action[i*2] - 0.5 * self.action[i*2+1]
+            data.ctrl[i * 2 + 1] = 0.5 * self.action[i*2] + 0.5 * self.action[i*2+1]
 
     def get_obs(self, data, env_id):
         if env_id == 0:
@@ -115,8 +115,6 @@ class GeneralEPController(object):
 
     def get_action_space(self):
         return spaces.Box(low=np.array([0, -1, 0, -1]), high=np.array([1, 1, 1, 1]), dtype=np.float32)
-    def get_obs_space(self, env_id):
-        return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # Feedforward Controller

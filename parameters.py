@@ -8,9 +8,9 @@ PUSH = 3
 SWING = 4
 
 # parameters that can be changed by users
-control_type = Control_Type.EP_GENERAL
-env_id = DOUBLE_PENDULUM
-training_type = "PPO"
+control_type = Control_Type.BASELINE
+env_id = INVERTED_PENDULUM
+training_type = "SAC"
 
 if env_id == DOUBLE_PENDULUM:
     controller_input_size = 2
@@ -32,7 +32,7 @@ if env_id == DOUBLE_PENDULUM:
     episode_length_in_seconds = 20
 elif env_id == INVERTED_PENDULUM:
     xml = 'inverted_pendulum_fast.xml'
-    episode_length_in_seconds = 120
+    episode_length_in_seconds = 150
 elif env_id == TOSS:
     xml = 'toss.xml'
     episode_length_in_seconds = 10000
