@@ -6,7 +6,7 @@ import parameters as params
 import double_links_env
 import control
 
-xml_path = 'double_links_fast.xml' #xml file (assumes this is in the same folder as this file)
+xml_path = 'single_link.xml' #xml file (assumes this is in the same folder as this file)
 sim_pause = True
 next_frame = False
 simend = 5 #simulation time
@@ -20,27 +20,14 @@ button_right = False
 lastx = 0
 lasty = 0
 
-m_target = np.array([0.2, -0.4])
 dt_brain = params.controller_params.brain_dt
 controller = control.PIDController()
 
 def init_controller(model,data):
-    # data.ctrl[4] = 1
     mj.mj_forward(model, data)
-    controller.target_pos = m_target
 
 def controller_callback(model, data):
-    global global_timer
-
-    if data.time - global_timer >= dt_brain or data.time < 0.000101:
-        controller.set_action(m_target)
-        global_timer = data.time
-
-    controller.callback(model, data)
-    double_links_env.evn_controller(0, model, data)
-    # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
-    # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
-    print({f"{data.qpos}-{data.ctrl}"})
+    pass
 
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
