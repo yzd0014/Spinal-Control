@@ -6,7 +6,7 @@ import parameters as params
 import double_links_env
 import control
 
-xml_path = 'single_link.xml' #xml file (assumes this is in the same folder as this file)
+xml_path = 'arm26_inverted.xml' #xml file (assumes this is in the same folder as this file)
 sim_pause = True
 next_frame = False
 simend = 5 #simulation time
@@ -144,7 +144,7 @@ glfw.set_scroll_callback(window, scroll)
 cam.azimuth = 90
 cam.elevation = -20
 cam.distance = 2
-cam.lookat = np.array([0.0, -1, 2])
+cam.lookat = np.array([0.0, 0, -0.4])
 
 #initialize the controller
 init_controller(model,data)

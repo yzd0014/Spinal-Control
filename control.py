@@ -297,21 +297,22 @@ class BaselineParams:
 
 class BaselineController(object):
     def __init__(self, p, env_id):
-        self.action = np.zeros(4)
         self.target_pos = np.zeros(2)
         self.env_id = env_id
         self.joint_num = 2
+        self.actuator_num = self.joint_num * 2 + 2
+        self.action = np.zeros(self.actuator_num)
 
     def callback(self, model, data):
-        for i in range(self.joint_num * 2):
+        for i in range(self.actuator_num):
             data.ctrl[i] = self.action[i]
 
     def set_action(self, newaction):
-        for i in range(self.joint_num * 2):
+        for i in range(self.actuator_num):
             self.action[i] = newaction[i]
 
     def get_action_space(self):
-        return spaces.Box(low=0, high=1, shape=(self.joint_num * 2,), dtype=np.float32)
+        return spaces.Box(low=0, high=1, shape=(self.actuator_num,), dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # PID Controller

@@ -31,7 +31,8 @@ if env_id == DOUBLE_PENDULUM:
     xml = 'double_links_fast.xml'
     episode_length_in_seconds = 20
 elif env_id == INVERTED_PENDULUM:
-    xml = 'inverted_pendulum_fast.xml'
+    # xml = 'inverted_pendulum_fast.xml'
+    xml = 'arm26_inverted.xml'
     episode_length_in_seconds = 150
 elif env_id == TOSS:
     xml = 'toss.xml'

@@ -13,17 +13,16 @@ def get_obs(controller, data, env_id):
     if env_id == 0:
         obs = np.array([controller.target_pos[0], controller.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
     elif env_id == 1:
-        # obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
+        obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         # obs = np.array([data.actuator_length[0], data.actuator_length[1],
         #                 data.actuator_length[2], data.actuator_length[3],
         #                 data.actuator_velocity[0], data.actuator_velocity[1],
         #                 data.actuator_velocity[2], data.actuator_velocity[3],
         #                 data.xpos[3][0], data.xpos[3][1], data.xpos[3][2]])
-        obs = np.array([data.actuator_length[0], data.actuator_length[1],
-                        data.actuator_length[2], data.actuator_length[3],
-                        data.actuator_velocity[0], data.actuator_velocity[1],
-                        data.actuator_velocity[2], data.actuator_velocity[3],
-                        data.qpos[2], data.qvel[2]])
+        # obs = np.array([data.actuator_length[0], data.actuator_length[1],
+        #                 data.actuator_length[2], data.actuator_length[3],
+        #                 data.actuator_length[4], data.actuator_length[5],
+        #                 data.qpos[2], data.qvel[2]])
     elif env_id == 2:
         obs = np.array([controller.target_pos[0], controller.target_pos[1], data.time])
     elif env_id == 3:
@@ -196,9 +195,9 @@ class DoubleLinkEnv(gym.Env):
             # self.data.qpos[0] = 0.4
             # self.data.qpos[1] = -0.87
             # self.data.qpos[2] = -2.32
-            self.data.qpos[0] = random.uniform(-0.3, 0.3)
-            self.data.qpos[1] = random.uniform(-0.3, 0.3)
-            last_link_angle = random.uniform(np.pi - 0.7, np.pi + 0.7)
+            self.data.qpos[0] = random.uniform(0.1, 0.5)
+            self.data.qpos[1] = random.uniform(0.1, 0.5)
+            last_link_angle = random.uniform(2.45, 3)
             self.data.qpos[2] = last_link_angle - self.data.qpos[0] - self.data.qpos[1]
             mj.mj_forward(self.model, self.data)
 
@@ -239,7 +238,12 @@ class DoubleLinkEnv(gym.Env):
         mj.mjv_defaultCamera(self.cam)
         mj.mjv_defaultOption(self.opt)
 
-        if self.env_id == 2:
+        if self.env_id == 1:
+            self.cam.azimuth = 90
+            self.cam.elevation = -20
+            self.cam.distance = 2
+            self.cam.lookat = np.array([0.0, 0, -0.4])
+        elif self.env_id == 2:
             self.cam.azimuth = 160
             self.cam.elevation = -10
             self.cam.distance = 5
@@ -284,8 +288,8 @@ class DoubleLinkEnv(gym.Env):
         if self.env_id == 0:
             return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
         elif self.env_id == 1:
-            # return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-            return spaces.Box(low=-100, high=100, shape=(10,), dtype=np.float32)
+            return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+            # return spaces.Box(low=-100, high=100, shape=(8,), dtype=np.float32)
         elif self.env_id == 2:
             return spaces.Box(low=-100, high=100, shape=(3,), dtype=np.float32)
         elif self.env_id == 3:

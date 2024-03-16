@@ -10,7 +10,7 @@ from stable_baselines3 import SAC
 
 m_target = np.array([-0.7, -0.7])
 # m_target = np.array([-10, 0])
-modelid = "1706052775"
+modelid = "1710627305"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -185,9 +185,9 @@ def init_controller(model,data):
         # data.qpos[0] = 0.4
         # data.qpos[1] = -0.87
         # data.qpos[2] = -2.32
-        data.qpos[0] = 0
-        data.qpos[1] = 0
-        data.qpos[2] = -2.61
+        data.qpos[0] = 0.1
+        data.qpos[1] = 0.1
+        data.qpos[2] = 3
     elif env_id == 2:
         controller.target_pos = np.array([m_target[0], m_target[1]])
         model.eq_active[0] = 1
@@ -274,7 +274,7 @@ glfw.set_scroll_callback(window, scroll)
 cam.azimuth = 90
 cam.elevation = -20
 cam.distance = 2
-cam.lookat = np.array([0.0, -1, 2])
+cam.lookat = np.array([0.0, 0, -0.4])
 
 #initialize the controller
 init_controller(model,data)
