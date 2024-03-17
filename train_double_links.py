@@ -38,40 +38,40 @@ if __name__ == "__main__":
 
 
     reward_target = 0
-    if env_id == DOUBLE_PENDULUM:
-        n_steps = controller_params.episode_length_in_ticks * 25
-        batch_size = controller_params.episode_length_in_ticks
-        n_epochs = 5
-        reward_target = -1
-        learning_rate = 0.0003
-    elif env_id == INVERTED_PENDULUM:
-        n_steps = int(100/controller_params.brain_dt)
-        batch_size = int(n_steps)
-        n_epochs = 20
-        reward_target = 100
-        learning_rate = 0.0003
-    elif env_id == TOSS:
-        n_steps = int(200/controller_params.brain_dt)
-        batch_size = n_steps
-        # batch_size = int(n_steps/5)
-        n_epochs = 10
-        reward_target = -0.2
-        learning_rate = 0.0003
-    elif env_id == PUSH:
-        n_steps = controller_params.episode_length_in_ticks * 10
-        batch_size = controller_params.episode_length_in_ticks
-        n_epochs = 10
-        reward_target = -0.1
-        learning_rate = 0.0001
-    elif env_id == SWING:
-        n_steps = int(100/controller_params.brain_dt)
-        batch_size = n_steps
-        n_epochs = 10
-        reward_target = -0.02
-        learning_rate = 0.0002
-
-    TIMESTEPS = n_steps
     if training_type == "PPO":
+        if env_id == DOUBLE_PENDULUM:
+            n_steps = controller_params.episode_length_in_ticks * 25
+            batch_size = controller_params.episode_length_in_ticks
+            n_epochs = 5
+            reward_target = -1
+            learning_rate = 0.0003
+        elif env_id == INVERTED_PENDULUM:
+            n_steps = int(100 / controller_params.brain_dt)
+            batch_size = int(n_steps)
+            n_epochs = 20
+            reward_target = 100
+            learning_rate = 0.0003
+        elif env_id == TOSS:
+            n_steps = int(200 / controller_params.brain_dt)
+            batch_size = n_steps
+            # batch_size = int(n_steps/5)
+            n_epochs = 10
+            reward_target = -0.2
+            learning_rate = 0.0003
+        elif env_id == PUSH:
+            n_steps = controller_params.episode_length_in_ticks * 10
+            batch_size = controller_params.episode_length_in_ticks
+            n_epochs = 10
+            reward_target = -0.1
+            learning_rate = 0.0001
+        elif env_id == SWING:
+            n_steps = int(100 / controller_params.brain_dt)
+            batch_size = n_steps
+            n_epochs = 10
+            reward_target = -0.02
+            learning_rate = 0.0002
+        TIMESTEPS = n_steps
+
         policy_kwargs = dict(activation_fn=th.nn.Tanh, \
                              net_arch=dict(pi=[64, 64], \
                                            vf=[64, 64]))
@@ -85,13 +85,20 @@ if __name__ == "__main__":
                     verbose=1, \
                     tensorboard_log=logdir)
     elif training_type == "SAC":
+        if env_id == DOUBLE_PENDULUM:
+            n_steps = controller_params.episode_length_in_ticks * 25
+            batch_size = controller_params.episode_length_in_ticks
+        elif env_id == INVERTED_PENDULUM:
+            n_steps = int(100 / controller_params.brain_dt)
+            batch_size = 256
+        TIMESTEPS = n_steps
         policy_kwargs = dict(activation_fn=th.nn.ReLU, \
                              net_arch=dict(pi=[256, 256], \
                                            qf=[256, 256]))
         model = SAC("MlpPolicy", env, \
                     policy_kwargs=policy_kwargs, \
                     device='cpu', \
-                    batch_size = 256, \
+                    batch_size = batch_size, \
                     train_freq = (1,"episode"), \
                     buffer_size = 1000000, \
                     tau = 0.005, \

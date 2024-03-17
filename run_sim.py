@@ -8,9 +8,9 @@ from control import *
 import double_links_env
 from stable_baselines3 import SAC
 
-m_target = np.array([0.6, 1.6])
+m_target = np.array([0.1, 0.8, 1])
 # m_target = np.array([-10, 0])
-modelid = "1710649553"
+modelid = "1710711401"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -180,7 +180,7 @@ def init_controller(model,data):
         # mj.mj_resetData(model, data)
         # print(f"target: {m_target}")
 
-        controller.target_pos = np.array([m_target[0], m_target[1]])
+        controller.target_pos = m_target
     elif env_id == 1:
         # data.qpos[0] = 0.4
         # data.qpos[1] = -0.87
@@ -221,7 +221,7 @@ def callback(model, data):
         global_timer = data.time
 
     controller.callback(model, data)
-    env_controller(env_id, model, data)
+    env_controller(controller, model, data)
     # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
     # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
     # print(data.ctrl)

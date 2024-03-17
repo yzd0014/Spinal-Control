@@ -59,12 +59,12 @@ class ControllerParams:
         self.brain_dt = brain_dt
         self.episode_length_in_ticks = int(episode_length_in_seconds / brain_dt)
 
-def env_controller(env_id, model, data):
-    if env_id == 0:
+def env_controller(controller, model, data):
+    if controller.env_id == 0:
         pass
-        # data.ctrl[6] = current_external_force * 20
-        # data.ctrl[7] = current_external_force * 10
-    elif env_id == 2:
+        # data.ctrl[6] = controller.target_pos[2] * 20 * np.sin(data.time * 2 * np.pi * 2)
+        # data.ctrl[7] = controller.target_pos[2] * 10 * np.sin(data.time * 2 * np.pi * 2)
+    elif controller.env_id == 2:
         if data.time > 3:
             model.eq_active[0] = 0
 # -----------------------------------------------------------------------------
@@ -297,7 +297,7 @@ class BaselineParams:
 
 class BaselineController(object):
     def __init__(self, p, env_id):
-        self.target_pos = np.zeros(2)
+        self.target_pos = np.zeros(3)
         self.env_id = env_id
         self.joint_num = 2
         self.actuator_num = self.joint_num * 2 + 2
@@ -533,23 +533,29 @@ class PPOController(object):
 # -----------------------------------------------------------------------------
 class SACController(object):
     def __init__(self, env_id):
-        self.action = np.zeros(2)
+        self.action = np.zeros(3)
         self.target_pos = np.zeros(2)
 
-        model_path = "./925000.zip"
+        # model_path = "./925000.zip" # theta without k
+        model_path = "./157500.zip" #length with k
         self.model = SAC.load(model_path)
 
         self.env_id = env_id
 
     def set_action(self, newaction):
-        for i in range(2):
+        for i in range(3):
             self.action[i] = newaction[i]
 
     def callback(self, model, data):
-        spinal_input = np.array([self.action[0], self.action[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        # spinal_input = np.array([self.action[0], self.action[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        spinal_input = np.array([self.action[0], self.action[1], self.action[2],
+                        data.actuator_length[0], data.actuator_length[1],
+                        data.actuator_length[2], data.actuator_length[3],
+                        data.actuator_velocity[0], data.actuator_velocity[1],
+                        data.actuator_velocity[2], data.actuator_velocity[3]])
         spinal_output, _states = self.model.predict(spinal_input)
         for i in range(6):
             data.ctrl[i] = spinal_output[i]
 
     def get_action_space(self):
-        return spaces.Box(low=0, high=2.09, shape=(2,), dtype=np.float32)
+        return spaces.Box(low=0, high=2.09, shape=(3,), dtype=np.float32)
