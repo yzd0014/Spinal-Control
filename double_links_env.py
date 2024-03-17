@@ -7,11 +7,19 @@ import os
 import random
 from control import *
 
-
+current_target = None
+current_external_force = None
 
 def get_obs(controller, data, env_id):
     if env_id == 0:
         obs = np.array([controller.target_pos[0], controller.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        # obs = np.array([current_target[0], current_target[1], current_external_force,
+        #                 data.actuator_length[0], data.actuator_length[1],
+        #                 data.actuator_length[2], data.actuator_length[3],
+        #                 data.actuator_length[4], data.actuator_length[5],
+        #                 data.actuator_force[0], data.actuator_force[1],
+        #                 data.actuator_force[2], data.actuator_force[3],
+        #                 data.actuator_force[4], data.actuator_force[5]])
     elif env_id == 1:
         obs = np.array([data.qpos[0], data.qpos[1], data.qpos[2], data.qvel[0], data.qvel[1], data.qvel[2]])
         # obs = np.array([data.actuator_length[0], data.actuator_length[1],
@@ -73,6 +81,8 @@ class DoubleLinkEnv(gym.Env):
             self.controller = AngleStiffnessController(env_id, enable_cocontraction=True)
         elif self.control_type == Control_Type.PPO:
             self.controller = PPOController(env_id)
+        elif self.control_type == Control_Type.SAC:
+            self.controller = SACController(env_id)
 
         # Set callback
         mj.set_mjcb_control(self.env_callback)
@@ -89,13 +99,16 @@ class DoubleLinkEnv(gym.Env):
 
         self.episode_length = c_params.episode_length_in_ticks
 
-        self.num_of_targets = 0
-        self.target_qs = []
-        for i in np.arange(-0.7, 0.71, 0.35):
-            for j in np.arange(-0.7, 0.71, 0.35):
-                self.target_qs.append(np.array([i, j]))
-                self.num_of_targets += 1
-
+        self.training_data = []
+        # for i in np.arange(0.1, 2.09, 0.2):
+        #     for j in np.arange(0.1, 2.09, 0.2):
+        #         for k in np.arange(0, 1.0001, 0.25):
+        #             self.training_data.append(np.array([i, j, k]))
+        #             self.training_data.append(np.array([i, j, -k]))
+        theta = [0.1, 0.6, 1.5, 1.7, 2.08]
+        for i in range(5):
+            for j in range(5):
+                self.training_data.append(np.array([theta[i], theta[j]]))
         self.target_iter = 0
 
         self.action_space = self.controller.get_action_space()
@@ -131,8 +144,10 @@ class DoubleLinkEnv(gym.Env):
                 curr_pos = np.array([self.data.xpos[2][0], self.data.xpos[2][2]])
                 position_error = 100 * (curr_pos - self.controller.target_pos)
             else:
-                position_error = self.data.qpos - self.target_qs[self.target_iter]
-            reward = -np.linalg.norm(position_error)
+                total_crtl = self.data.ctrl[0] + self.data.ctrl[1] + self.data.ctrl[2] + self.data.ctrl[3] + self.data.ctrl[4] + self.data.ctrl[5]
+                position_error = np.linalg.norm(self.data.qpos -  self.controller.target_pos)
+            # reward = -position_error - 0.005 * total_crtl
+            reward = -position_error
 
         elif self.env_id == 1:
             reward = self.dt_brain
@@ -173,23 +188,17 @@ class DoubleLinkEnv(gym.Env):
             self.controller.q_error = np.zeros(2)
 
         if self.env_id == 0:
+            self.controller.target_pos = np.array([self.training_data[self.target_iter][0], self.training_data[self.target_iter][1]])
+            # current_external_force = self.training_data[self.target_iter][2]
+            mj.mj_resetData(self.model, self.data)
+            # self.data.qpos[0] = self.controller.target_pos[0]
+            # self.data.qpos[1] = self.controller.target_pos[1]
+            mj.mj_forward(self.model, self.data)
             self.target_iter += 1
-            if self.target_iter >= self.num_of_targets:
+
+            if self.target_iter >= len(self.training_data):
                 self.target_iter = 0
-            m_target = self.target_qs[self.target_iter]
-            mj.mj_resetData(self.model, self.data)
-            self.data.qpos[0] = m_target[0]
-            self.data.qpos[1] = m_target[1]
-            mj.mj_forward(self.model, self.data)
-            self.cartesian_target = self.data.xpos[2].copy()
 
-            mj.mj_resetData(self.model, self.data)
-            mj.mj_forward(self.model, self.data)
-
-            if self.cartesian == True:
-                self.controller.target_pos = np.array([self.cartesian_target[0], self.cartesian_target[2]])
-            else:
-                self.controller.target_pos = np.array([m_target[0], m_target[1]])
         elif self.env_id == 1:
             mj.mj_resetData(self.model, self.data)
             # self.data.qpos[0] = 0.4
@@ -197,7 +206,8 @@ class DoubleLinkEnv(gym.Env):
             # self.data.qpos[2] = -2.32
             self.data.qpos[0] = random.uniform(0.1, 0.5)
             self.data.qpos[1] = random.uniform(0.1, 0.5)
-            last_link_angle = random.uniform(2.45, 3)
+            # last_link_angle = random.uniform(2.45, 3)
+            last_link_angle = random.uniform(2.9, 3)
             self.data.qpos[2] = last_link_angle - self.data.qpos[0] - self.data.qpos[1]
             mj.mj_forward(self.model, self.data)
 
@@ -238,7 +248,7 @@ class DoubleLinkEnv(gym.Env):
         mj.mjv_defaultCamera(self.cam)
         mj.mjv_defaultOption(self.opt)
 
-        if self.env_id == 1:
+        if self.env_id == 0 or self.env_id == 1:
             self.cam.azimuth = 90
             self.cam.elevation = -20
             self.cam.distance = 2
@@ -270,7 +280,7 @@ class DoubleLinkEnv(gym.Env):
         self.viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
 
     def get_num_of_targets(self):
-        return self.num_of_targets;
+        return len(self.training_data);
 
     def render(self):
         mj.mjv_updateScene(self.model, self.data, self.opt, None, \
@@ -282,11 +292,12 @@ class DoubleLinkEnv(gym.Env):
 
     def env_callback(self, model, data):
         self.controller.callback(model, data)
-        evn_controller(self.env_id, model, data)
+        env_controller(self.env_id, model, data)
 
     def get_obs_space(self):
         if self.env_id == 0:
             return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+            # return spaces.Box(low=-100, high=100, shape=(15,), dtype=np.float32)
         elif self.env_id == 1:
             return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
             # return spaces.Box(low=-100, high=100, shape=(8,), dtype=np.float32)

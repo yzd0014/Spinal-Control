@@ -11,6 +11,7 @@ from gym import spaces
 import torch
 import torch_net
 from stable_baselines3 import PPO
+from stable_baselines3 import SAC
 
 class Control_Type(Enum):
     DEFAULT = -1
@@ -25,6 +26,7 @@ class Control_Type(Enum):
     FF_GENERAL = 9
     FF_OPTIMAL = 10
     PPO = 11
+    SAC = 12
 
 
 control_type_dic = {Control_Type.BASELINE: "baseline",
@@ -38,7 +40,8 @@ control_type_dic = {Control_Type.BASELINE: "baseline",
                     Control_Type.FF_GENERAL: "feedforward-general",
                     Control_Type.DEFAULT: "default",
                     Control_Type.FF_OPTIMAL: "feedforward-optimal",
-                    Control_Type.PPO: "ppo"
+                    Control_Type.PPO: "ppo",
+                    Control_Type.SAC: "sac"
                     }
 
 
@@ -56,17 +59,14 @@ class ControllerParams:
         self.brain_dt = brain_dt
         self.episode_length_in_ticks = int(episode_length_in_seconds / brain_dt)
 
-def evn_controller(env_id, model, data):
+def env_controller(env_id, model, data):
     if env_id == 0:
-        # max_force = 4
-        # max_angle = 0.88
-        # data.ctrl[4] = -np.pow(data.qpos[0] / max_angle, 2) * max_force
-        # data.ctrl[5] = -np.pow(data.qpos[1] / max_angle, 2) * max_force
         pass
+        # data.ctrl[6] = current_external_force * 20
+        # data.ctrl[7] = current_external_force * 10
     elif env_id == 2:
         if data.time > 3:
             model.eq_active[0] = 0
-
 # -----------------------------------------------------------------------------
 # EP Controller
 # -----------------------------------------------------------------------------
@@ -502,7 +502,7 @@ class AngleStiffnessController(object):
 
 
 # -----------------------------------------------------------------------------
-# Feedforward Controller
+# PPO Controller
 # -----------------------------------------------------------------------------
 class PPOController(object):
     def __init__(self, env_id):
@@ -521,8 +521,35 @@ class PPOController(object):
     def callback(self, model, data):
         spinal_input = np.array([self.action[0], self.action[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
         spinal_output, _states = self.PPO_model.predict(spinal_input)
-        for i in range(4):
+        for i in range(6):
             data.ctrl[i] = spinal_output[i]
 
     def get_action_space(self):
-        return spaces.Box(low=-2, high=2, shape=(2,), dtype=np.float32)
+        # return spaces.Box(low=-2, high=2, shape=(2,), dtype=np.float32)
+        return spaces.Box(low=0, high=2.09, shape=(2,), dtype=np.float32)
+
+# -----------------------------------------------------------------------------
+# SAC Controller
+# -----------------------------------------------------------------------------
+class SACController(object):
+    def __init__(self, env_id):
+        self.action = np.zeros(2)
+        self.target_pos = np.zeros(2)
+
+        model_path = "./925000.zip"
+        self.model = SAC.load(model_path)
+
+        self.env_id = env_id
+
+    def set_action(self, newaction):
+        for i in range(2):
+            self.action[i] = newaction[i]
+
+    def callback(self, model, data):
+        spinal_input = np.array([self.action[0], self.action[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        spinal_output, _states = self.model.predict(spinal_input)
+        for i in range(6):
+            data.ctrl[i] = spinal_output[i]
+
+    def get_action_space(self):
+        return spaces.Box(low=0, high=2.09, shape=(2,), dtype=np.float32)

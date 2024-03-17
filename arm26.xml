@@ -113,7 +113,7 @@
     <muscle name="EE" tendon="EE" scale="400"/>
     <muscle name="BF" tendon="BF" scale="400"/>
     <muscle name="BE" tendon="BE" scale="400"/>
-    <motor name="motor0" joint="shoulder" ctrllimited="true" ctrlrange="-10 10"/>
+    <motor name="motor0" joint="shoulder" ctrllimited="true" ctrlrange="-20 20"/>
     <motor name="motor1" joint="elbow" ctrllimited="true" ctrlrange="-10 10"/>
   </actuator>
 </mujoco>

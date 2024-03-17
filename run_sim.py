@@ -8,9 +8,9 @@ from control import *
 import double_links_env
 from stable_baselines3 import SAC
 
-m_target = np.array([-0.7, -0.7])
+m_target = np.array([0.6, 1.6])
 # m_target = np.array([-10, 0])
-modelid = "1710627305"
+modelid = "1710649553"
 #######################################################################
 # Load Params
 print("\n\n")
@@ -20,7 +20,7 @@ training_type, control_type, env_id, controller_params = pickle.load(open("./mod
                                          + "env_contr_params.p", "rb"))
 episode_length = controller_params.episode_length_in_ticks
 dt_brain = controller_params.brain_dt
-training_type = "SAC"
+# training_type = "SAC"
 
 # For saving data
 data_dir = "datalog"
@@ -221,7 +221,7 @@ def callback(model, data):
         global_timer = data.time
 
     controller.callback(model, data)
-    evn_controller(env_id, model, data)
+    env_controller(env_id, model, data)
     # print(f"time:{data.time} {data.qvel[0]+data.qvel[1]+data.qvel[2]}")
     # print(f"target:{m_target}, curr pos:{data.xpos[2][0]} {data.xpos[2][2]}")
     # print(data.ctrl)
