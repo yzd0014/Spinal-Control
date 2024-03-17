@@ -91,6 +91,7 @@ if __name__ == "__main__":
         elif env_id == INVERTED_PENDULUM:
             n_steps = int(100 / controller_params.brain_dt)
             batch_size = 256
+            reward_target = 100
         TIMESTEPS = n_steps
         policy_kwargs = dict(activation_fn=th.nn.ReLU, \
                              net_arch=dict(pi=[256, 256], \

@@ -537,7 +537,10 @@ class SACController(object):
         self.target_pos = np.zeros(2)
 
         # model_path = "./925000.zip" # theta without k
-        model_path = "./157500.zip" #length with k
+        # model_path = "./227500.zip"  # length without k
+        # model_path = "./157500.zip" #length with k
+        model_path = "./142500.zip" #length with k
+
         self.model = SAC.load(model_path)
 
         self.env_id = env_id
@@ -548,6 +551,11 @@ class SACController(object):
 
     def callback(self, model, data):
         # spinal_input = np.array([self.action[0], self.action[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
+        # spinal_input = np.array([self.action[0], self.action[1],
+        #                          data.actuator_length[0], data.actuator_length[1],
+        #                          data.actuator_length[2], data.actuator_length[3],
+        #                          data.actuator_velocity[0], data.actuator_velocity[1],
+        #                          data.actuator_velocity[2], data.actuator_velocity[3]])
         spinal_input = np.array([self.action[0], self.action[1], self.action[2],
                         data.actuator_length[0], data.actuator_length[1],
                         data.actuator_length[2], data.actuator_length[3],
@@ -558,4 +566,5 @@ class SACController(object):
             data.ctrl[i] = spinal_output[i]
 
     def get_action_space(self):
-        return spaces.Box(low=0, high=2.09, shape=(3,), dtype=np.float32)
+        # return spaces.Box(low=0, high=2.09, shape=(3,), dtype=np.float32)
+        return spaces.Box(low=np.array([0, 0, 0]), high=np.array([2.09, 2.09, 1]), dtype=np.float32)
