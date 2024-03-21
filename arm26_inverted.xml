@@ -23,7 +23,7 @@
   </visual>
 
   <default>
-    <joint type="hinge" pos="0 0 0" axis="0 -1 0" damping="0.5"/>
+    <joint type="hinge" pos="0 0 0" axis="0 -1 0" damping="0.0"/>
     <muscle ctrllimited="true" ctrlrange="0 1"/>
   </default>
   <asset>
