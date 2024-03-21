@@ -87,11 +87,14 @@ if __name__ == "__main__":
     elif training_type == "SAC":
         if env_id == DOUBLE_PENDULUM:
             n_steps = controller_params.episode_length_in_ticks * 25
-            batch_size = controller_params.episode_length_in_ticks
+            m_batch_size = controller_params.episode_length_in_ticks
+            m_freq = 1
+            reward_target = -28
         elif env_id == INVERTED_PENDULUM:
             n_steps = int(100 / controller_params.brain_dt)
-            batch_size = 256
-            reward_target = 100
+            m_batch_size = 256
+            m_freq =  (1,"episode")
+            reward_target = 40
         TIMESTEPS = n_steps
         policy_kwargs = dict(activation_fn=th.nn.ReLU, \
                              net_arch=dict(pi=[256, 256], \
@@ -99,8 +102,8 @@ if __name__ == "__main__":
         model = SAC("MlpPolicy", env, \
                     policy_kwargs=policy_kwargs, \
                     device='cpu', \
-                    batch_size = batch_size, \
-                    train_freq = (1,"episode"), \
+                    batch_size = m_batch_size, \
+                    train_freq = m_freq, \
                     buffer_size = 1000000, \
                     tau = 0.005, \
                     gamma = 0.99, \
@@ -124,6 +127,6 @@ if __name__ == "__main__":
         if mean_reward > reward_target:
             break
 
-    file = open(logdir + "num_timesteps.txt", "w")
-    file.write(str(TIMESTEPS * iters))
-    file.close()
+    # file = open(logdir + "num_timesteps.txt", "w")
+    # file.write(str(TIMESTEPS * iters))
+    # file.close()

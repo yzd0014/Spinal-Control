@@ -11,7 +11,7 @@ from control import *
 def get_obs(controller, data, env_id):
     if env_id == 0:
         # obs = np.array([controller.target_pos[0], controller.target_pos[1], data.qpos[0], data.qvel[0], data.qpos[1], data.qvel[1]])
-        obs = np.array([controller.target_pos[0], controller.target_pos[1], controller.target_pos[2],
+        obs = np.array([controller.target_pos[0], controller.target_pos[1], controller.target_pos[2], controller.target_pos[3],
                         data.actuator_length[0], data.actuator_length[1],
                         data.actuator_length[2], data.actuator_length[3],
                         data.actuator_velocity[0], data.actuator_velocity[1],
@@ -106,7 +106,8 @@ class DoubleLinkEnv(gym.Env):
         for i in range(5):
             for j in range(5):
                 for k in np.arange(0, 1.0001, 0.5):
-                    self.training_data.append(np.array([theta[i], theta[j], k]))
+                    for w in np.arange(0, 1.0001, 0.5):
+                        self.training_data.append(np.array([theta[i], theta[j], k, w]))
         self.target_iter = 0
 
         self.action_space = self.controller.get_action_space()
@@ -187,7 +188,8 @@ class DoubleLinkEnv(gym.Env):
             self.controller.q_error = np.zeros(2)
 
         if self.env_id == 0:
-            self.controller.target_pos = np.array([self.training_data[self.target_iter][0], self.training_data[self.target_iter][1], self.training_data[self.target_iter][2]])
+            self.controller.target_pos = np.array([self.training_data[self.target_iter][0], self.training_data[self.target_iter][1],
+                                                   self.training_data[self.target_iter][2], self.training_data[self.target_iter][3]])
             # current_external_force = self.training_data[self.target_iter][2]
             mj.mj_resetData(self.model, self.data)
             # self.data.qpos[0] = self.controller.target_pos[0]
@@ -296,7 +298,7 @@ class DoubleLinkEnv(gym.Env):
     def get_obs_space(self):
         if self.env_id == 0:
             # return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
-            return spaces.Box(low=-100, high=100, shape=(11,), dtype=np.float32)
+            return spaces.Box(low=-100, high=100, shape=(12,), dtype=np.float32)
         elif self.env_id == 1:
             # return spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
             return spaces.Box(low=-100, high=100, shape=(10,), dtype=np.float32)

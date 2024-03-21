@@ -8,9 +8,9 @@ from control import *
 import double_links_env
 from stable_baselines3 import SAC
 
-m_target = np.array([0.1, 0.8, 1])
+m_target = np.array([0.9, 0.9, 1, 1])
 # m_target = np.array([-10, 0])
-modelid = "1710711401"
+modelid = "1710983163"
 #######################################################################
 # Load Params
 print("\n\n")

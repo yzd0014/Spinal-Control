@@ -61,9 +61,11 @@ class ControllerParams:
 
 def env_controller(controller, model, data):
     if controller.env_id == 0:
+        # external_force = np.random.normal(0.5, 0.1)
+        # external_force = np.clip(external_force, 0, 1)
+        # data.ctrl[6] = controller.target_pos[2] * 20 * external_force * controller.target_pos[2]
+        # data.ctrl[7] = controller.target_pos[2] * 10 * external_force * controller.target_pos[3]
         pass
-        # data.ctrl[6] = controller.target_pos[2] * 20 * np.sin(data.time * 2 * np.pi * 2)
-        # data.ctrl[7] = controller.target_pos[2] * 10 * np.sin(data.time * 2 * np.pi * 2)
     elif controller.env_id == 2:
         if data.time > 3:
             model.eq_active[0] = 0
@@ -297,7 +299,7 @@ class BaselineParams:
 
 class BaselineController(object):
     def __init__(self, p, env_id):
-        self.target_pos = np.zeros(3)
+        self.target_pos = np.zeros(4)
         self.env_id = env_id
         self.joint_num = 2
         self.actuator_num = self.joint_num * 2 + 2
@@ -533,14 +535,14 @@ class PPOController(object):
 # -----------------------------------------------------------------------------
 class SACController(object):
     def __init__(self, env_id):
-        self.action = np.zeros(3)
+        self.action = np.zeros(4)
         self.target_pos = np.zeros(2)
 
         # model_path = "./925000.zip" # theta without k
         # model_path = "./227500.zip"  # length without k
         # model_path = "./157500.zip" #length with k
-        model_path = "./142500.zip" #length with k
-
+        # model_path = "./142500.zip" #length with k
+        model_path = "./policies/45000.zip" #length with k
         self.model = SAC.load(model_path)
 
         self.env_id = env_id
@@ -556,7 +558,7 @@ class SACController(object):
         #                          data.actuator_length[2], data.actuator_length[3],
         #                          data.actuator_velocity[0], data.actuator_velocity[1],
         #                          data.actuator_velocity[2], data.actuator_velocity[3]])
-        spinal_input = np.array([self.action[0], self.action[1], self.action[2],
+        spinal_input = np.array([self.action[0], self.action[1], self.action[2], self.action[3],
                         data.actuator_length[0], data.actuator_length[1],
                         data.actuator_length[2], data.actuator_length[3],
                         data.actuator_velocity[0], data.actuator_velocity[1],
@@ -567,4 +569,4 @@ class SACController(object):
 
     def get_action_space(self):
         # return spaces.Box(low=0, high=2.09, shape=(3,), dtype=np.float32)
-        return spaces.Box(low=np.array([0, 0, 0]), high=np.array([2.09, 2.09, 1]), dtype=np.float32)
+        return spaces.Box(low=np.array([0, 0, 0, 0]), high=np.array([2.09, 2.09, 1, 1]), dtype=np.float32)
