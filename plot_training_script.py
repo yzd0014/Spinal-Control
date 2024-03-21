@@ -1,12 +1,13 @@
-import pickle
-import plot_training_data as pt
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-datafile = 'baeline-processed.pkl'
+datafile = './datalog/baesline-processed.pkl'
+data = pd.read_pickle(datafile)
+data = data[data['Model'] == 'baseline']
+value = data.Value.to_numpy()
+all_data = [value, value]
+labels = ['baseline', 'sac']
+plt.boxplot(all_data, labels=labels)
+plt.show()
 
-data = pickle.load(open(datafile,'rb'))
-
-interp_df = data['interp_df']
-v_df = data['v_df']
-means = data['means']
-maxes = data['maxes']
-pt.plot_data(interp_df,v_df,means,maxes,'Episode Length')

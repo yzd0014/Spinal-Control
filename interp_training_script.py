@@ -29,15 +29,6 @@ for model in v_df['Model'].unique():
     all_data.append(sub_df)
 interp_df = pd.concat(all_data, ignore_index=True)
 output = interp_df[interp_df['Step'] == 60000]
-means = interp_df.groupby(['Model','Step'])['Value'].mean().reset_index()
-
-maxes = (v_df.groupby('ModelID')
-         .agg(MaxValue=('Value', 'max'),Model=('Model', 'first'))
-         .reset_index())
-
-pickle.dump({'interp_df': interp_df,
-             'v_df': v_df,
-             'means': means,
-             'maxes': maxes}, open('./' + savefile, 'wb'))
+pickle.dump(output, open('./datalog/' + savefile, 'wb'))
 
 
