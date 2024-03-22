@@ -61,10 +61,8 @@ class ControllerParams:
 
 def env_controller(controller, model, data):
     if controller.env_id == 0:
-        # external_force = np.random.normal(0.5, 0.1)
-        # external_force = np.clip(external_force, 0, 1)
-        # data.ctrl[6] = controller.target_pos[2] * 20 * external_force * controller.target_pos[2]
-        # data.ctrl[7] = controller.target_pos[2] * 10 * external_force * controller.target_pos[3]
+        # data.ctrl[6] = 20 * np.random.normal(0, controller.target_pos[2])
+        # data.ctrl[7] = 10 * np.random.normal(0, controller.target_pos[3])
         pass
     elif controller.env_id == 2:
         if data.time > 3:
